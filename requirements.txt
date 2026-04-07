@@ -1,7 +1,0 @@
-requests
-howlongtobeatpy
-streamlit
-pandas
-plotly
-supabase
-python-dotenv
