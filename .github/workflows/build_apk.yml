@@ -50,7 +50,7 @@ jobs:
 
       - name: Compilar APK (Fat APK)
         working-directory: ./frontend
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name=1.0.0 --build-number=${{ github.run_number }}
 
       - name: Subir APK al Artifact
         uses: actions/upload-artifact@v4

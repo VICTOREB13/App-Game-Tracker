@@ -9,11 +9,36 @@ import 'screens/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint("Archivo .env no encontrado");
+  }
+
+  final String url = dotenv.env['SUPABASE_URL'] ?? '';
+  final String anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
+  if (url.isEmpty || anonKey.isEmpty) {
+    runApp(const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Text(
+              "❌ Error de Configuración:\nFaltan las claves de Supabase en el archivo .env.\n\nAsegúrate de que el APK fue compilado con los secretos correctos en GitHub.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.redAccent, fontSize: 16),
+            ),
+          ),
+        ),
+      ),
+    ));
+    return;
+  }
   
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+    url: url,
+    anonKey: anonKey,
   );
 
   runApp(const TrackerApp());
