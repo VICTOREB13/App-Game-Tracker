@@ -36,6 +36,8 @@ jobs:
         run: |
           sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+          # Add deep link intent filter for Supabase Auth inside the MainActivity
+          sed -i '/<intent-filter>/i \            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="io.supabase.gametracker" android:host="login-callback" />\n            </intent-filter>' android/app/src/main/AndroidManifest.xml
 
       - name: Restaurar dependencias
         working-directory: ./frontend
