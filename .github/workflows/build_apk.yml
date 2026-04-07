@@ -1,0 +1,59 @@
+name: Compilar Tracker App
+
+on:
+  workflow_dispatch: # Ejecutar y construir pulsando el botón en GitHub
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build_apk:
+    name: Construir APK de Android
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+        
+      - name: Configurar Java (Necesario para Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0' # Versión estable más reciente
+          channel: 'stable'
+
+      - name: Generar Archivos de Plataforma
+        working-directory: ./frontend
+        run: flutter create --platforms android .
+
+      - name: Cambiar el nombre nativo y añadir Permisos
+        working-directory: ./frontend
+        run: |
+          sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+
+      - name: Restaurar dependencias
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Crear archivo .env temporal para compilar
+        working-directory: ./frontend
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+          echo "RAWG_KEY=${{ secrets.RAWG_KEY }}" >> .env
+
+      - name: Compilar APK (Fat APK)
+        working-directory: ./frontend
+        run: flutter build apk --release
+
+      - name: Subir APK al Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackerApp_Android_APK
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk

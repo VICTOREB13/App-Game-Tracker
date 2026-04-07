@@ -1,0 +1,37 @@
+name: Game Tracker Sync
+
+on:
+  schedule:
+    - cron: '0 */12 * * *' # Corre cada 12 horas
+  workflow_dispatch: # Permite correrlo manualmente desde el botón en GitHub
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar Sincronizador
+        env:
+          RAWG_KEY: ${{ secrets.RAWG_KEY }}
+          STEAM_KEY: ${{ secrets.STEAM_KEY }}
+          STEAM_USER_ID: ${{ secrets.STEAM_USER_ID }}
+          STEAM_FAMILY_IDS: ${{ secrets.STEAM_FAMILY_IDS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
+        run: python main.py
