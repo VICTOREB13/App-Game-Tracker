@@ -34,7 +34,7 @@ class SyncService {
     if (user == null) return 'Error: No autenticado';
 
     try {
-      final response = await supabase.functions.invoke('sync-games', body: {
+      final response = await supabase.functions.invoke('sync_game', body: {
         'action': action,
         'userId': user.id,
         'providerId': providerId

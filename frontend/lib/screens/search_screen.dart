@@ -124,7 +124,10 @@ class _SearchScreenState extends State<SearchScreen> {
       
       String? tagsStr;
       if (rawgGame['tags'] != null && rawgGame['tags'] is List) {
-        tagsStr = (rawgGame['tags'] as List).map((t) => t['name'].toString()).join(', ');
+        tagsStr = (rawgGame['tags'] as List)
+            .where((t) => t['language'] == 'eng' || t['language'] == 'spa')
+            .map((t) => t['name'].toString())
+            .join(', ');
       }
 
       final payload = {
@@ -135,6 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
         'external_id': rawgGame['id'].toString(),
         'hours_played': 0.0,
         'is_manual': true,
+        'hltb_main': rawgGame['playtime']?.toDouble() ?? 0.0,
         if (genresStr != null && genresStr.isNotEmpty) 'genre': genresStr,
         if (tagsStr != null && tagsStr.isNotEmpty) 'tags': tagsStr,
       };
