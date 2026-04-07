@@ -117,6 +117,16 @@ class _SearchScreenState extends State<SearchScreen> {
       final supabase = Supabase.instance.client;
       final user = supabase.auth.currentUser;
       
+      String? genresStr;
+      if (rawgGame['genres'] != null && rawgGame['genres'] is List) {
+        genresStr = (rawgGame['genres'] as List).map((g) => g['name'].toString()).join(', ');
+      }
+      
+      String? tagsStr;
+      if (rawgGame['tags'] != null && rawgGame['tags'] is List) {
+        tagsStr = (rawgGame['tags'] as List).map((t) => t['name'].toString()).join(', ');
+      }
+
       final payload = {
         'title': rawgGame['name'],
         'cover_url': rawgGame['background_image'],
@@ -125,6 +135,8 @@ class _SearchScreenState extends State<SearchScreen> {
         'external_id': rawgGame['id'].toString(),
         'hours_played': 0.0,
         'is_manual': true,
+        if (genresStr != null && genresStr.isNotEmpty) 'genre': genresStr,
+        if (tagsStr != null && tagsStr.isNotEmpty) 'tags': tagsStr,
       };
 
       if (user != null) {

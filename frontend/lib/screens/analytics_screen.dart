@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -179,60 +180,66 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           const SizedBox(height: 32),
           SizedBox(
             height: 300,
-            child: platformData.isEmpty ? const Center(child: Text("Sin datos")) : BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: platformData.values.map((map) => map.values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b).toDouble() * 1.1,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final keys = platformData.keys.toList();
-                        if (value.toInt() >= keys.length) return const SizedBox();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(keys[value.toInt()], style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                        );
-                      },
-                      reservedSize: 40,
+            child: platformData.isEmpty ? const Center(child: Text("Sin datos")) : SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: math.max(MediaQuery.of(context).size.width - 32, platformData.length * 70.0),
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: platformData.values.map((map) => map.values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b).toDouble() * 1.1,
+                    barTouchData: BarTouchData(enabled: false),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final keys = platformData.keys.toList();
+                            if (value.toInt() >= keys.length) return const SizedBox();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(keys[value.toInt()], style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                            );
+                          },
+                          reservedSize: 40,
+                        ),
+                      ),
+                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                  ),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: FlGridData(show: false),
-                barGroups: platformData.entries.toList().asMap().entries.map((entry) {
-                  final int index = entry.key;
-                  final map = entry.value.value;
-                  double currentY = 0;
-                  final List<BarChartRodStackItem> stackItems = [];
-                  
-                  // Orden de dibujado (de abajo hacia arriba)
-                  for (var status in ['Completado', 'Jugando', 'Por Jugar', 'Pausado', 'Abandonado']) {
-                    final int count = map[status] ?? 0;
-                    if (count > 0) {
-                      stackItems.add(BarChartRodStackItem(currentY, currentY + count, _getStatusColor(status)));
-                      currentY += count;
-                    }
-                  }
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(show: false),
+                    barGroups: platformData.entries.toList().asMap().entries.map((entry) {
+                      final int index = entry.key;
+                      final map = entry.value.value;
+                      double currentY = 0;
+                      final List<BarChartRodStackItem> stackItems = [];
+                      
+                      // Orden de dibujado (de abajo hacia arriba)
+                      for (var status in ['Completado', 'Jugando', 'Por Jugar', 'Pausado', 'Abandonado']) {
+                        final int count = map[status] ?? 0;
+                        if (count > 0) {
+                          stackItems.add(BarChartRodStackItem(currentY, currentY + count, _getStatusColor(status)));
+                          currentY += count;
+                        }
+                      }
 
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: currentY,
-                        width: 20,
-                        rodStackItems: stackItems,
-                        borderRadius: BorderRadius.circular(2),
-                      )
-                    ],
-                  );
-                }).toList(),
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: currentY,
+                            width: 20,
+                            rodStackItems: stackItems,
+                            borderRadius: BorderRadius.circular(2),
+                          )
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
           ),
