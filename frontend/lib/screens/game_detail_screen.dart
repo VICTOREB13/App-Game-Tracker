@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
+
 import '../models/game.dart';
+import '../services/notion_service.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -14,134 +15,160 @@ class GameDetailScreen extends StatefulWidget {
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
-  final supabase = Supabase.instance.client;
+  final _notion = NotionService.instance;
   late TextEditingController _titleController;
   late TextEditingController _hoursController;
-  late TextEditingController _tagsController;
   late TextEditingController _hltbMainController;
   late TextEditingController _hltbCompController;
   late TextEditingController _coverUrlController;
-  
+  late TextEditingController _summaryController;
+  late TextEditingController _linkController;
+
   late String _selectedStatus;
   late String _selectedPlatform;
+  late String _selectedRating;
   late List<String> _selectedGenres;
-  DateTime? _firstCompletedAt;
+  DateTime? _startDate;
+  DateTime? _completedDate;
   bool _isSaving = false;
-  bool _isUploading = false;
 
-  final List<String> _statuses = ['Por Jugar', 'Jugando', 'Pausado', 'Completado', 'Abandonado'];
+  final List<String> _statuses = ['Por jugar', 'Jugando', 'Jugado'];
+
   final List<String> _platforms = [
-    'PC', 'PlayStation 5', 'PlayStation 4', 'PlayStation 3', 'PlayStation 2', 'PlayStation 1',
-    'PSP', 'PS Vita', 'Xbox Series X|S', 'Xbox One', 'Xbox 360', 'Xbox Original',
-    'Nintendo Switch', 'Wii U', 'Wii', 'GameCube', 'Nintendo 64', 'SNES', 'NES',
-    'Nintendo 3DS', 'Nintendo DS', 'Game Boy Advance', 'Game Boy', 
-    'Sega Genesis', 'Sega Dreamcast', 'Mobile', 'Otra'
+    'PC', 'Mac', 'Mobile',
+    'Playstation 5', 'Playstation 4', 'Playstation 3',
+    'Playstation 2', 'Playstation 1',
+    'Xbox', 'Nintendo Switch', 'Wii U',
+    'Nintendo 64', 'Nintendo DS',
+    'GOG', 'Epic Games',
+  ];
+
+  final List<String> _ratings = [
+    '★★★★★', '★★★★✰', '★★★✰✰', '★★✰✰✰', '★✰✰✰✰', '✰✰✰✰✰',
   ];
 
   final List<String> _allGenres = [
-    'Acción', 'Indie', 'Aventura', 'RPG', 'Estrategia', 'Shooter', 'Casual', 
-    'Simulación', 'Puzzle', 'Arcade', 'Plataformas', 'Carreras', 'Deportes', 
-    'Lucha', 'Familiar', 'Juegos de Mesa', 'Educativo', 'Card Game'
+    'Acción', 'Aventura', 'Acción-aventura', 'RPG', 'Rol', 'Rol de acción',
+    'Disparos', 'Shooter', 'Estrategia', 'Simulador', 'Simulación',
+    'Plataformas', 'Lucha', 'Puzle', 'Arcade', 'Casual', 'Indie',
+    'MMORPG', 'Massively Multiplayer', 'Hack and Slash', 'Souls', 'Soulslike',
+    'Metroidvania', 'Roguelike', 'Terror y supervivencia', 'Carreras',
+    'Anime', 'Gacha', 'Sigilo', 'Zombies',
   ];
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.game.title);
-    _hoursController = TextEditingController(text: widget.game.hoursPlayed?.toString() ?? '0');
-    _tagsController = TextEditingController(text: widget.game.tags ?? '');
-    _hltbMainController = TextEditingController(text: widget.game.hltbMain?.toString() ?? '0');
-    _hltbCompController = TextEditingController(text: widget.game.hltbCompletionist?.toString() ?? '0');
-    _coverUrlController = TextEditingController(text: widget.game.coverUrl ?? '');
-    
-    _selectedStatus = _statuses.contains(widget.game.status) ? widget.game.status! : _statuses[0];
-    _selectedPlatform = _platforms.contains(widget.game.platform) ? widget.game.platform! : _platforms[0];
-    
-    _selectedGenres = widget.game.genre?.split(',').map((e) => e.trim()).where((s) => s.isNotEmpty).toList() ?? [];
-    
-    // Si la API trajo géneros nuevos (ej. RAWG), los añadimos visualmente a la lista para que aparezcan sus Chips.
+    _hoursController = TextEditingController(
+        text: widget.game.hoursPlayed?.toString() ?? '0');
+    _hltbMainController = TextEditingController(
+        text: widget.game.hltbMain?.toString() ?? '0');
+    _hltbCompController = TextEditingController(
+        text: widget.game.hltbCompletionist?.toString() ?? '0');
+    _coverUrlController =
+        TextEditingController(text: widget.game.coverUrl ?? '');
+    _summaryController =
+        TextEditingController(text: widget.game.summary ?? '');
+    _linkController = TextEditingController(text: widget.game.link ?? '');
+
+    _selectedStatus = _statuses.contains(widget.game.status)
+        ? widget.game.status
+        : _statuses[0];
+    _selectedPlatform = _platforms.contains(widget.game.platform)
+        ? widget.game.platform!
+        : _platforms[0];
+    _selectedRating = widget.game.rating ?? _ratings.last;
+    if (!_ratings.contains(_selectedRating)) {
+      _selectedRating = _ratings.last;
+    }
+
+    _selectedGenres = List.from(widget.game.genres);
+    // Add any genres from the game that aren't in our list
     for (var g in _selectedGenres) {
       if (!_allGenres.contains(g)) {
         _allGenres.add(g);
       }
     }
-    
-    _firstCompletedAt = widget.game.firstCompletedAt;
+
+    _startDate = widget.game.startDate;
+    _completedDate = widget.game.completedDate;
   }
 
-  Future<void> _pickAndUploadImage() async {
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 50, // Compresión automática al 50%
-    );
-
-    if (image == null) return;
-
-    setState(() => _isUploading = true);
-    try {
-      final bytes = await image.readAsBytes();
-      final fileExt = image.path.split('.').last;
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-      final filePath = 'user_uploads/$fileName';
-
-      await supabase.storage.from('covers').uploadBinary(
-        filePath,
-        bytes,
-        fileOptions: FileOptions(contentType: 'image/$fileExt'),
-      );
-
-      final String publicUrl = supabase.storage.from('covers').getPublicUrl(filePath);
-      
-      setState(() {
-        _coverUrlController.text = publicUrl;
-        _isUploading = false;
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('📸 Imagen subida correctamente')));
-    } catch (e) {
-      setState(() => _isUploading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error al subir: $e'), backgroundColor: Colors.red));
-    }
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectDate(BuildContext context, bool isStart) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _firstCompletedAt ?? DateTime.now(),
+      initialDate:
+          (isStart ? _startDate : _completedDate) ?? DateTime.now(),
       firstDate: DateTime(1980),
       lastDate: DateTime.now(),
-      builder: (context, child) => Theme(data: ThemeData.dark(), child: child!),
+      builder: (context, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFF00F0FF),
+            surface: Color(0xFF141927),
+          ),
+        ),
+        child: child!,
+      ),
     );
-    if (picked != null && picked != _firstCompletedAt) {
-      setState(() => _firstCompletedAt = picked);
+    if (picked != null) {
+      setState(() {
+        if (isStart) {
+          _startDate = picked;
+        } else {
+          _completedDate = picked;
+        }
+      });
     }
   }
 
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
     try {
-      final hours = double.tryParse(_hoursController.text) ?? 0.0;
-      await supabase.from('games').update({
-        'title': _titleController.text,
-        'status': _selectedStatus,
-        'platform': _selectedPlatform,
-        'hours_played': hours,
-        'cover_url': _coverUrlController.text,
-        'genre': _selectedGenres.join(', '),
-        'tags': _tagsController.text,
-        'hltb_main': double.tryParse(_hltbMainController.text) ?? 0.0,
-        'hltb_completionist': double.tryParse(_hltbCompController.text) ?? 0.0,
-        'first_completed_at': _firstCompletedAt?.toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', widget.game.id);
+      final updatedGame = Game(
+        notionPageId: widget.game.notionPageId,
+        title: _titleController.text,
+        status: _selectedStatus,
+        platform: _selectedPlatform,
+        hoursPlayed: double.tryParse(_hoursController.text),
+        genres: _selectedGenres,
+        rating: _selectedRating,
+        hltbMain: double.tryParse(_hltbMainController.text),
+        hltbCompletionist: double.tryParse(_hltbCompController.text),
+        coverUrl: _coverUrlController.text,
+        summary: _summaryController.text.isNotEmpty
+            ? _summaryController.text
+            : null,
+        link: _linkController.text.isNotEmpty ? _linkController.text : null,
+        startDate: _startDate,
+        completedDate: _completedDate,
+      );
+
+      await _notion.updatePage(
+        widget.game.notionPageId,
+        updatedGame.toNotionProperties(),
+      );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Cambios guardados'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cambios guardados',
+                style: GoogleFonts.inter(color: const Color(0xFF0A0E1A))),
+            backgroundColor: const Color(0xFF00F0FF),
+          ),
+        );
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFFF2D78),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -149,194 +176,386 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   Future<void> _deleteGame() async {
     final bool confirm = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Eliminar juego?'),
-        content: const Text('Esta acción borrará permanentemente el juego de tu biblioteca.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    ) ?? false;
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF141927),
+            title: Text('¿Eliminar juego?',
+                style: GoogleFonts.spaceGrotesk(
+                    color: const Color(0xFFF0F2F5))),
+            content: Text(
+              'Se moverá a la papelera de Notion.',
+              style:
+                  GoogleFonts.inter(color: const Color(0xFF6B7394)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancelar',
+                    style: GoogleFonts.inter(
+                        color: const Color(0xFF6B7394))),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Eliminar',
+                    style: GoogleFonts.inter(
+                        color: const Color(0xFFFF2D78))),
+              ),
+            ],
+          ),
+        ) ??
+        false;
 
     if (!confirm) return;
     try {
-      await supabase.from('games').delete().eq('id', widget.game.id);
+      await _notion.deletePage(widget.game.notionPageId);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error al borrar: $e'), backgroundColor: Colors.red));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al borrar: $e'),
+            backgroundColor: const Color(0xFFFF2D78),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Detalles del Juego'),
+        title: Text('Detalles', style: GoogleFonts.spaceGrotesk()),
         actions: [
-          IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: _deleteGame),
+          IconButton(
+            icon:
+                const Icon(Icons.delete_outline, color: Color(0xFFFF2D78)),
+            onPressed: _deleteGame,
+          ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Portada y Selector
+            // Cover
             Center(
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: CachedNetworkImage(
-                          imageUrl: _coverUrlController.text,
-                          height: 300,
-                          fit: BoxFit.contain,
-                          placeholder: (context, url) => Container(height: 300, width: 200, color: Colors.grey[900]),
-                          errorWidget: (context, url, e) => Container(height: 300, width: 200, color: Colors.grey[800], child: const Icon(Icons.gamepad, size: 50)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _coverUrlController.text.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: _coverUrlController.text,
+                        height: 280,
+                        fit: BoxFit.contain,
+                        placeholder: (_, __) => Container(
+                            height: 280,
+                            width: 190,
+                            color: const Color(0xFF1C2237)),
+                        errorWidget: (_, __, ___) => Container(
+                          height: 280,
+                          width: 190,
+                          color: const Color(0xFF1C2237),
+                          child: const Icon(Icons.gamepad_rounded,
+                              size: 50, color: Color(0xFF3A4060)),
                         ),
+                      )
+                    : Container(
+                        height: 280,
+                        width: 190,
+                        color: const Color(0xFF1C2237),
+                        child: const Icon(Icons.gamepad_rounded,
+                            size: 50, color: Color(0xFF3A4060)),
                       ),
-                      if (_isUploading) const CircularProgressIndicator(),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: _isUploading ? null : _pickAndUploadImage,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Cambiar Portada (Galería)'),
-                  ),
-                ],
               ),
             ),
-            const SizedBox(height: 32),
-            
+            const SizedBox(height: 24),
+
+            // Cover URL
+            TextField(
+              controller: _coverUrlController,
+              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7394)),
+              decoration: const InputDecoration(
+                labelText: 'URL de Portada',
+                prefixIcon: Icon(Icons.image_outlined,
+                    size: 18, color: Color(0xFF6B7394)),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Nombre del Juego', border: OutlineInputBorder()),
+              style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18, fontWeight: FontWeight.w600),
+              decoration: const InputDecoration(labelText: 'Título'),
             ),
-            const SizedBox(height: 16),
-            
+            const SizedBox(height: 20),
+
+            // Status & Platform row
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedStatus,
-                    items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (val) => setState(() => _selectedStatus = val!),
-                    decoration: const InputDecoration(labelText: 'Estado'),
+                  child: _buildDropdown(
+                    'Estado',
+                    _selectedStatus,
+                    _statuses,
+                    (val) => setState(() => _selectedStatus = val!),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedPlatform,
-                    items: _platforms.map((p) => DropdownMenuItem(value: p, child: Text(p, style: const TextStyle(fontSize: 12)))).toList(),
-                    onChanged: (val) => setState(() => _selectedPlatform = val!),
-                    decoration: const InputDecoration(labelText: 'Consola'),
+                  child: _buildDropdown(
+                    'Plataforma',
+                    _selectedPlatform,
+                    _platforms,
+                    (val) => setState(() => _selectedPlatform = val!),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
+            // Rating
+            _buildDropdown(
+              'Calificación',
+              _selectedRating,
+              _ratings,
+              (val) => setState(() => _selectedRating = val!),
+            ),
+            const SizedBox(height: 20),
+
+            // Hours played
             TextField(
               controller: _hoursController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Horas Jugadas', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Horas Jugadas',
+                prefixIcon:
+                    Icon(Icons.timer_outlined, color: Color(0xFF6B7394)),
+              ),
             ),
             const SizedBox(height: 24),
 
-            const Text('Fecha de Primera vez que lo pasaste:', style: TextStyle(color: Colors.white54, fontSize: 13)),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 18, color: Colors.blueAccent),
-                    const SizedBox(width: 12),
-                    Text(
-                      _firstCompletedAt == null ? 'Seleccionar fecha' : DateFormat('dd / MM / yyyy').format(_firstCompletedAt!),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
+            // Dates
+            _buildSectionHeader('Fechas'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDatePicker(
+                    'Fecha de Inicio',
+                    _startDate,
+                    () => _selectDate(context, true),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDatePicker(
+                    'Primera vez completado',
+                    _completedDate,
+                    () => _selectDate(context, false),
+                  ),
+                ),
+              ],
             ),
-            
             const SizedBox(height: 24),
-            const Text('Géneros:', style: TextStyle(color: Colors.white54, fontSize: 13)),
+
+            // Genres
+            _buildSectionHeader('Géneros'),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 8,
-              runSpacing: 4,
+              spacing: 6,
+              runSpacing: 6,
               children: _allGenres.map((g) {
-                bool isSelected = _selectedGenres.contains(g);
+                final isSelected = _selectedGenres.contains(g);
                 return FilterChip(
-                  label: Text(g, style: TextStyle(fontSize: 11, color: isSelected ? Colors.black : Colors.white70)),
+                  label: Text(
+                    g,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: isSelected
+                          ? const Color(0xFF0A0E1A)
+                          : const Color(0xFF6B7394),
+                    ),
+                  ),
                   selected: isSelected,
-                  selectedColor: Colors.blueAccent,
+                  selectedColor: const Color(0xFF00F0FF),
+                  backgroundColor: const Color(0xFF1C2237),
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                  showCheckmark: false,
                   onSelected: (val) {
                     setState(() {
-                      if (val) _selectedGenres.add(g);
-                      else _selectedGenres.remove(g);
+                      if (val) {
+                        _selectedGenres.add(g);
+                      } else {
+                        _selectedGenres.remove(g);
+                      }
                     });
                   },
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 24),
-            TextField(
-              controller: _tagsController,
-              decoration: const InputDecoration(labelText: 'Etiquetas Personalizadas (Tags)'),
-            ),
 
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 16),
-            const Text('Metadatos Inteligentes (HowLongToBeat)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-            const SizedBox(height: 16),
+            // Summary
+            TextField(
+              controller: _summaryController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Resumen / Notas',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Link
+            TextField(
+              controller: _linkController,
+              decoration: const InputDecoration(
+                labelText: 'Link',
+                prefixIcon: Icon(Icons.link_rounded,
+                    size: 18, color: Color(0xFF6B7394)),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // HLTB Section
+            _buildSectionHeader('HowLongToBeat'),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _hltbMainController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Horas Historia'),
+                    decoration:
+                        const InputDecoration(labelText: 'Historia (hrs)'),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _hltbCompController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Horas 100%'),
+                    decoration:
+                        const InputDecoration(labelText: '100% (hrs)'),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 40),
 
-            const SizedBox(height: 48),
+            // Save button
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 54,
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveChanges,
-                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
-                child: _isSaving ? const CircularProgressIndicator() : const Text('Guardar Todo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF0A0E1A),
+                        ),
+                      )
+                    : Text('Guardar Todo',
+                        style: GoogleFonts.spaceGrotesk(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
               ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.spaceGrotesk(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF00F0FF),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildDropdown(
+    String label,
+    String value,
+    List<String> items,
+    ValueChanged<String?> onChanged,
+  ) {
+    return DropdownButtonFormField<String>(
+      value: items.contains(value) ? value : items.first,
+      dropdownColor: const Color(0xFF1C2237),
+      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFF0F2F5)),
+      items: items
+          .map((s) => DropdownMenuItem(
+                value: s,
+                child: Text(s, style: GoogleFonts.inter(fontSize: 13)),
+              ))
+          .toList(),
+      onChanged: onChanged,
+      decoration: InputDecoration(labelText: label),
+    );
+  }
+
+  Widget _buildDatePicker(
+      String label, DateTime? date, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF141927),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF1C2237)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: 10, color: const Color(0xFF6B7394))),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded,
+                    size: 14, color: Color(0xFF00F0FF)),
+                const SizedBox(width: 6),
+                Text(
+                  date == null
+                      ? 'Seleccionar'
+                      : DateFormat('dd/MM/yyyy').format(date),
+                  style: GoogleFonts.inter(
+                      fontSize: 13, color: const Color(0xFFF0F2F5)),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _hoursController.dispose();
+    _hltbMainController.dispose();
+    _hltbCompController.dispose();
+    _coverUrlController.dispose();
+    _summaryController.dispose();
+    _linkController.dispose();
+    super.dispose();
   }
 }

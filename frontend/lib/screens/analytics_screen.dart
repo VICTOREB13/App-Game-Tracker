@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import '../models/game.dart';
+import '../services/notion_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -12,13 +14,9 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  final supabase = Supabase.instance.client;
+  final _notion = NotionService.instance;
   List<Game> _games = [];
   bool _isLoading = true;
-  
-  // Filtros
-  String _selectedProvider = 'Todos';
-  String _selectedPlatform = 'Todas';
 
   @override
   void initState() {
@@ -27,223 +25,358 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Future<void> _fetchData() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
-    final data = await supabase.from('games').select().eq('user_id', user.id);
-    
-    if (mounted) {
-      setState(() {
-        _games = (data as List).map((e) => Game.fromJson(e)).toList();
-        _isLoading = false;
-      });
+    try {
+      final pages = await _notion.getGames();
+      if (mounted) {
+        setState(() {
+          _games = pages.map((p) => Game.fromNotionPage(p)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  List<Game> get _filteredGames {
-    return _games.where((g) {
-      if (_selectedProvider != 'Todos' && g.provider != _selectedProvider) return false;
-      if (_selectedPlatform != 'Todas' && g.platform != _selectedPlatform) return false;
-      return true;
-    }).toList();
-  }
-
-  // --- LÓGICA GRÁFICO TORTA (ESTADOS) ---
+  // Status distribution
   Map<String, int> _getStatusData() {
-    final Map<String, int> counts = {'Completado': 0, 'Jugando': 0, 'Por Jugar': 0, 'Pausado': 0, 'Abandonado': 0};
-    for (var g in _filteredGames) {
-      final status = g.status ?? 'Por Jugar';
-      counts[status] = (counts[status] ?? 0) + 1;
+    final Map<String, int> counts = {
+      'Jugado': 0,
+      'Jugando': 0,
+      'Por jugar': 0,
+    };
+    for (var g in _games) {
+      counts[g.status] = (counts[g.status] ?? 0) + 1;
     }
     return counts;
   }
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Completado': return Colors.amber;
-      case 'Jugando': return Colors.greenAccent;
-      case 'Por Jugar': return Colors.blueAccent;
-      case 'Pausado': return Colors.orangeAccent;
-      case 'Abandonado': return Colors.redAccent;
-      default: return Colors.grey;
+      case 'Jugado':
+        return const Color(0xFFFF2D78);
+      case 'Jugando':
+        return const Color(0xFF00F0FF);
+      case 'Por jugar':
+        return const Color(0xFFFFBE0B);
+      default:
+        return const Color(0xFF6B7394);
     }
   }
 
-  // --- LÓGICA BARRAS APILADAS (PLATAFORMA VS ESTADO) ---
+  // Platform distribution
   Map<String, Map<String, int>> _getPlatformData() {
     final Map<String, Map<String, int>> data = {};
-    for (var g in _filteredGames) {
+    for (var g in _games) {
       final plat = g.platform ?? 'Otra';
-      final stat = g.status ?? 'Por Jugar';
+      final stat = g.status;
       if (!data.containsKey(plat)) {
-        data[plat] = {'Completado': 0, 'Jugando': 0, 'Por Jugar': 0, 'Pausado': 0, 'Abandonado': 0};
+        data[plat] = {'Jugado': 0, 'Jugando': 0, 'Por jugar': 0};
       }
       data[plat]![stat] = (data[plat]![stat] ?? 0) + 1;
     }
     return data;
   }
 
+  // Top rated games
+  List<Game> _getTopRated() {
+    final ratingOrder = ['★★★★★', '★★★★✰', '★★★✰✰', '★★✰✰✰', '★✰✰✰✰'];
+    final rated =
+        _games.where((g) => g.rating != null && ratingOrder.contains(g.rating)).toList();
+    rated.sort((a, b) {
+      final ai = ratingOrder.indexOf(a.rating!);
+      final bi = ratingOrder.indexOf(b.rating!);
+      return ai.compareTo(bi);
+    });
+    return rated.take(5).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(backgroundColor: Color(0xFF0F172A), body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        ),
+      );
     }
 
     final statusData = _getStatusData();
     final platformData = _getPlatformData();
-    final totalGames = _filteredGames.length;
-
-    // Obtener listas únicas
-    final providers = ['Todos', ..._games.map((e) => e.provider ?? 'Notion').toSet().toList()];
-    final platforms = ['Todas', ..._games.map((e) => e.platform ?? 'Otra').toSet().toList()];
+    final totalGames = _games.length;
+    final topRated = _getTopRated();
+    final totalHours = _games.fold<num>(0, (sum, g) => sum + (g.hoursPlayed ?? 0));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      appBar: AppBar(title: const Text('Estadísticas'), backgroundColor: Colors.transparent),
+      appBar: AppBar(
+        title: Text('Estadísticas', style: GoogleFonts.spaceGrotesk()),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // FILTROS
+          // Summary cards
           Row(
             children: [
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    dropdownColor: Colors.grey[900],
-                    value: _selectedProvider,
-                    items: providers.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(value: p, child: Text(p, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
-                    onChanged: (v) => setState(() => _selectedProvider = v!),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    dropdownColor: Colors.grey[900],
-                    value: _selectedPlatform,
-                    items: platforms.map<DropdownMenuItem<String>>((p) => DropdownMenuItem<String>(value: p, child: Text(p, style: const TextStyle(color: Colors.white, fontSize: 13)))).toList(),
-                    onChanged: (v) => setState(() => _selectedPlatform = v!),
-                  ),
-                ),
-              ),
+              _buildStatCard('Total', totalGames.toString(),
+                  const Color(0xFF00F0FF)),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                  'Horas',
+                  totalHours.toStringAsFixed(0),
+                  const Color(0xFFFF2D78)),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                  'Jugados',
+                  (statusData['Jugado'] ?? 0).toString(),
+                  const Color(0xFFFFBE0B)),
             ],
           ),
-          const Divider(color: Colors.white12),
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
 
-          // 1. GRÁFICO DE TORTA
-          const Text('Distribución por Estados', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
+          // Pie chart
+          Text('Distribución por Estado',
+              style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
           SizedBox(
             height: 200,
-            child: totalGames == 0 ? const Center(child: Text("Sin datos")) : PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-                sections: statusData.entries.where((e) => e.value > 0).map((e) {
-                  final percentage = (e.value / totalGames * 100).toStringAsFixed(1);
-                  return PieChartSectionData(
-                    color: _getStatusColor(e.key),
-                    value: e.value.toDouble(),
-                    title: '$percentage%',
-                    radius: 50,
-                    titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                  );
-                }).toList(),
-              ),
-            ),
+            child: totalGames == 0
+                ? Center(
+                    child: Text('Sin datos',
+                        style: GoogleFonts.inter(
+                            color: const Color(0xFF6B7394))))
+                : PieChart(
+                    PieChartData(
+                      sectionsSpace: 3,
+                      centerSpaceRadius: 45,
+                      sections: statusData.entries
+                          .where((e) => e.value > 0)
+                          .map((e) {
+                        final pct =
+                            (e.value / totalGames * 100).toStringAsFixed(0);
+                        return PieChartSectionData(
+                          color: _getStatusColor(e.key),
+                          value: e.value.toDouble(),
+                          title: '$pct%',
+                          radius: 50,
+                          titleStyle: GoogleFonts.spaceGrotesk(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A0E1A),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
           ),
           const SizedBox(height: 16),
-          // Leyenda de Torta
+          // Legend
           Wrap(
-            spacing: 16,
+            spacing: 20,
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: statusData.entries.where((e) => e.value > 0).map((e) {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 12, height: 12, color: _getStatusColor(e.key)),
-                  const SizedBox(width: 4),
-                  Text('${e.key} (${e.value})', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(e.key),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${e.key} (${e.value})',
+                    style: GoogleFonts.inter(
+                        color: const Color(0xFF6B7394), fontSize: 12),
+                  ),
                 ],
               );
             }).toList(),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 40),
 
-          // 2. GRÁFICO DE BARRAS APILADAS
-          const Text('Dominancia de Plataformas', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 32),
+          // Platform chart
+          Text('Plataformas',
+              style: GoogleFonts.spaceGrotesk(
+                  fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 24),
           SizedBox(
-            height: 300,
-            child: platformData.isEmpty ? const Center(child: Text("Sin datos")) : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: math.max(MediaQuery.of(context).size.width - 32, platformData.length * 70.0),
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: platformData.values.map((map) => map.values.reduce((a, b) => a + b)).reduce((a, b) => a > b ? a : b).toDouble() * 1.1,
-                    barTouchData: BarTouchData(enabled: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            final keys = platformData.keys.toList();
-                            if (value.toInt() >= keys.length) return const SizedBox();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(keys[value.toInt()], style: const TextStyle(color: Colors.white70, fontSize: 10)),
+            height: 280,
+            child: platformData.isEmpty
+                ? Center(
+                    child: Text('Sin datos',
+                        style: GoogleFonts.inter(
+                            color: const Color(0xFF6B7394))))
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: math.max(MediaQuery.of(context).size.width - 32,
+                          platformData.length * 65.0),
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: platformData.values
+                                  .map((m) =>
+                                      m.values.reduce((a, b) => a + b))
+                                  .reduce((a, b) => a > b ? a : b)
+                                  .toDouble() *
+                              1.15,
+                          barTouchData: BarTouchData(enabled: false),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  final keys = platformData.keys.toList();
+                                  if (value.toInt() >= keys.length) {
+                                    return const SizedBox();
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      keys[value.toInt()],
+                                      style: GoogleFonts.inter(
+                                          color: const Color(0xFF6B7394),
+                                          fontSize: 9),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 36,
+                              ),
+                            ),
+                            leftTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(
+                                sideTitles: SideTitles(showTitles: false)),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          gridData: const FlGridData(show: false),
+                          barGroups: platformData.entries
+                              .toList()
+                              .asMap()
+                              .entries
+                              .map((entry) {
+                            final int index = entry.key;
+                            final map = entry.value.value;
+                            double currentY = 0;
+                            final List<BarChartRodStackItem> stackItems = [];
+
+                            for (var status in [
+                              'Jugado',
+                              'Jugando',
+                              'Por jugar'
+                            ]) {
+                              final int count = map[status] ?? 0;
+                              if (count > 0) {
+                                stackItems.add(BarChartRodStackItem(
+                                  currentY,
+                                  currentY + count,
+                                  _getStatusColor(status),
+                                ));
+                                currentY += count;
+                              }
+                            }
+
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: currentY,
+                                  width: 18,
+                                  rodStackItems: stackItems,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ],
                             );
-                          },
-                          reservedSize: 40,
+                          }).toList(),
                         ),
                       ),
-                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    borderData: FlBorderData(show: false),
-                    gridData: FlGridData(show: false),
-                    barGroups: platformData.entries.toList().asMap().entries.map((entry) {
-                      final int index = entry.key;
-                      final map = entry.value.value;
-                      double currentY = 0;
-                      final List<BarChartRodStackItem> stackItems = [];
-                      
-                      // Orden de dibujado (de abajo hacia arriba)
-                      for (var status in ['Completado', 'Jugando', 'Por Jugar', 'Pausado', 'Abandonado']) {
-                        final int count = map[status] ?? 0;
-                        if (count > 0) {
-                          stackItems.add(BarChartRodStackItem(currentY, currentY + count, _getStatusColor(status)));
-                          currentY += count;
-                        }
-                      }
-
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: currentY,
-                            width: 20,
-                            rodStackItems: stackItems,
-                            borderRadius: BorderRadius.circular(2),
-                          )
-                        ],
-                      );
-                    }).toList(),
                   ),
-                ),
+          ),
+          const SizedBox(height: 40),
+
+          // Top rated
+          if (topRated.isNotEmpty) ...[
+            Text('Top Calificaciones',
+                style: GoogleFonts.spaceGrotesk(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ...topRated.map((game) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141927),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: const Color(0xFF1C2237), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          game.title,
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFFF0F2F5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        game.rating ?? '',
+                        style: GoogleFonts.inter(
+                            fontSize: 14, color: const Color(0xFFFFBE0B)),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: const Color(0xFF6B7394)),
+            ),
+          ],
+        ),
       ),
     );
   }

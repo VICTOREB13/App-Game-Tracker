@@ -1,74 +1,160 @@
+import '../services/notion_parser.dart';
+
 class Game {
-  final String id;
+  final String notionPageId;
   final String title;
   final String? coverUrl;
-  final String? status;
+  final String status; // "Por jugar", "Jugando", "Jugado"
   final String? platform;
   final num? hoursPlayed;
-  final String? genre;
-  final String? tags;
+  final List<String> genres;
+  final String? rating; // "★★★★★", etc.
   final num? hltbMain;
   final num? hltbCompletionist;
-  final DateTime? firstCompletedAt;
-  final DateTime? lastPlayedAt;
-  final String? provider;
-  final bool isManual;
+  final String? summary;
+  final String? link;
+  final DateTime? startDate;
+  final DateTime? completedDate;
+  final num? steamId;
+  final DateTime? lastEditedTime;
 
   Game({
-    required this.id,
+    required this.notionPageId,
     required this.title,
     this.coverUrl,
-    this.status,
+    this.status = 'Por jugar',
     this.platform,
     this.hoursPlayed,
-    this.genre,
-    this.tags,
+    this.genres = const [],
+    this.rating,
     this.hltbMain,
     this.hltbCompletionist,
-    this.firstCompletedAt,
-    this.lastPlayedAt,
-    this.provider,
-    this.isManual = false,
+    this.summary,
+    this.link,
+    this.startDate,
+    this.completedDate,
+    this.steamId,
+    this.lastEditedTime,
   });
 
-  factory Game.fromJson(Map<String, dynamic> json) {
+  /// Parse a Notion page object into a Game
+  factory Game.fromNotionPage(Map<String, dynamic> page) {
+    final props = page['properties'] as Map<String, dynamic>;
+
     return Game(
-      id: json['id'].toString(),
-      title: json['title'] ?? 'Desconocido',
-      coverUrl: json['cover_url'],
-      status: json['status'],
-      platform: json['platform'],
-      hoursPlayed: json['hours_played'],
-      genre: json['genre'],
-      tags: json['tags'],
-      hltbMain: json['hltb_main'],
-      hltbCompletionist: json['hltb_completionist'],
-      firstCompletedAt: json['first_completed_at'] != null 
-          ? DateTime.parse(json['first_completed_at']) 
-          : null,
-      lastPlayedAt: json['last_played_at'] != null 
-          ? DateTime.parse(json['last_played_at']) 
-          : null,
-      provider: json['provider'],
-      isManual: json['is_manual'] ?? false,
+      notionPageId: page['id'] ?? '',
+      title: NotionParser.parseTitle(props['Título']),
+      coverUrl: NotionParser.parseFiles(props['Portada']),
+      status: NotionParser.parseStatus(props['Estado']),
+      platform: NotionParser.parseSelect(props['Plataforma']),
+      hoursPlayed: NotionParser.parseNumber(props['Horas Jugadas']),
+      genres: NotionParser.parseMultiSelect(props['Géneros']),
+      rating: NotionParser.parseSelect(props['Calificación']),
+      hltbMain: NotionParser.parseNumber(props['HLTB Principal']),
+      hltbCompletionist: NotionParser.parseNumber(props['HLTB Completista']),
+      summary: NotionParser.parseRichText(props['Resumen']),
+      link: NotionParser.parseUrl(props['Link']),
+      startDate: NotionParser.parseDate(props['Fecha de Inicio']),
+      completedDate: NotionParser.parseDate(
+          props['Fecha de Culminación (primera campaña)']),
+      steamId: NotionParser.parseNumber(props['Steam ID']),
+      lastEditedTime: DateTime.tryParse(page['last_edited_time'] ?? ''),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'cover_url': coverUrl,
-      'status': status,
-      'platform': platform,
-      'hours_played': hoursPlayed,
-      'genre': genre,
-      'tags': tags,
-      'hltb_main': hltbMain,
-      'hltb_completionist': hltbCompletionist,
-      'first_completed_at': firstCompletedAt?.toIso8601String(),
-      'last_played_at': lastPlayedAt?.toIso8601String(),
-      'provider': provider,
-      'is_manual': isManual,
-    };
+  /// Build Notion properties map for creating/updating a page
+  Map<String, dynamic> toNotionProperties({bool includeTitle = true}) {
+    final props = <String, dynamic>{};
+
+    if (includeTitle) {
+      props['Título'] = NotionParser.buildTitle(title);
+    }
+
+    props['Estado'] = NotionParser.buildStatus(status);
+
+    if (platform != null) {
+      props['Plataforma'] = NotionParser.buildSelect(platform!);
+    }
+
+    if (hoursPlayed != null) {
+      props['Horas Jugadas'] = NotionParser.buildNumber(hoursPlayed);
+    }
+
+    if (genres.isNotEmpty) {
+      props['Géneros'] = NotionParser.buildMultiSelect(genres);
+    }
+
+    if (rating != null) {
+      props['Calificación'] = NotionParser.buildSelect(rating!);
+    }
+
+    if (hltbMain != null) {
+      props['HLTB Principal'] = NotionParser.buildNumber(hltbMain);
+    }
+
+    if (hltbCompletionist != null) {
+      props['HLTB Completista'] = NotionParser.buildNumber(hltbCompletionist);
+    }
+
+    if (summary != null) {
+      props['Resumen'] = NotionParser.buildRichText(summary);
+    }
+
+    if (link != null) {
+      props['Link'] = NotionParser.buildUrl(link);
+    }
+
+    if (startDate != null) {
+      props['Fecha de Inicio'] = NotionParser.buildDate(startDate);
+    }
+
+    if (completedDate != null) {
+      props['Fecha de Culminación (primera campaña)'] =
+          NotionParser.buildDate(completedDate);
+    }
+
+    if (coverUrl != null && coverUrl!.isNotEmpty) {
+      props['Portada'] = NotionParser.buildExternalFile(coverUrl);
+    }
+
+    return props;
+  }
+
+  /// Create a copy with updated fields
+  Game copyWith({
+    String? notionPageId,
+    String? title,
+    String? coverUrl,
+    String? status,
+    String? platform,
+    num? hoursPlayed,
+    List<String>? genres,
+    String? rating,
+    num? hltbMain,
+    num? hltbCompletionist,
+    String? summary,
+    String? link,
+    DateTime? startDate,
+    DateTime? completedDate,
+    num? steamId,
+  }) {
+    return Game(
+      notionPageId: notionPageId ?? this.notionPageId,
+      title: title ?? this.title,
+      coverUrl: coverUrl ?? this.coverUrl,
+      status: status ?? this.status,
+      platform: platform ?? this.platform,
+      hoursPlayed: hoursPlayed ?? this.hoursPlayed,
+      genres: genres ?? this.genres,
+      rating: rating ?? this.rating,
+      hltbMain: hltbMain ?? this.hltbMain,
+      hltbCompletionist: hltbCompletionist ?? this.hltbCompletionist,
+      summary: summary ?? this.summary,
+      link: link ?? this.link,
+      startDate: startDate ?? this.startDate,
+      completedDate: completedDate ?? this.completedDate,
+      steamId: steamId ?? this.steamId,
+      lastEditedTime: lastEditedTime,
+    );
   }
 }
