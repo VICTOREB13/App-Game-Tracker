@@ -36,19 +36,11 @@ jobs:
         run: |
           sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
-          # Add deep link intent filter for Supabase Auth inside the MainActivity
-          sed -i '/<intent-filter>/i \            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="io.supabase.gametracker" android:host="login-callback" />\n            </intent-filter>' android/app/src/main/AndroidManifest.xml
 
       - name: Restaurar dependencias
         working-directory: ./frontend
         run: flutter pub get
 
-      - name: Crear archivo .env temporal para compilar
-        working-directory: ./frontend
-        run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-          echo "RAWG_KEY=${{ secrets.RAWG_KEY }}" >> .env
 
       - name: Compilar APK (Fat APK)
         working-directory: ./frontend
