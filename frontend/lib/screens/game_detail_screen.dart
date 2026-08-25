@@ -61,11 +61,23 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     super.initState();
     _titleController = TextEditingController(text: widget.game.title);
     _hoursController = TextEditingController(
-        text: widget.game.hoursPlayed?.toString() ?? '0');
+        text: widget.game.hoursPlayed != null
+            ? (widget.game.hoursPlayed! % 1 == 0
+                ? widget.game.hoursPlayed!.toInt().toString()
+                : widget.game.hoursPlayed!.toString())
+            : '0');
     _hltbMainController = TextEditingController(
-        text: widget.game.hltbMain?.toString() ?? '0');
+        text: widget.game.hltbMain != null
+            ? (widget.game.hltbMain! % 1 == 0
+                ? widget.game.hltbMain!.toInt().toString()
+                : widget.game.hltbMain!.toString())
+            : '0');
     _hltbCompController = TextEditingController(
-        text: widget.game.hltbCompletionist?.toString() ?? '0');
+        text: widget.game.hltbCompletionist != null
+            ? (widget.game.hltbCompletionist! % 1 == 0
+                ? widget.game.hltbCompletionist!.toInt().toString()
+                : widget.game.hltbCompletionist!.toString())
+            : '0');
     _coverUrlController =
         TextEditingController(text: widget.game.coverUrl ?? '');
     _summaryController =
@@ -84,7 +96,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
 
     _selectedGenres = List.from(widget.game.genres);
-    // Add any genres from the game that aren't in our list
     for (var g in _selectedGenres) {
       if (!_allGenres.contains(g)) {
         _allGenres.add(g);
@@ -95,13 +106,29 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     _completedDate = widget.game.completedDate;
   }
 
+  void _addQuickHours(double delta) {
+    final current = double.tryParse(_hoursController.text) ?? 0.0;
+    final updated = current + delta;
+    setState(() {
+      _hoursController.text =
+          updated % 1 == 0 ? updated.toInt().toString() : updated.toStringAsFixed(1);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('+${delta % 1 == 0 ? delta.toInt() : delta}h añadidas al contador'),
+        backgroundColor: const Color(0xFF00F0FF),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
   Future<void> _selectDate(BuildContext context, bool isStart) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate:
           (isStart ? _startDate : _completedDate) ?? DateTime.now(),
       firstDate: DateTime(1980),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
@@ -153,7 +180,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Cambios guardados',
+            content: Text('Cambios guardados en Notion',
                 style: GoogleFonts.inter(color: const Color(0xFF0A0E1A))),
             backgroundColor: const Color(0xFF00F0FF),
           ),
@@ -164,7 +191,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Error al guardar: $e'),
             backgroundColor: const Color(0xFFFF2D78),
           ),
         );
@@ -223,253 +250,449 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hours = double.tryParse(_hoursController.text) ?? 0.0;
+    final hltbMain = double.tryParse(_hltbMainController.text) ?? 0.0;
+    final hltbComp = double.tryParse(_hltbCompController.text) ?? 0.0;
+    final progress = hltbMain > 0 ? (hours / hltbMain).clamp(0.0, 1.0) : 0.0;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalles', style: GoogleFonts.spaceGrotesk()),
+        title: Text('Ficha del Juego', style: GoogleFonts.spaceGrotesk()),
         actions: [
           IconButton(
             icon:
-                const Icon(Icons.delete_outline, color: Color(0xFFFF2D78)),
+                const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF2D78)),
+            tooltip: 'Eliminar juego',
             onPressed: _deleteGame,
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cover
-            Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _coverUrlController.text.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: _coverUrlController.text,
-                        height: 280,
-                        fit: BoxFit.contain,
-                        placeholder: (_, __) => Container(
-                            height: 280,
-                            width: 190,
-                            color: const Color(0xFF1C2237)),
-                        errorWidget: (_, __, ___) => Container(
-                          height: 280,
-                          width: 190,
-                          color: const Color(0xFF1C2237),
-                          child: const Icon(Icons.gamepad_rounded,
-                              size: 50, color: Color(0xFF3A4060)),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 750),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cinematic Header with Cover Backdrop & Image
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Backdrop blur container
+                    if (_coverUrlController.text.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: SizedBox(
+                          height: 260,
+                          width: double.infinity,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: _coverUrlController.text,
+                                fit: BoxFit.cover,
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      const Color(0xFF0A0E1A).withOpacity(0.6),
+                                      const Color(0xFF0A0E1A),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )
-                    : Container(
-                        height: 280,
-                        width: 190,
-                        color: const Color(0xFF1C2237),
-                        child: const Icon(Icons.gamepad_rounded,
-                            size: 50, color: Color(0xFF3A4060)),
                       ),
-              ),
-            ),
-            const SizedBox(height: 24),
 
-            // Cover URL
-            TextField(
-              controller: _coverUrlController,
-              style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7394)),
-              decoration: const InputDecoration(
-                labelText: 'URL de Portada',
-                prefixIcon: Icon(Icons.image_outlined,
-                    size: 18, color: Color(0xFF6B7394)),
-              ),
-            ),
-            const SizedBox(height: 20),
+                    // Centered Main Cover Card
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: _coverUrlController.text.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: _coverUrlController.text,
+                                height: 220,
+                                width: 160,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => Container(
+                                    height: 220,
+                                    width: 160,
+                                    color: const Color(0xFF1C2237)),
+                                errorWidget: (_, __, ___) => Container(
+                                  height: 220,
+                                  width: 160,
+                                  color: const Color(0xFF1C2237),
+                                  child: const Icon(Icons.sports_esports_rounded,
+                                      size: 50, color: Color(0xFF3A4060)),
+                                ),
+                              )
+                            : Container(
+                                height: 220,
+                                width: 160,
+                                color: const Color(0xFF1C2237),
+                                child: const Icon(Icons.sports_esports_rounded,
+                                    size: 50, color: Color(0xFF3A4060)),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-            // Title
-            TextField(
-              controller: _titleController,
-              style: GoogleFonts.spaceGrotesk(
-                  fontSize: 18, fontWeight: FontWeight.w600),
-              decoration: const InputDecoration(labelText: 'Título'),
-            ),
-            const SizedBox(height: 20),
-
-            // Status & Platform row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDropdown(
-                    'Estado',
-                    _selectedStatus,
-                    _statuses,
-                    (val) => setState(() => _selectedStatus = val!),
+                // Cover URL Input
+                TextField(
+                  controller: _coverUrlController,
+                  style: GoogleFonts.inter(
+                      fontSize: 12, color: const Color(0xFF6B7394)),
+                  decoration: const InputDecoration(
+                    labelText: 'URL de Portada',
+                    prefixIcon: Icon(Icons.image_outlined,
+                        size: 18, color: Color(0xFF6B7394)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildDropdown(
-                    'Plataforma',
-                    _selectedPlatform,
-                    _platforms,
-                    (val) => setState(() => _selectedPlatform = val!),
-                  ),
+                const SizedBox(height: 20),
+
+                // Title
+                TextField(
+                  controller: _titleController,
+                  style: GoogleFonts.spaceGrotesk(
+                      fontSize: 18, fontWeight: FontWeight.w600),
+                  decoration: const InputDecoration(labelText: 'Título del Juego'),
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-            // Rating
-            _buildDropdown(
-              'Calificación',
-              _selectedRating,
-              _ratings,
-              (val) => setState(() => _selectedRating = val!),
-            ),
-            const SizedBox(height: 20),
-
-            // Hours played
-            TextField(
-              controller: _hoursController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Horas Jugadas',
-                prefixIcon:
-                    Icon(Icons.timer_outlined, color: Color(0xFF6B7394)),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Dates
-            _buildSectionHeader('Fechas'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDatePicker(
-                    'Fecha de Inicio',
-                    _startDate,
-                    () => _selectDate(context, true),
-                  ),
+                // Status & Platform row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdown(
+                        'Estado',
+                        _selectedStatus,
+                        _statuses,
+                        (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedStatus = val;
+                              // Auto-fill completion date when marking as played
+                              if (val == 'Jugado' && _completedDate == null) {
+                                _completedDate = DateTime.now();
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDropdown(
+                        'Plataforma',
+                        _selectedPlatform,
+                        _platforms,
+                        (val) => setState(() => _selectedPlatform = val!),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildDatePicker(
-                    'Primera vez completado',
-                    _completedDate,
-                    () => _selectDate(context, false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-            // Genres
-            _buildSectionHeader('Géneros'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _allGenres.map((g) {
-                final isSelected = _selectedGenres.contains(g);
-                return FilterChip(
-                  label: Text(
-                    g,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: isSelected
-                          ? const Color(0xFF0A0E1A)
-                          : const Color(0xFF6B7394),
+                // Rating
+                _buildDropdown(
+                  'Calificación',
+                  _selectedRating,
+                  _ratings,
+                  (val) => setState(() => _selectedRating = val!),
+                ),
+                const SizedBox(height: 24),
+
+                // Hours Played & Quick Action Buttons
+                _buildSectionHeader('Tiempo de Juego'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _hoursController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (val) => setState(() {}),
+                        decoration: const InputDecoration(
+                          labelText: 'Horas Jugadas',
+                          prefixIcon: Icon(Icons.timer_outlined,
+                              color: Color(0xFF6B7394)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Quick +buttons
+                    _buildQuickHourButton('+30m', 0.5),
+                    const SizedBox(width: 6),
+                    _buildQuickHourButton('+1h', 1.0),
+                    const SizedBox(width: 6),
+                    _buildQuickHourButton('+2h', 2.0),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // HLTB Progress Card if available
+                if (hltbMain > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141927),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: const Color(0xFF00F0FF).withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Progreso de Campaña',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00F0FF),
+                              ),
+                            ),
+                            Text(
+                              '${(progress * 100).toStringAsFixed(0)}%',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00F0FF),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            backgroundColor: const Color(0xFF1C2237),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFF00F0FF)),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Historia: ${hltbMain.toInt()}h',
+                              style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFF6B7394)),
+                            ),
+                            if (hltbComp > 0)
+                              Text(
+                                '100% Completista: ${hltbComp.toInt()}h',
+                                style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: const Color(0xFF6B7394)),
+                              ),
+                            Text(
+                              hours >= hltbMain
+                                  ? 'Completado'
+                                  : 'Faltan ~${(hltbMain - hours).clamp(0, 999).toStringAsFixed(0)}h',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: hours >= hltbMain
+                                    ? const Color(0xFFFF2D78)
+                                    : const Color(0xFFFFBE0B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFF00F0FF),
-                  backgroundColor: const Color(0xFF1C2237),
-                  side: BorderSide.none,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6)),
-                  showCheckmark: false,
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        _selectedGenres.add(g);
-                      } else {
-                        _selectedGenres.remove(g);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                ],
 
-            // Summary
-            TextField(
-              controller: _summaryController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Resumen / Notas',
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 20),
+                // Dates Section
+                _buildSectionHeader('Fechas de Registro'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDatePicker(
+                        'Fecha de Inicio',
+                        _startDate,
+                        () => _selectDate(context, true),
+                        onClear: () => setState(() => _startDate = null),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDatePicker(
+                        'Culminación (1ra Campaña)',
+                        _completedDate,
+                        () => _selectDate(context, false),
+                        onClear: () => setState(() => _completedDate = null),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
-            // Link
-            TextField(
-              controller: _linkController,
-              decoration: const InputDecoration(
-                labelText: 'Link',
-                prefixIcon: Icon(Icons.link_rounded,
-                    size: 18, color: Color(0xFF6B7394)),
-              ),
-            ),
-            const SizedBox(height: 24),
+                // Genres Section
+                _buildSectionHeader('Géneros'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _allGenres.map((g) {
+                    final isSelected = _selectedGenres.contains(g);
+                    return FilterChip(
+                      label: Text(
+                        g,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: isSelected
+                              ? const Color(0xFF0A0E1A)
+                              : const Color(0xFF6B7394),
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: const Color(0xFF00F0FF),
+                      backgroundColor: const Color(0xFF1C2237),
+                      side: BorderSide.none,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                      showCheckmark: false,
+                      onSelected: (val) {
+                        setState(() {
+                          if (val) {
+                            _selectedGenres.add(g);
+                          } else {
+                            _selectedGenres.remove(g);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
 
-            // HLTB Section
-            _buildSectionHeader('HowLongToBeat'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hltbMainController,
-                    keyboardType: TextInputType.number,
-                    decoration:
-                        const InputDecoration(labelText: 'Historia (hrs)'),
+                // Summary
+                TextField(
+                  controller: _summaryController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Resumen / Notas personales',
+                    alignLabelWithHint: true,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _hltbCompController,
-                    keyboardType: TextInputType.number,
-                    decoration:
-                        const InputDecoration(labelText: '100% (hrs)'),
+                const SizedBox(height: 20),
+
+                // Link
+                TextField(
+                  controller: _linkController,
+                  decoration: const InputDecoration(
+                    labelText: 'Link / Sitio web',
+                    prefixIcon: Icon(Icons.link_rounded,
+                        size: 18, color: Color(0xFF6B7394)),
                   ),
                 ),
+                const SizedBox(height: 24),
+
+                // HLTB Settings Section
+                _buildSectionHeader('Metadatos HowLongToBeat'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _hltbMainController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => setState(() {}),
+                        decoration:
+                            const InputDecoration(labelText: 'Historia (hrs)'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _hltbCompController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => setState(() {}),
+                        decoration:
+                            const InputDecoration(labelText: '100% (hrs)'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _saveChanges,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF0A0E1A),
+                            ),
+                          )
+                        : Text('Guardar Todo en Notion',
+                            style: GoogleFonts.spaceGrotesk(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 24),
               ],
             ),
-            const SizedBox(height: 40),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveChanges,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF0A0E1A),
-                        ),
-                      )
-                    : Text('Guardar Todo',
-                        style: GoogleFonts.spaceGrotesk(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
+  Widget _buildQuickHourButton(String label, double hoursToAdd) {
+    return ElevatedButton(
+      onPressed: () => _addQuickHours(hoursToAdd),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        backgroundColor: const Color(0xFF1C2237),
+        foregroundColor: const Color(0xFF00F0FF),
+        elevation: 0,
+        side: const BorderSide(color: Color(0xFF00F0FF), width: 0.8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -509,12 +732,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildDatePicker(
-      String label, DateTime? date, VoidCallback onTap) {
+      String label, DateTime? date, VoidCallback onTap,
+      {VoidCallback? onClear}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: const Color(0xFF141927),
           borderRadius: BorderRadius.circular(12),
@@ -523,9 +747,20 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 10, color: const Color(0xFF6B7394))),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(label,
+                    style: GoogleFonts.inter(
+                        fontSize: 10, color: const Color(0xFF6B7394))),
+                if (date != null && onClear != null)
+                  GestureDetector(
+                    onTap: onClear,
+                    child: const Icon(Icons.close_rounded,
+                        size: 12, color: Color(0xFF6B7394)),
+                  ),
+              ],
+            ),
             const SizedBox(height: 4),
             Row(
               children: [

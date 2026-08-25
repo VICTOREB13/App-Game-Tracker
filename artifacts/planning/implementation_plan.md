@@ -1,54 +1,53 @@
 ---
 tipo: plan
-proyecto: App-Rastreador-de-Entretenimiento
-version: v2.1.0
+proyecto: App_Rastreador_de_Entretenimiento
+version: v2.2.0
 estado: activo
 fecha: 2026-08-25
-tags: [plan, search-ui, dashboard-filter, pc-desktop, notion]
+tags: [plan, gamer-hub, hero-spotlight, zero-friction, platform-badges, cinematic-detail, backlog-calculator]
 ---
 
-# 📋 Plan de Implementación: Búsqueda Avanzada, Filtro en Biblioteca y Soporte PC (v2.1)
+# 📋 Plan de Implementación: Gamer Hub & Experiencia de Entretenimiento (v2.2.0)
 
 ## 🎯 Objetivo de la Iteración
 
-Elevar la experiencia de usuario y alcance multiplataforma de la aplicación mediante:
-1. **Modal Enriquecido al Añadir Juegos (`SearchScreen`):** Permitir configurar fecha de inicio, horas iniciales, plataforma, estado, calificación y selección de géneros mediante un menú desplegable/acordeón intuitivo y ergonómico.
-2. **Buscador / Filtro en Tiempo Real en la Biblioteca (`DashboardScreen`):** Barra de búsqueda integrada en la cabecera para filtrar instantáneamente por título de juego dentro de los juegos ya cargados de Notion.
-3. **Adaptación y Compilación para PC Desktop (Windows):** Layout responsivo en grids y diálogos, y flujo automatizado en GitHub Actions para generar el binario `.zip` de Windows.
+Transformar el rastreador de videojuegos en una experiencia inmersiva de nivel profesional (*Gamer Hub*), implementando las 5 áreas clave de mejora funcional y visual, junto con el nuevo isotipo de entretenimiento.
 
 ---
 
-## 🛠️ Desglose de Tareas por Agente Especializado
+## 🚀 Desglose de Funcionalidades
 
-### 1. `Frontend-UI` (Experiencia de Usuario y Vistas)
-- **Modal de Adición de Juegos (`search_screen.dart`):**
-  - Reemplazar el `AlertDialog` básico por un modal completo/scrollable (`SingleChildScrollView` con `BoxConstraints(maxWidth: 550)`).
-  - Selector de **Fecha de Inicio** con `showDatePicker` y botón de reset.
-  - Campo numérico para **Horas Jugadas Iniciales**.
-  - **Menú Desplegable / Expandible de Géneros:** Crear componente `ExpansionTile` o dropdown de acordeón con chips interactivos para seleccionar/deseleccionar géneros fácilmente sin saturar la pantalla.
-  - Precargar géneros sugeridos desde RAWG y combinarlos con la lista oficial de Notion.
-- **Buscador en Vivo en Biblioteca (`dashboard.dart`):**
-  - Añadir botón de búsqueda en el `AppBar` que despliegue un campo de texto con animación o transición limpia.
-  - Filtrado reactivo en memoria: combinar filtro de texto (`_searchQuery`) con filtro de estado (`_selectedStatusFilter`).
-  - Mostrar estado vacío descriptivo cuando no haya coincidencias de búsqueda.
-- **Diseño Responsivo Desktop (`dashboard.dart` y temas):**
-  - Reemplazar `SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2)` por `SliverGridDelegateWithMaxCrossAxisExtent` (max width ~200-240px) para que en pantallas de PC se muestren de 4 a 6 columnas automáticamente de forma fluida.
+### 1. 🌟 Hero Banner "Jugando Ahora" (Dashboard)
+- Renderizar un banner panorámico destacado en la parte superior del `DashboardScreen` cuando existan juegos en estado `"Jugando"`.
+- Barra de progreso neón integrada que compara `Horas Jugadas` vs `HLTB Principal` (ej: `28h / 45h - 62%`).
+- Botón rápido `+1h` directo en el banner para registrar sesiones de juego al instante sin entrar a editar.
 
-### 2. `Backend-Architect` (Integración y Parsers)
-- Verificar y asegurar que los campos enviados desde `SearchScreen` (`startDate`, `hoursPlayed`, `genres`, `rating`, `coverUrl`, `hltbMain`) se mapeen sin discrepancias a través de `NotionParser` y `NotionService.createPage`.
+### 2. ⚡ Microinteracciones y Registro Rápido ("Zero Friction")
+- **Botones de incremento rápido en `GameDetailScreen`:** Botones accesibles (`+30m`, `+1h`, `+2h`) que incrementan el contador de horas y guardan automáticamente.
+- **Autocompletado de Fecha de Culminación:** Al cambiar el estado a `"Jugado"`, si la fecha de culminación está vacía, se asigna automáticamente la fecha del día (`DateTime.now()`).
+- **Menú Contextual Rápido (Long Press):** Mantener presionada una tarjeta de juego en el grid para desplegar un modal rápido con acciones: *Cambiar Estado*, *Sumar +1h*, o *Eliminar*.
 
-### 3. `DevOps-Engineer` (Automatización CI/CD para PC)
-- Crear el workflow de GitHub Actions `.github/workflows/build_windows.yml` para compilar automáticamente la versión de Windows (`flutter build windows --release`) y empaquetar el binario en un `.zip` descargable en los artifacts de GitHub.
+### 3. 🎮 Logos de Plataformas e Insignias Neón + Filtro Secundario
+- Componente `PlatformBadge` que mapea cada plataforma a su color de marca característico (PlayStation Azul, Switch Rojo, Xbox Verde, PC/Steam Cyan) e icono representativo.
+- Carrusel horizontal secundario en el Dashboard para filtrar la biblioteca por plataforma específica ("Todas", "PC", "Playstation 5", "Nintendo Switch", etc.).
 
-### 4. `Systems-Auditor` (Quality Gate)
-- Auditar la ausencia de regresiones en móvil y PC, verificar rate-limiting en Notion y validar responsive breakpoints.
+### 4. 🖼️ Pantalla de Detalle Cinematográfica (Hero Backdrop & Ficha Técnica)
+- Encabezado con efecto de fondo panorámico en degradado negro sobre la carátula del juego.
+- Bloque de métricas rápidas: Calificación en estrellas destacada, Tiempos HowLongToBeat completos (*Historia Principal*, *Completista 100%*), y tags de géneros estilizados.
+
+### 5. 📊 Gamificación & "Backlog Pulse" en Analíticas
+- **Calculadora de Backlog:** Métrica en `AnalyticsScreen` que suma las horas estimadas de todos los títulos en *"Por jugar"* y proyecta el tiempo total pendiente.
+- **Resumen del Año en Curso (2026):** Contador de títulos completados en el año actual y promedio de horas por juego completado.
+
+### 6. 🎨 Nuevo Logo de Entretenimiento (Asset & UI)
+- Actualización de `pubspec.yaml` para incluir el asset `assets/images/app_logo.jpg`.
+- Integración del nuevo isotipo en la pantalla de bienvenida (`SetupScreen`), app bar icons y branding del proyecto.
 
 ---
 
-## 🔄 Criterios de Aceptación
+## 🛠️ Asignación de Tareas por Rol
 
-1. Al pulsar sobre cualquier juego en la búsqueda de RAWG, se abre un diálogo completo y responsivo donde el usuario puede definir fecha de inicio, horas, plataforma, estado y géneros en un selector desplegable.
-2. Al pulsar "Añadir", la página creada en Notion incluye todos estos campos correctamente formateados.
-3. En el Dashboard existe un botón/buscador para encontrar cualquier juego de la biblioteca por nombre en tiempo real.
-4. El Dashboard se adapta visualmente tanto a pantallas de teléfono móvil (2 columnas) como a pantallas anchas de PC (múltiples columnas con proporción estética).
-5. Existe un workflow de CI funcional para compilar la versión de Windows.
+- **`Frontend-UI`:** Construcción del `HeroBanner`, `PlatformBadge`, rediseño cinemático de `GameDetailScreen`, carrusel de plataformas y actualización de `SetupScreen` con el nuevo logo.
+- **`Backend-Architect`:** Lógica de actualización optimista de horas (+1h), cálculo de progreso HLTB y auto-asignación de fecha de culminación.
+- **`Systems-Auditor`:** Verificación de rendimiento en animaciones, responsive breakpoints en móvil y PC, y control de linter.
+- **`DevOps-Engineer`:** Asegurar empaquetado de assets en compilaciones de Android (APK) y Windows (PC ZIP).

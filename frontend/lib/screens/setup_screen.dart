@@ -119,30 +119,38 @@ class _SetupScreenState extends State<SetupScreen>
                 FadeTransition(
                   opacity: _pulseAnimation,
                   child: Container(
-                    width: 100,
-                    height: 100,
+                    width: 104,
+                    height: 104,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: const Color(0xFF00F0FF),
-                        width: 2,
+                        color: const Color(0xFF1C2237),
+                        width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00F0FF).withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
+                          color: const Color(0xFF00F0FF).withOpacity(0.12),
+                          blurRadius: 24,
+                          spreadRadius: 2,
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.gamepad_rounded,
-                      size: 48,
-                      color: Color(0xFF00F0FF),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      'assets/images/app_logo.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFF141927),
+                        child: const Icon(
+                          Icons.sports_esports_rounded,
+                          size: 48,
+                          color: Color(0xFF00F0FF),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
                 Text(
                   'Game Tracker',

@@ -3,20 +3,23 @@ tipo: overview
 proyecto: App_Rastreador_de_Entretenimiento
 estado: activo
 fecha: 2026-08-25
-tags: [proyecto, overview, notion, flutter, entretenimiento]
+tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, v2.2]
 ---
 
 # 🚀 Visión General del Proyecto: Rastreador de Entretenimiento
 
-Aplicación multiplataforma (Android & PC/Desktop) desarrollada en Flutter con arquitectura ligera y conexión directa a la API de Notion como base de datos principal, complementada con RAWG API para búsqueda y metadatos de videojuegos.
+Aplicación multiplataforma (Android & PC/Desktop) desarrollada en Flutter con diseño inmersivo "Arcade Noir", conectada directamente a la API de Notion como base de datos principal y enriquecida con metadatos de RAWG API.
 
 ## 📖 ¿Qué hace el proyecto?
 
-- **Gestión de Biblioteca de Videojuegos:** Lectura, filtrado y edición bidireccional de partidas, estados (*Por jugar*, *Jugando*, *Jugado*), plataformas, horas jugadas, géneros, fechas y calificaciones en Notion.
-- **Búsqueda y Adición Inteligente (RAWG API):** Descubrimiento de juegos con portadas en alta calidad, géneros, tiempos estimados (HowLongToBeat) y adición personalizada mediante modal enriquecido.
-- **Búsqueda y Filtrado en Tiempo Real:** Búsqueda instantánea dentro de la biblioteca de juegos guardados en el Dashboard.
-- **Estadísticas y Analíticas:** Visualización interactiva de distribución de estados, plataformas más jugadas y ranking de mejores calificaciones.
-- **Soporte Multiplataforma:** Experiencia optimizada con diseño responsivo ("Arcade Noir") para dispositivos móviles (Android APK) y computadoras de escritorio (Windows PC).
+- **Gestión Integral de Biblioteca de Videojuegos:** Lectura, filtrado y edición bidireccional de partidas, estados (*Por jugar*, *Jugando*, *Jugado*), plataformas, horas jugadas, géneros, fechas y calificaciones en Notion.
+- **Hero Spotlight "Jugando Ahora":** Banner panorámico destacado en la cabecera del Dashboard para los títulos activos, con barra de progreso interactiva (Horas vs HLTB) y registro rápido de sesión (+1h).
+- **Zero-Friction Logging:** Microinteracciones de incremento de tiempo rápido (+30m, +1h, +2h), auto-completado de fecha de culminación y menú rápido contextual (Long Press).
+- **Logos de Plataformas Neón & Filtro por Plataforma:** Insignias visuales temáticas (PlayStation, Xbox, Nintendo Switch, PC, etc.) y carrusel de filtrado por plataforma en el Dashboard.
+- **Detalle de Juego Cinematográfico:** Encabezado con degradado inmersivo, ficha técnica ampliada y desglose de tiempos HowLongToBeat (Historia, Extra, 100%).
+- **Gamificación & Backlog Pulse:** Estadísticas en tiempo real con calculadora de horas totales de backlog y resumen anual de juegos completados.
+- **Búsqueda y Adición Inteligente (RAWG):** Búsqueda de catálogo con portadas en HD, modal avanzado con selector de fecha, horas y acordeón de géneros.
+- **Soporte Multiplataforma y Build Automatizado:** Diseñado responsivamente para móviles y computadoras de escritorio (Windows PC) mediante GitHub Actions.
 
 ---
 

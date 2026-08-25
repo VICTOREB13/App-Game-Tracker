@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
+import '../services/notion_parser.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 import 'game_detail_screen.dart';
@@ -27,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isSearchActive = false;
   String _searchQuery = '';
   String _selectedStatusFilter = 'Todos';
+  String _selectedPlatformFilter = 'Todas';
   String _selectedSort = 'Recientes';
 
   final List<String> _statusFilters = [
@@ -87,6 +89,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final matchesStatus = _selectedStatusFilter == 'Todos' ||
             g.status.toLowerCase() == _selectedStatusFilter.toLowerCase();
 
+        // Platform filter
+        final matchesPlatform = _selectedPlatformFilter == 'Todas' ||
+            (g.platform != null &&
+                g.platform!.toLowerCase() ==
+                    _selectedPlatformFilter.toLowerCase());
+
         // Search query filter (matches title, platform, or genres)
         bool matchesQuery = true;
         if (query.isNotEmpty) {
@@ -98,7 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           matchesQuery = titleMatch || platformMatch || genreMatch;
         }
 
-        return matchesStatus && matchesQuery;
+        return matchesStatus && matchesPlatform && matchesQuery;
       }).toList();
 
       if (_selectedSort == 'A-Z') {
@@ -109,8 +117,282 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  List<String> get _availablePlatformsInLibrary {
+    final Set<String> platforms = {'Todas'};
+    for (var g in _games) {
+      if (g.platform != null && g.platform!.isNotEmpty) {
+        platforms.add(g.platform!);
+      }
+    }
+    return platforms.toList();
+  }
+
+  List<Game> get _currentlyPlayingGames {
+    return _games.where((g) => g.status == 'Jugando').toList();
+  }
+
+  // Quick Action: Add 1 hour to a game directly
+  Future<void> _quickAddHours(Game game, num deltaHours) async {
+    final newHours = (game.hoursPlayed ?? 0) + deltaHours;
+
+    // Optimistic UI update
+    setState(() {
+      final idx = _games.indexWhere((g) => g.notionPageId == game.notionPageId);
+      if (idx != -1) {
+        _games[idx] = _games[idx].copyWith(hoursPlayed: newHours);
+        _applyFilters();
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('+${deltaHours}h registradas en ${game.title}'),
+        backgroundColor: const Color(0xFF00F0FF),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      await _notion.updatePage(
+        game.notionPageId,
+        {'Horas Jugadas': NotionParser.buildNumber(newHours)},
+      );
+    } catch (e) {
+      debugPrint('Error updating hours in Notion: $e');
+    }
+  }
+
+  // Quick Action: Change game status
+  Future<void> _quickChangeStatus(Game game, String newStatus) async {
+    DateTime? completedDate = game.completedDate;
+    if (newStatus == 'Jugado' && completedDate == null) {
+      completedDate = DateTime.now();
+    }
+
+    setState(() {
+      final idx = _games.indexWhere((g) => g.notionPageId == game.notionPageId);
+      if (idx != -1) {
+        _games[idx] = _games[idx].copyWith(
+          status: newStatus,
+          completedDate: completedDate,
+        );
+        _applyFilters();
+      }
+    });
+
+    try {
+      final props = <String, dynamic>{
+        'Estado': NotionParser.buildStatus(newStatus),
+      };
+      if (completedDate != null) {
+        props['Fecha de Culminación (primera campaña)'] =
+            NotionParser.buildDate(completedDate);
+      }
+      await _notion.updatePage(game.notionPageId, props);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${game.title} marcado como "$newStatus"'),
+            backgroundColor: const Color(0xFF00F0FF),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error updating status in Notion: $e');
+    }
+  }
+
+  // Contextual Long-Press Modal
+  void _showQuickActionMenu(Game game) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF141927),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: Color(0xFF1C2237)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Game Header in Modal
+                Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: game.coverUrl != null && game.coverUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: game.coverUrl!,
+                              width: 44,
+                              height: 56,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              width: 44,
+                              height: 56,
+                              color: const Color(0xFF1C2237),
+                              child: const Icon(Icons.sports_esports_rounded,
+                                  color: Color(0xFF3A4060)),
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            game.title,
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFF0F2F5),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${game.platform ?? 'Sin plataforma'} • ${game.hoursPlayed ?? 0}h jugadas',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: const Color(0xFF6B7394),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: Color(0xFF1C2237)),
+                const SizedBox(height: 8),
+
+                // Quick Status Switcher
+                Text(
+                  'Cambiar Estado',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF6B7394),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildStatusQuickButton(game, 'Por jugar', const Color(0xFFFFBE0B)),
+                    const SizedBox(width: 8),
+                    _buildStatusQuickButton(game, 'Jugando', const Color(0xFF00F0FF)),
+                    const SizedBox(width: 8),
+                    _buildStatusQuickButton(game, 'Jugado', const Color(0xFFFF2D78)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Quick Log Action
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F0FF).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.timer_rounded,
+                        color: Color(0xFF00F0FF), size: 20),
+                  ),
+                  title: Text(
+                    'Registrar sesión (+1 hora)',
+                    style: GoogleFonts.inter(
+                        fontSize: 14, color: const Color(0xFFF0F2F5)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _quickAddHours(game, 1);
+                  },
+                ),
+
+                // Full Edit Action
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C2237),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit_rounded,
+                        color: Color(0xFFF0F2F5), size: 20),
+                  ),
+                  title: Text(
+                    'Ver detalle / Editar ficha',
+                    style: GoogleFonts.inter(
+                        fontSize: 14, color: const Color(0xFFF0F2F5)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final res = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GameDetailScreen(game: game),
+                      ),
+                    );
+                    if (res == true) _fetchGames(forceRefresh: true);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatusQuickButton(Game game, String status, Color color) {
+    final isCurrent = game.status == status;
+    return Expanded(
+      child: InkWell(
+        onTap: isCurrent
+            ? null
+            : () {
+                Navigator.pop(context);
+                _quickChangeStatus(game, status);
+              },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isCurrent ? color.withOpacity(0.2) : const Color(0xFF1C2237),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isCurrent ? color : const Color(0xFF1C2237),
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            status,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+              color: isCurrent ? color : const Color(0xFF6B7394),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final playingGames = _currentlyPlayingGames;
+
     return Scaffold(
       appBar: AppBar(
         title: _isSearchActive
@@ -151,19 +433,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               )
             : Row(
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF00F0FF),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0x5500F0FF),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/images/app_logo.jpg',
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141927),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF00F0FF)),
                         ),
-                      ],
+                        child: const Icon(Icons.sports_esports_rounded,
+                            size: 16, color: Color(0xFF00F0FF)),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -240,27 +527,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: Column(
         children: [
-          // Filter bar
+          // Hero Spotlight "Jugando Ahora" (if any active games and not actively searching)
+          if (!_isSearchActive && playingGames.isNotEmpty && !_isLoading)
+            _buildHeroSpotlight(playingGames.first),
+
+          // Status Filter Bar & Sort
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   ..._statusFilters.map(_buildFilterChip),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Container(
                     width: 1,
-                    height: 24,
+                    height: 22,
                     color: const Color(0xFF1C2237),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   _buildSortDropdown(),
                 ],
               ),
             ),
           ),
+
+          // Secondary Platform Filter Carousel
+          if (_availablePlatformsInLibrary.length > 2)
+            Container(
+              height: 36,
+              margin: const EdgeInsets.only(bottom: 4),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _availablePlatformsInLibrary.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, index) {
+                  final platform = _availablePlatformsInLibrary[index];
+                  final isSelected = _selectedPlatformFilter == platform;
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPlatformFilter = platform;
+                        _applyFilters();
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF00F0FF).withOpacity(0.15)
+                            : const Color(0xFF141927),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF00F0FF)
+                              : const Color(0xFF1C2237),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          if (platform != 'Todas') ...[
+                            _PlatformIconHelper.getIcon(platform, size: 13),
+                            const SizedBox(width: 6),
+                          ],
+                          Text(
+                            platform,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: isSelected
+                                  ? const Color(0xFF00F0FF)
+                                  : const Color(0xFF6B7394),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
 
           // Search indicator & Game count
           Padding(
@@ -326,26 +678,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Text(
                                     _searchQuery.isNotEmpty
                                         ? 'No se encontraron juegos para "$_searchQuery"'
-                                        : 'No hay juegos con el filtro "$_selectedStatusFilter"',
+                                        : 'No hay juegos con los filtros seleccionados',
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.inter(
                                       color: const Color(0xFF6B7394),
                                       fontSize: 14,
                                     ),
                                   ),
-                                  if (_searchQuery.isNotEmpty) ...[
+                                  if (_searchQuery.isNotEmpty ||
+                                      _selectedPlatformFilter != 'Todas') ...[
                                     const SizedBox(height: 12),
                                     OutlinedButton.icon(
                                       onPressed: () {
                                         setState(() {
                                           _searchController.clear();
                                           _searchQuery = '';
+                                          _selectedPlatformFilter = 'Todas';
                                           _applyFilters();
                                         });
                                       },
                                       icon: const Icon(Icons.clear_rounded,
                                           size: 16),
-                                      label: const Text('Limpiar búsqueda'),
+                                      label: const Text('Restablecer filtros'),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: const Color(0xFF00F0FF),
                                         side: const BorderSide(
@@ -382,6 +736,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _fetchGames(forceRefresh: true);
                                   }
                                 },
+                                onLongPress: () => _showQuickActionMenu(game),
                                 child: _GameCard(game: game),
                               );
                             },
@@ -405,6 +760,195 @@ class _DashboardScreenState extends State<DashboardScreen> {
           'Añadir',
           style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
         ),
+      ),
+    );
+  }
+
+  // Hero Spotlight Card for Currently Playing game
+  Widget _buildHeroSpotlight(Game game) {
+    final hours = game.hoursPlayed ?? 0;
+    final hltb = game.hltbMain ?? 0;
+    final progress = hltb > 0 ? (hours / hltb).clamp(0.0, 1.0) : 0.0;
+    final percentText = (progress * 100).toStringAsFixed(0);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141927),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF00F0FF).withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F0FF).withOpacity(0.08),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Background subtle backdrop
+          if (game.coverUrl != null && game.coverUrl!.isNotEmpty)
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.15,
+                child: CachedNetworkImage(
+                  imageUrl: game.coverUrl!,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Cover
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: game.coverUrl != null && game.coverUrl!.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: game.coverUrl!,
+                          width: 60,
+                          height: 80,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          width: 60,
+                          height: 80,
+                          color: const Color(0xFF1C2237),
+                          child: const Icon(Icons.sports_esports_rounded,
+                              color: Color(0xFF3A4060)),
+                        ),
+                ),
+                const SizedBox(width: 14),
+                // Details & Progress
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00F0FF).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                  color: const Color(0xFF00F0FF).withOpacity(0.4),
+                                  width: 0.5),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xFF00F0FF),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'JUGANDO AHORA',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF00F0FF),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          if (game.platform != null)
+                            _PlatformBadge(platform: game.platform!),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        game.title,
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFF0F2F5),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Progress Bar & Stats
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            hltb > 0 ? '${hours}h / ${hltb}h HLTB' : '${hours}h jugadas',
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFF6B7394),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (hltb > 0)
+                            Text(
+                              '$percentText%',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF00F0FF),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress > 0 ? progress : null,
+                          minHeight: 5,
+                          backgroundColor: const Color(0xFF1C2237),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF00F0FF)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Quick +1h button
+                ElevatedButton(
+                  onPressed: () => _quickAddHours(game, 1),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    backgroundColor: const Color(0xFF00F0FF),
+                    foregroundColor: const Color(0xFF0A0E1A),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    minimumSize: const Size(42, 42),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.add_rounded, size: 16),
+                      Text(
+                        '1h',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -567,6 +1111,9 @@ class _GameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
+    final hours = game.hoursPlayed ?? 0;
+    final hltb = game.hltbMain ?? 0;
+    final progress = hltb > 0 ? (hours / hltb).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -617,7 +1164,7 @@ class _GameCard extends StatelessWidget {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: 40,
+                  height: 44,
                   child: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -672,12 +1219,26 @@ class _GameCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                // Micro-progress bar at bottom of cover if HLTB available
+                if (hltb > 0 && hours > 0)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 3,
+                      backgroundColor: Colors.transparent,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(statusColor),
+                    ),
+                  ),
               ],
             ),
           ),
           // Info
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -743,5 +1304,70 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PlatformBadge extends StatelessWidget {
+  final String platform;
+  const _PlatformBadge({required this.platform});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _PlatformIconHelper.getColor(platform);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.5),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PlatformIconHelper.getIcon(platform, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(
+            platform,
+            style: GoogleFonts.inter(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlatformIconHelper {
+  static Color getColor(String platform) {
+    final p = platform.toLowerCase();
+    if (p.contains('playstation') || p.contains('ps')) {
+      return const Color(0xFF0070D1);
+    } else if (p.contains('nintendo') || p.contains('switch')) {
+      return const Color(0xFFE60012);
+    } else if (p.contains('xbox')) {
+      return const Color(0xFF107C10);
+    } else if (p.contains('pc') || p.contains('steam') || p.contains('epic')) {
+      return const Color(0xFF00F0FF);
+    } else if (p.contains('mobile') || p.contains('android') || p.contains('ios')) {
+      return const Color(0xFFFF2D78);
+    } else {
+      return const Color(0xFFFFBE0B);
+    }
+  }
+
+  static Widget getIcon(String platform, {double size = 12, Color? color}) {
+    final p = platform.toLowerCase();
+    final iconColor = color ?? getColor(platform);
+
+    if (p.contains('pc') || p.contains('mac')) {
+      return Icon(Icons.computer_rounded, size: size, color: iconColor);
+    } else if (p.contains('mobile')) {
+      return Icon(Icons.smartphone_rounded, size: size, color: iconColor);
+    } else {
+      return Icon(Icons.gamepad_rounded, size: size, color: iconColor);
+    }
   }
 }
