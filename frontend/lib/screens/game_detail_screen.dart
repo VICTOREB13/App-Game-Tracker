@@ -356,6 +356,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      PlatformHelper.buildBadge(_selectedPlatform,
+                          fontSize: 11, iconSize: 14),
+                      _buildStatusPill(_selectedStatus),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // Cover URL Input
@@ -814,6 +827,39 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         fontWeight: FontWeight.w600,
         color: const Color(0xFF00F0FF),
         letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(String status) {
+    Color color;
+    switch (status) {
+      case 'Jugando':
+        color = const Color(0xFF00F0FF);
+        break;
+      case 'Por jugar':
+        color = const Color(0xFFFFBE0B);
+        break;
+      case 'Jugado':
+        color = const Color(0xFFFF2D78);
+        break;
+      default:
+        color = const Color(0xFF6B7394);
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.5),
+      ),
+      child: Text(
+        status,
+        style: GoogleFonts.inter(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

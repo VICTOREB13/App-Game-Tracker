@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
+import '../widgets/platform_helper.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -454,6 +455,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       ),
                       child: Row(
                         children: [
+                          if (game.platform != null &&
+                              game.platform!.isNotEmpty) ...[
+                            PlatformHelper.getIcon(game.platform!, size: 16),
+                            const SizedBox(width: 10),
+                          ],
                           Expanded(
                             child: Text(
                               game.title,
