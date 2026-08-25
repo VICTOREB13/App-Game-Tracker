@@ -1,10 +1,10 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.2.0
+version: v2.3.0
 estado: completado
 fecha: 2026-08-25
-tags: [proyecto, changelog, versiones]
+tags: [proyecto, changelog, versiones, clean-toolbar]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento
@@ -12,15 +12,22 @@ tags: [proyecto, changelog, versiones]
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
-## [2.2.0] - 2026-08-25 (Gamer Hub & Minimalist Branding)
+## [2.3.0] - 2026-08-25 (Clean Unified Toolbar & Platform Helper)
 
 ### Added
-- **Nuevo Logo Minimalista:** Isotipo oficial sobrio con silueta de gamepad sobre squircle oscuro mate en `assets/images/app_logo.jpg` integrado en la app.
-- **Hero Spotlight "Jugando Ahora":** Banner interactivo en el Dashboard para títulos activos con barra de progreso HLTB vs Horas y botón rápido `+1h` con actualización optimista.
-- **Microinteracciones Zero-Friction:** Botones de incremento rápido (`+30m`, `+1h`, `+2h`), autocompletado inteligente de fecha de culminación y menú contextual por pulsación prolongada (Long Press).
-- **Logos de Plataformas & Filtro Dedicado:** Insignias visuales con paletas oficiales de marca (PlayStation, Xbox, Switch, PC) y carrusel de filtrado por consola en el Dashboard.
-- **Detalle de Juego Cinematográfico:** Cabecera con degradado inmersivo y panel de tiempos HowLongToBeat enriquecido.
-- **Calculadora de Backlog & Stats Anuales:** Métrica de tiempo pendiente en biblioteca y analíticas de juegos completados en el año actual (2026).
+- **Barra de Filtros Unificada (1 Sola Fila):** Eliminación de las dos filas apiladas por una barra horizontal limpia con tabs de estado y menús desplegables para Plataforma, Género y Orden.
+- **Menú Desplegable de Plataformas:** Sustitución de la tira de 12+ chips por un selector estilizado con iconos temáticos y feedback visual de filtro activo.
+- **Botón Rápido de Limpieza:** Botón dinámico `[ ✕ Limpiar ]` en la barra y en el estado vacío para restablecer todos los filtros con un toque.
+- **Helper Global de Plataformas (`PlatformHelper`):** Unificación de iconos, paletas y badges temáticos de consolas para Dashboard, Ficha de Juego y Modal de Añadir.
+
+---
+
+## [2.2.0] - 2026-08-25 (Gamer Hub & Minimalist Branding)
+### Added
+- Nuevo isotipo minimalista con silueta de gamepad sobre squircle oscuro mate.
+- Hero Spotlight "Jugando Ahora" interactivo con barra estática y botón rápido `+1h`.
+- Menú contextual (Long Press) y microinteracciones de registro rápido (+30m, +1h, +2h).
+- Ficha cinematográfica y calculadora de backlog en analíticas.
 
 ---
 
@@ -29,7 +36,6 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Modal avanzado de adición con DatePicker, horas iniciales y selector desplegable de géneros.
 - Buscador en tiempo real en la biblioteca dentro del Dashboard.
 - Soporte y workflow de compilación para Windows PC (Desktop).
-- Layout responsivo con columnas dinámicas para pantallas grandes.
 
 ---
 

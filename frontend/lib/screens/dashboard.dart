@@ -9,6 +9,7 @@ import 'search_screen.dart';
 import 'settings_screen.dart';
 import 'game_detail_screen.dart';
 import 'analytics_screen.dart';
+import '../widgets/platform_helper.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -148,6 +149,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Game> get _currentlyPlayingGames {
     return _games.where((g) => g.status == 'Jugando').toList();
+  }
+
+  bool get _isAnyFilterActive =>
+      _selectedStatusFilter != 'Todos' ||
+      _selectedPlatformFilter != 'Todas' ||
+      _selectedGenreFilter != 'Todos' ||
+      _searchQuery.isNotEmpty;
+
+  void _clearAllFilters() {
+    setState(() {
+      _selectedStatusFilter = 'Todos';
+      _selectedPlatformFilter = 'Todas';
+      _selectedGenreFilter = 'Todos';
+      _selectedSort = 'Recientes';
+      _searchQuery = '';
+      _searchController.clear();
+      _isSearchActive = false;
+      _applyFilters();
+    });
   }
 
   // Quick Action: Add 1 hour to a game directly
@@ -550,96 +570,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (!_isSearchActive && playingGames.isNotEmpty && !_isLoading)
             _buildHeroSpotlight(playingGames.first),
 
-          // Status Filter Bar & Sort
+          // Unified Filter Toolbar (Single Row: Statuses | Platform | Genre | Sort | Clear)
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   ..._statusFilters.map(_buildFilterChip),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Container(
                     width: 1,
-                    height: 22,
+                    height: 24,
                     color: const Color(0xFF1C2237),
                   ),
-                  const SizedBox(width: 10),
-                  _buildSortDropdown(),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 1,
-                    height: 22,
-                    color: const Color(0xFF1C2237),
-                  ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
+                  _buildPlatformDropdown(),
+                  const SizedBox(width: 8),
                   _buildGenreDropdown(),
+                  const SizedBox(width: 8),
+                  _buildSortDropdown(),
+                  if (_isAnyFilterActive) ...[
+                    const SizedBox(width: 8),
+                    _buildClearFiltersButton(),
+                  ],
                 ],
               ),
             ),
           ),
-
-          // Secondary Platform Filter Carousel
-          if (_availablePlatformsInLibrary.length > 2)
-            Container(
-              height: 36,
-              margin: const EdgeInsets.only(bottom: 4),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _availablePlatformsInLibrary.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 6),
-                itemBuilder: (context, index) {
-                  final platform = _availablePlatformsInLibrary[index];
-                  final isSelected = _selectedPlatformFilter == platform;
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedPlatformFilter = platform;
-                        _applyFilters();
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF00F0FF).withOpacity(0.15)
-                            : const Color(0xFF141927),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF00F0FF)
-                              : const Color(0xFF1C2237),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          if (platform != 'Todas') ...[
-                            _PlatformIconHelper.getIcon(platform, size: 13),
-                            const SizedBox(width: 6),
-                          ],
-                          Text(
-                            platform,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: isSelected
-                                  ? const Color(0xFF00F0FF)
-                                  : const Color(0xFF6B7394),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
 
           // Search indicator & Game count
           Padding(
@@ -712,18 +671,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       fontSize: 14,
                                     ),
                                   ),
-                                  if (_searchQuery.isNotEmpty ||
-                                      _selectedPlatformFilter != 'Todas') ...[
+                                  if (_isAnyFilterActive) ...[
                                     const SizedBox(height: 12),
                                     OutlinedButton.icon(
-                                      onPressed: () {
-                                        setState(() {
-                                          _searchController.clear();
-                                          _searchQuery = '';
-                                          _selectedPlatformFilter = 'Todas';
-                                          _applyFilters();
-                                        });
-                                      },
+                                      onPressed: _clearAllFilters,
                                       icon: const Icon(Icons.clear_rounded,
                                           size: 16),
                                       label: const Text('Restablecer filtros'),
@@ -893,7 +844,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const Spacer(),
                           if (game.platform != null)
-                            _PlatformBadge(platform: game.platform!),
+                            PlatformHelper.buildBadge(game.platform!),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -1030,29 +981,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSortDropdown() {
+  Widget _buildPlatformDropdown() {
+    final platforms = _availablePlatformsInLibrary;
+    final isFiltered = _selectedPlatformFilter != 'Todas';
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2237),
+        color: isFiltered
+            ? const Color(0xFF00F0FF).withOpacity(0.15)
+            : const Color(0xFF1C2237),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isFiltered
+              ? const Color(0xFF00F0FF)
+              : Colors.transparent,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _selectedSort,
-          dropdownColor: const Color(0xFF1C2237),
+          value: platforms.contains(_selectedPlatformFilter)
+              ? _selectedPlatformFilter
+              : 'Todas',
+          dropdownColor: const Color(0xFF141927),
+          borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
-              fontSize: 12, color: const Color(0xFFF0F2F5)),
-          icon: const Icon(Icons.sort_rounded,
-              size: 16, color: Color(0xFF6B7394)),
-          items: ['Recientes', 'A-Z']
-              .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+              fontSize: 12,
+              color: isFiltered
+                  ? const Color(0xFF00F0FF)
+                  : const Color(0xFFF0F2F5)),
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(Icons.arrow_drop_down_rounded,
+                size: 20,
+                color: isFiltered
+                    ? const Color(0xFF00F0FF)
+                    : const Color(0xFF6B7394)),
+          ),
+          items: platforms
+              .map((p) => DropdownMenuItem(
+                    value: p,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (p != 'Todas') ...[
+                          PlatformHelper.getIcon(p, size: 14),
+                          const SizedBox(width: 8),
+                        ] else ...[
+                          const Icon(Icons.videogame_asset_outlined,
+                              size: 14, color: Color(0xFF6B7394)),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          p == 'Todas' ? 'Plataforma: Todas' : p,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: p == _selectedPlatformFilter
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: p == _selectedPlatformFilter
+                                ? const Color(0xFF00F0FF)
+                                : const Color(0xFFF0F2F5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ))
               .toList(),
           onChanged: (val) {
-            setState(() {
-              _selectedSort = val!;
-              _applyFilters();
-            });
+            if (val != null) {
+              setState(() {
+                _selectedPlatformFilter = val;
+                _applyFilters();
+              });
+            }
           },
         ),
       ),
@@ -1061,16 +1063,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildGenreDropdown() {
     final genres = _availableGenresInLibrary;
+    final isFiltered = _selectedGenreFilter != 'Todos';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: _selectedGenreFilter != 'Todos'
+        color: isFiltered
             ? const Color(0xFF00F0FF).withOpacity(0.15)
             : const Color(0xFF1C2237),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: _selectedGenreFilter != 'Todos'
+          color: isFiltered
               ? const Color(0xFF00F0FF)
               : Colors.transparent,
         ),
@@ -1080,21 +1083,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value: genres.contains(_selectedGenreFilter)
               ? _selectedGenreFilter
               : 'Todos',
-          dropdownColor: const Color(0xFF1C2237),
+          dropdownColor: const Color(0xFF141927),
+          borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
               fontSize: 12,
-              color: _selectedGenreFilter != 'Todos'
+              color: isFiltered
                   ? const Color(0xFF00F0FF)
                   : const Color(0xFFF0F2F5)),
-          icon: Icon(Icons.category_outlined,
-              size: 14,
-              color: _selectedGenreFilter != 'Todos'
-                  ? const Color(0xFF00F0FF)
-                  : const Color(0xFF6B7394)),
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(Icons.arrow_drop_down_rounded,
+                size: 20,
+                color: isFiltered
+                    ? const Color(0xFF00F0FF)
+                    : const Color(0xFF6B7394)),
+          ),
           items: genres
               .map((s) => DropdownMenuItem(
                     value: s,
-                    child: Text(s == 'Todos' ? 'Género: Todos' : s),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.category_outlined,
+                            size: 14, color: Color(0xFF6B7394)),
+                        const SizedBox(width: 8),
+                        Text(
+                          s == 'Todos' ? 'Género: Todos' : s,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: s == _selectedGenreFilter
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: s == _selectedGenreFilter
+                                ? const Color(0xFF00F0FF)
+                                : const Color(0xFFF0F2F5),
+                          ),
+                        ),
+                      ],
+                    ),
                   ))
               .toList(),
           onChanged: (val) {
@@ -1105,6 +1131,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
               });
             }
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2237),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedSort,
+          dropdownColor: const Color(0xFF141927),
+          borderRadius: BorderRadius.circular(12),
+          style: GoogleFonts.inter(
+              fontSize: 12, color: const Color(0xFFF0F2F5)),
+          icon: const Padding(
+            padding: EdgeInsets.only(left: 4),
+            child: Icon(Icons.sort_rounded,
+                size: 16, color: Color(0xFF6B7394)),
+          ),
+          items: ['Recientes', 'A-Z']
+              .map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s, style: GoogleFonts.inter(fontSize: 12)),
+                  ))
+              .toList(),
+          onChanged: (val) {
+            if (val != null) {
+              setState(() {
+                _selectedSort = val;
+                _applyFilters();
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClearFiltersButton() {
+    return InkWell(
+      onTap: _clearAllFilters,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF2D78).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFFF2D78).withOpacity(0.4),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.close_rounded,
+                size: 14, color: Color(0xFFFF2D78)),
+            const SizedBox(width: 4),
+            Text(
+              'Limpiar',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFF2D78),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1384,70 +1482,5 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _PlatformBadge extends StatelessWidget {
-  final String platform;
-  const _PlatformBadge({required this.platform});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _PlatformIconHelper.getColor(platform);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.4), width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PlatformIconHelper.getIcon(platform, size: 10, color: color),
-          const SizedBox(width: 4),
-          Text(
-            platform,
-            style: GoogleFonts.inter(
-              color: color,
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PlatformIconHelper {
-  static Color getColor(String platform) {
-    final p = platform.toLowerCase();
-    if (p.contains('playstation') || p.contains('ps')) {
-      return const Color(0xFF0070D1);
-    } else if (p.contains('nintendo') || p.contains('switch')) {
-      return const Color(0xFFE60012);
-    } else if (p.contains('xbox')) {
-      return const Color(0xFF107C10);
-    } else if (p.contains('pc') || p.contains('steam') || p.contains('epic')) {
-      return const Color(0xFF00F0FF);
-    } else if (p.contains('mobile') || p.contains('android') || p.contains('ios')) {
-      return const Color(0xFFFF2D78);
-    } else {
-      return const Color(0xFFFFBE0B);
-    }
-  }
-
-  static Widget getIcon(String platform, {double size = 12, Color? color}) {
-    final p = platform.toLowerCase();
-    final iconColor = color ?? getColor(platform);
-
-    if (p.contains('pc') || p.contains('mac')) {
-      return Icon(Icons.computer_rounded, size: size, color: iconColor);
-    } else if (p.contains('mobile')) {
-      return Icon(Icons.smartphone_rounded, size: size, color: iconColor);
-    } else {
-      return Icon(Icons.gamepad_rounded, size: size, color: iconColor);
-    }
   }
 }

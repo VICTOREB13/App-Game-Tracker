@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../services/notion_service.dart';
 import '../services/notion_parser.dart';
+import '../widgets/platform_helper.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -280,16 +281,24 @@ class _SearchScreenState extends State<SearchScreen> {
                                       const SizedBox(height: 4),
                                       DropdownButtonFormField<String>(
                                         value: selectedPlatform,
-                                        dropdownColor: const Color(0xFF1C2237),
+                                        dropdownColor: const Color(0xFF141927),
+                                        borderRadius: BorderRadius.circular(12),
                                         style: GoogleFonts.inter(
                                             fontSize: 13,
                                             color: const Color(0xFFF0F2F5)),
                                         items: _availablePlatforms
                                             .map((s) => DropdownMenuItem(
                                                 value: s,
-                                                child: Text(s,
-                                                    style: GoogleFonts.inter(
-                                                        fontSize: 13))))
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    PlatformHelper.getIcon(s, size: 14),
+                                                    const SizedBox(width: 8),
+                                                    Text(s,
+                                                        style: GoogleFonts.inter(
+                                                            fontSize: 13)),
+                                                  ],
+                                                )))
                                             .toList(),
                                         onChanged: (val) {
                                           if (val != null) {

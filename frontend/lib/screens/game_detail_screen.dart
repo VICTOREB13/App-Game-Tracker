@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
+import '../widgets/platform_helper.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -823,14 +824,26 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     List<String> items,
     ValueChanged<String?> onChanged,
   ) {
+    final isPlatform = label.toLowerCase().contains('plataforma');
+
     return DropdownButtonFormField<String>(
       value: items.contains(value) ? value : items.first,
-      dropdownColor: const Color(0xFF1C2237),
+      dropdownColor: const Color(0xFF141927),
+      borderRadius: BorderRadius.circular(12),
       style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFF0F2F5)),
       items: items
           .map((s) => DropdownMenuItem(
                 value: s,
-                child: Text(s, style: GoogleFonts.inter(fontSize: 13)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isPlatform) ...[
+                      PlatformHelper.getIcon(s, size: 16),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(s, style: GoogleFonts.inter(fontSize: 13)),
+                  ],
+                ),
               ))
           .toList(),
       onChanged: onChanged,
