@@ -14,13 +14,11 @@ class PlatformHelper {
       return const Color(0xFFE60012);
     } else if (p.contains('xbox')) {
       return const Color(0xFF107C10);
-    } else if (p.contains('steam')) {
-      return const Color(0xFF1B2838);
-    } else if (p.contains('gog')) {
-      return const Color(0xFF9E47A5);
-    } else if (p.contains('epic')) {
-      return const Color(0xFF313131);
-    } else if (p.contains('pc') || p.contains('mac')) {
+    } else if (p.contains('pc') ||
+        p.contains('steam') ||
+        p.contains('gog') ||
+        p.contains('epic') ||
+        p.contains('mac')) {
       return const Color(0xFF00F0FF);
     } else if (p.contains('mobile') ||
         p.contains('android') ||
