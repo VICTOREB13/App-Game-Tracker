@@ -31,6 +31,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   DateTime? _startDate;
   DateTime? _completedDate;
   bool _isSaving = false;
+  bool _isGenreAccordionExpanded = false;
 
   final List<String> _statuses = ['Por jugar', 'Jugando', 'Jugado'];
 
@@ -559,42 +560,148 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Genres Section
+                // Genres Collapsible Section
                 _buildSectionHeader('Géneros'),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: _allGenres.map((g) {
-                    final isSelected = _selectedGenres.contains(g);
-                    return FilterChip(
-                      label: Text(
-                        g,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: isSelected
-                              ? const Color(0xFF0A0E1A)
-                              : const Color(0xFF6B7394),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141927),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _isGenreAccordionExpanded
+                          ? const Color(0xFF00F0FF).withOpacity(0.5)
+                          : const Color(0xFF1C2237),
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isGenreAccordionExpanded = !_isGenreAccordionExpanded;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.category_rounded,
+                                      size: 18, color: Color(0xFF00F0FF)),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Seleccionar Géneros',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFFF0F2F5),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00F0FF)
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${_selectedGenres.length}',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF00F0FF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Icon(
+                                _isGenreAccordionExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: const Color(0xFF6B7394),
+                                size: 22,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      selected: isSelected,
-                      selectedColor: const Color(0xFF00F0FF),
-                      backgroundColor: const Color(0xFF1C2237),
-                      side: BorderSide.none,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6)),
-                      showCheckmark: false,
-                      onSelected: (val) {
-                        setState(() {
-                          if (val) {
-                            _selectedGenres.add(g);
-                          } else {
-                            _selectedGenres.remove(g);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                      if (_isGenreAccordionExpanded) ...[
+                        const Divider(height: 1, color: Color(0xFF1C2237)),
+                        Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: _allGenres.map((g) {
+                              final isSelected = _selectedGenres.contains(g);
+                              return FilterChip(
+                                label: Text(
+                                  g,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? const Color(0xFF0A0E1A)
+                                        : const Color(0xFF6B7394),
+                                  ),
+                                ),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFF00F0FF),
+                                backgroundColor: const Color(0xFF1C2237),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : const Color(0xFF1C2237),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6)),
+                                showCheckmark: false,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 0),
+                                onSelected: (val) {
+                                  setState(() {
+                                    if (val) {
+                                      _selectedGenres.add(g);
+                                    } else {
+                                      _selectedGenres.remove(g);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ] else if (_selectedGenres.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedGenres.join(' • '),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: const Color(0xFF6B7394),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 

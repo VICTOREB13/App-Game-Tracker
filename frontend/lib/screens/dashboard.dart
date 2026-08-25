@@ -29,6 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String _searchQuery = '';
   String _selectedStatusFilter = 'Todos';
   String _selectedPlatformFilter = 'Todas';
+  String _selectedGenreFilter = 'Todos';
   String _selectedSort = 'Recientes';
 
   final List<String> _statusFilters = [
@@ -95,6 +96,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 g.platform!.toLowerCase() ==
                     _selectedPlatformFilter.toLowerCase());
 
+        // Genre filter
+        final matchesGenre = _selectedGenreFilter == 'Todos' ||
+            g.genres.any((gen) =>
+                gen.toLowerCase() == _selectedGenreFilter.toLowerCase());
+
         // Search query filter (matches title, platform, or genres)
         bool matchesQuery = true;
         if (query.isNotEmpty) {
@@ -106,7 +112,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           matchesQuery = titleMatch || platformMatch || genreMatch;
         }
 
-        return matchesStatus && matchesPlatform && matchesQuery;
+        return matchesStatus &&
+            matchesPlatform &&
+            matchesGenre &&
+            matchesQuery;
       }).toList();
 
       if (_selectedSort == 'A-Z') {
@@ -125,6 +134,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
     }
     return platforms.toList();
+  }
+
+  List<String> get _availableGenresInLibrary {
+    final Set<String> genres = {'Todos'};
+    for (var g in _games) {
+      for (var gen in g.genres) {
+        if (gen.isNotEmpty) genres.add(gen);
+      }
+    }
+    return genres.toList();
   }
 
   List<Game> get _currentlyPlayingGames {
@@ -548,6 +567,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(width: 10),
                   _buildSortDropdown(),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 1,
+                    height: 22,
+                    color: const Color(0xFF1C2237),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildGenreDropdown(),
                 ],
               ),
             ),
@@ -1024,6 +1051,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _selectedSort = val!;
               _applyFilters();
             });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenreDropdown() {
+    final genres = _availableGenresInLibrary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: _selectedGenreFilter != 'Todos'
+            ? const Color(0xFF00F0FF).withOpacity(0.15)
+            : const Color(0xFF1C2237),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _selectedGenreFilter != 'Todos'
+              ? const Color(0xFF00F0FF)
+              : Colors.transparent,
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: genres.contains(_selectedGenreFilter)
+              ? _selectedGenreFilter
+              : 'Todos',
+          dropdownColor: const Color(0xFF1C2237),
+          style: GoogleFonts.inter(
+              fontSize: 12,
+              color: _selectedGenreFilter != 'Todos'
+                  ? const Color(0xFF00F0FF)
+                  : const Color(0xFFF0F2F5)),
+          icon: Icon(Icons.category_outlined,
+              size: 14,
+              color: _selectedGenreFilter != 'Todos'
+                  ? const Color(0xFF00F0FF)
+                  : const Color(0xFF6B7394)),
+          items: genres
+              .map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s == 'Todos' ? 'Género: Todos' : s),
+                  ))
+              .toList(),
+          onChanged: (val) {
+            if (val != null) {
+              setState(() {
+                _selectedGenreFilter = val;
+                _applyFilters();
+              });
+            }
           },
         ),
       ),
