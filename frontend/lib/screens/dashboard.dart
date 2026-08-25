@@ -913,7 +913,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            hltb > 0 ? '${hours}h / ${hltb}h HLTB' : '${hours}h jugadas',
+                            hltb > 0
+                                ? '${hours % 1 == 0 ? hours.toInt() : hours}h / ${hltb % 1 == 0 ? hltb.toInt() : hltb.toStringAsFixed(1)}h HLTB'
+                                : '${hours % 1 == 0 ? hours.toInt() : hours}h jugadas',
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               color: const Color(0xFF6B7394),
@@ -931,12 +933,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: progress > 0 ? progress : null,
-                          minHeight: 5,
+                          value: progress.clamp(0.0, 1.0),
+                          minHeight: 4,
                           backgroundColor: const Color(0xFF1C2237),
                           valueColor: const AlwaysStoppedAnimation<Color>(
                               Color(0xFF00F0FF)),
