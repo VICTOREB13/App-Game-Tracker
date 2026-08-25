@@ -14,12 +14,13 @@ class PlatformHelper {
       return const Color(0xFFE60012);
     } else if (p.contains('xbox')) {
       return const Color(0xFF107C10);
+    } else if (p.contains('steam')) {
+      return const Color(0xFF1B2838);
+    } else if (p.contains('gog')) {
+      return const Color(0xFF9E47A5);
     } else if (p.contains('epic')) {
       return const Color(0xFF313131);
-    } else if (p.contains('pc') ||
-        p.contains('steam') ||
-        p.contains('gog') ||
-        p.contains('mac')) {
+    } else if (p.contains('pc') || p.contains('mac')) {
       return const Color(0xFF00F0FF);
     } else if (p.contains('mobile') ||
         p.contains('android') ||
@@ -30,20 +31,34 @@ class PlatformHelper {
     }
   }
 
-  static String? getAssetPath(String platform) {
+  static String? getAssetPath(String platform, {bool isColor = true}) {
     final p = platform.toLowerCase();
     if (p.contains('playstation') || p.contains('ps')) {
-      return 'assets/images/Playstation_logo_colour.svg.webp';
+      return isColor
+          ? 'assets/images/Playstation_logo_colour.svg.webp'
+          : 'assets/images/PlayStation-Logo.wine.png';
     } else if (p.contains('nintendo') ||
         p.contains('switch') ||
         p.contains('wii') ||
         p.contains('ds') ||
         p.contains('64')) {
-      return 'assets/images/nintendo_PNG19.png';
+      return isColor
+          ? 'assets/images/nintendo_PNG19.png'
+          : 'assets/images/nintendo-logo-1-1.png';
     } else if (p.contains('xbox')) {
-      return 'assets/images/logo-Xbox.png';
+      return isColor
+          ? 'assets/images/logo-Xbox.png'
+          : 'assets/images/xbox-2-logo-png-transparent.png';
+    } else if (p.contains('steam')) {
+      return isColor
+          ? 'assets/images/steam-logo.png'
+          : 'assets/images/steam-logo-steam-icon-transparent-free-png.webp';
+    } else if (p.contains('gog')) {
+      return 'assets/images/GOG_LOGO_DARK.png';
     } else if (p.contains('epic')) {
       return 'assets/images/Epic_Games_logo.svg.webp';
+    } else if (p == 'pc' || p == 'computadora') {
+      return 'assets/images/steam-logo.png';
     }
     return null;
   }
@@ -53,10 +68,11 @@ class PlatformHelper {
     double size = 14,
     Color? color,
     bool useAsset = true,
+    bool isColor = true,
   }) {
     final p = platform.toLowerCase();
     final iconColor = color ?? getColor(platform);
-    final asset = useAsset ? getAssetPath(platform) : null;
+    final asset = useAsset ? getAssetPath(platform, isColor: isColor) : null;
 
     if (asset != null) {
       return Image.asset(
@@ -93,6 +109,7 @@ class PlatformHelper {
     String platform, {
     double fontSize = 9,
     double iconSize = 12,
+    bool isColor = true,
   }) {
     final color = getColor(platform);
     return Container(
@@ -105,7 +122,7 @@ class PlatformHelper {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          getIcon(platform, size: iconSize, color: color),
+          getIcon(platform, size: iconSize, color: color, isColor: isColor),
           const SizedBox(width: 5),
           Text(
             platform,
