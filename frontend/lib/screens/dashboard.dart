@@ -18,10 +18,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final _notion = NotionService.instance;
+  final _searchController = TextEditingController();
+
   List<Game> _games = [];
   List<Game> _filteredGames = [];
   bool _isLoading = true;
   bool _isRefreshing = false;
+  bool _isSearchActive = false;
+  String _searchQuery = '';
   String _selectedStatusFilter = 'Todos';
   String _selectedSort = 'Recientes';
 
@@ -36,6 +40,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _fetchGames();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchGames({bool forceRefresh = false}) async {
@@ -56,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar juegos: $e'),
+            content: Text('Error al cargar juegos de Notion: $e'),
             backgroundColor: const Color(0xFFFF2D78),
           ),
         );
@@ -69,17 +79,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _applyFilters() {
+    final query = _searchQuery.trim().toLowerCase();
+
     setState(() {
       _filteredGames = _games.where((g) {
-        if (_selectedStatusFilter == 'Todos') return true;
-        return g.status == _selectedStatusFilter;
+        // Status filter
+        final matchesStatus = _selectedStatusFilter == 'Todos' ||
+            g.status.toLowerCase() == _selectedStatusFilter.toLowerCase();
+
+        // Search query filter (matches title, platform, or genres)
+        bool matchesQuery = true;
+        if (query.isNotEmpty) {
+          final titleMatch = g.title.toLowerCase().contains(query);
+          final platformMatch =
+              g.platform != null && g.platform!.toLowerCase().contains(query);
+          final genreMatch = g.genres
+              .any((genre) => genre.toLowerCase().contains(query));
+          matchesQuery = titleMatch || platformMatch || genreMatch;
+        }
+
+        return matchesStatus && matchesQuery;
       }).toList();
 
       if (_selectedSort == 'A-Z') {
         _filteredGames.sort(
             (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
       }
-      // "Recientes" keeps the default Notion ordering (last_edited_time DESC)
+      // "Recientes" maintains the Notion last_edited_time DESC sorting
     });
   }
 
@@ -87,64 +113,129 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF00F0FF),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x5500F0FF),
-                    blurRadius: 6,
-                    spreadRadius: 1,
+        title: _isSearchActive
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: GoogleFonts.inter(
+                    fontSize: 15, color: const Color(0xFFF0F2F5)),
+                decoration: InputDecoration(
+                  hintText: 'Buscar en tu biblioteca...',
+                  hintStyle: GoogleFonts.inter(color: const Color(0xFF6B7394)),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  prefixIcon: const Icon(Icons.search_rounded,
+                      color: Color(0xFF00F0FF), size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              color: Color(0xFF6B7394), size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                              _applyFilters();
+                            });
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _searchQuery = val;
+                    _applyFilters();
+                  });
+                },
+              )
+            : Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF00F0FF),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x5500F0FF),
+                          blurRadius: 6,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Mi Biblioteca',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 10),
-            Text('Mi Biblioteca',
-                style: GoogleFonts.spaceGrotesk(
-                    fontSize: 22, fontWeight: FontWeight.bold)),
-          ],
-        ),
         actions: [
           IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF00F0FF)),
-                  )
-                : const Icon(Icons.refresh_rounded, color: Color(0xFF00F0FF)),
-            onPressed: _isRefreshing
-                ? null
-                : () {
-                    setState(() => _isRefreshing = true);
-                    _fetchGames(forceRefresh: true);
-                  },
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFFFFBE0B)),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+            icon: Icon(
+              _isSearchActive ? Icons.close_rounded : Icons.search_rounded,
+              color: _isSearchActive
+                  ? const Color(0xFFFF2D78)
+                  : const Color(0xFF00F0FF),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_rounded,
-                color: Color(0xFF6B7394)),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
-              if (result == true) _fetchGames(forceRefresh: true);
+            tooltip: _isSearchActive ? 'Cerrar búsqueda' : 'Buscar juegos',
+            onPressed: () {
+              setState(() {
+                if (_isSearchActive) {
+                  _isSearchActive = false;
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _applyFilters();
+                } else {
+                  _isSearchActive = true;
+                }
+              });
             },
           ),
+          if (!_isSearchActive) ...[
+            IconButton(
+              icon: _isRefreshing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF00F0FF)),
+                    )
+                  : const Icon(Icons.refresh_rounded, color: Color(0xFF00F0FF)),
+              tooltip: 'Refrescar de Notion',
+              onPressed: _isRefreshing
+                  ? null
+                  : () {
+                      setState(() => _isRefreshing = true);
+                      _fetchGames(forceRefresh: true);
+                    },
+            ),
+            IconButton(
+              icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFFFFBE0B)),
+              tooltip: 'Estadísticas',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_rounded, color: Color(0xFF6B7394)),
+              tooltip: 'Configuración',
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+                if (result == true) _fetchGames(forceRefresh: true);
+              },
+            ),
+          ],
         ],
       ),
       body: Column(
@@ -171,24 +262,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
 
-          // Game count
+          // Search indicator & Game count
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${_filteredGames.length} juegos',
+                  '${_filteredGames.length} de ${_games.length} juegos',
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF6B7394),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (_searchQuery.isNotEmpty)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F0FF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: const Color(0xFF00F0FF).withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      'Filtro: "$_searchQuery"',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF00F0FF),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
 
-          // Grid
+          // Grid with Responsive Breakpoints (Mobile, Tablet, Desktop)
           Expanded(
             child: _isLoading
                 ? _buildSkeletonGrid()
@@ -198,32 +309,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onRefresh: () => _fetchGames(forceRefresh: true),
                     child: _filteredGames.isEmpty
                         ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.gamepad_outlined,
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _searchQuery.isNotEmpty
+                                        ? Icons.search_off_rounded
+                                        : Icons.gamepad_outlined,
                                     size: 64,
                                     color: const Color(0xFF6B7394)
-                                        .withOpacity(0.3)),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No hay juegos que mostrar',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFF6B7394),
-                                    fontSize: 14,
+                                        .withOpacity(0.3),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _searchQuery.isNotEmpty
+                                        ? 'No se encontraron juegos para "$_searchQuery"'
+                                        : 'No hay juegos con el filtro "$_selectedStatusFilter"',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFF6B7394),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  if (_searchQuery.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchController.clear();
+                                          _searchQuery = '';
+                                          _applyFilters();
+                                        });
+                                      },
+                                      icon: const Icon(Icons.clear_rounded,
+                                          size: 16),
+                                      label: const Text('Limpiar búsqueda'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: const Color(0xFF00F0FF),
+                                        side: const BorderSide(
+                                            color: Color(0xFF00F0FF)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           )
                         : GridView.builder(
                             padding: const EdgeInsets.all(16),
                             gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 220,
                               childAspectRatio: 0.62,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 14,
+                              mainAxisSpacing: 14,
                             ),
                             itemCount: _filteredGames.length,
                             itemBuilder: (context, index) {
@@ -249,7 +390,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final res = await Navigator.push(
             context,
@@ -259,7 +400,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         backgroundColor: const Color(0xFF00F0FF),
         foregroundColor: const Color(0xFF0A0E1A),
-        child: const Icon(Icons.add_rounded),
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Añadir',
+          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -344,27 +489,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSkeletonGrid() {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 220,
         childAspectRatio: 0.62,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
       ),
-      itemCount: 6,
+      itemCount: 8,
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
             color: const Color(0xFF141927),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF1C2237)),
           ),
           child: Column(
             children: [
               Expanded(
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C2237),
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12)),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1C2237),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(12)),
                   ),
                 ),
               ),
@@ -502,6 +648,30 @@ class _GameCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Rating pill if available
+                if (game.rating != null && game.rating!.isNotEmpty)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0A0E1A).withOpacity(0.75),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: const Color(0xFFFFBE0B).withOpacity(0.5),
+                            width: 0.5),
+                      ),
+                      child: Text(
+                        game.rating!,
+                        style: GoogleFonts.inter(
+                          fontSize: 8,
+                          color: const Color(0xFFFFBE0B),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

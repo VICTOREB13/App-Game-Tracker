@@ -1,0 +1,65 @@
+name: Sincronizar Docs a Obsidian
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'artifacts/**' # Solo se ejecuta si los agentes de IA modificaron los artefactos
+
+jobs:
+  sync-to-vault:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Clonar Repositorio del Proyecto
+        uses: actions/checkout@v4
+        with:
+          path: source-repo
+
+      - name: 📥 Clonar Bóveda de Obsidian
+        uses: actions/checkout@v4
+        with:
+          repository: VICTOREB13/obsidian-obsidian-vault # <-- ¡CAMBIA ESTO!
+          token: ${{ secrets.VAULT_PAT }}
+          path: target-vault
+
+      - name: 🔄 Procesar, Renombrar y Copiar Artefactos
+        run: |
+          # 1. Define el nombre base de tu proyecto
+          PROYECTO="App_Rastreador_de_Entretenimiento" # <-- Cambia esto por tu proyecto (ej: Homepage, Pasantias)
+          
+          # 2. Configura las variables de rutas y prefijos
+          PREFIJO="PRJ_${PROYECTO}_"
+          RUTA_OBSIDIAN="target-vault/01_Proyectos/PRJ_$PROYECTO"
+          
+          # 3. Crea la carpeta principal del proyecto en Obsidian
+          mkdir -p "$RUTA_OBSIDIAN"
+          
+          # 4. Encuentra, aplana y RENOMBRA cada archivo .md
+          find source-repo/artifacts -type f -name "*.md" | while read -r archivo_origen; do
+            # Extrae solo el nombre del archivo original (ej: changelog.md)
+            nombre_base=$(basename "$archivo_origen")
+            
+            # Lo copia al destino inyectando el prefijo (ej: PRJ_Homepage_changelog.md)
+            cp "$archivo_origen" "$RUTA_OBSIDIAN/${PREFIJO}${nombre_base}"
+          done
+          
+          # 5. Blindaje: Reescribe enlaces internos genéricos al formato Obsidian con prefijo
+          find "$RUTA_OBSIDIAN" -type f -name "*.md" | while read -r archivo_destino; do
+            sed -i "s/\[\[architecture\]\]/\[\[${PREFIJO}architecture|architecture\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[api_spec\]\]/\[\[${PREFIJO}api_spec|api_spec\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[implementation_plan\]\]/\[\[${PREFIJO}implementation_plan|implementation_plan\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[task\]\]/\[\[${PREFIJO}task|task\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[changelog_v1\]\]/\[\[${PREFIJO}changelog_v1|changelog_v1\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[audit_report\]\]/\[\[${PREFIJO}audit_report|audit_report\]\]/g" "$archivo_destino"
+          done
+          
+      - name: 🚀 Empujar a Obsidian Vault
+        run: |
+          cd target-vault
+          git config user.name "Victor Engineer Bot"
+          git config user.email "bot@victorengineer.fyi"
+          git add .
+          # Si no hay cambios, el comando fallará de forma segura y no hará nada
+          git commit -m "docs: 🤖 Actualización automática de artefactos para PRJ_$PROYECTO" || echo "No hay cambios nuevos en los documentos"
+          git push

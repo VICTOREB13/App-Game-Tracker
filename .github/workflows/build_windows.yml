@@ -1,0 +1,45 @@
+name: Compilar Tracker App Windows (PC)
+
+on:
+  workflow_dispatch: # Ejecutar y construir pulsando el botón en GitHub
+
+jobs:
+  build_windows:
+    name: Construir Ejecutable de Windows (PC)
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+
+      - name: Habilitar Soporte de Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Generar Archivos de Plataforma Windows
+        working-directory: ./frontend
+        run: flutter create --platforms windows .
+
+      - name: Restaurar dependencias
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Compilar Aplicación para Windows (Release)
+        working-directory: ./frontend
+        run: flutter build windows --release
+
+      - name: Empaquetar Release en ZIP
+        working-directory: ./frontend
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\TrackerApp_Windows_x64.zip -Force
+
+      - name: Subir Binario de Windows al Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrackerApp_Windows_x64
+          path: frontend/build/windows/TrackerApp_Windows_x64.zip
