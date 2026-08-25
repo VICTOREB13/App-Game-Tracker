@@ -12,14 +12,20 @@ jobs:
       - name: Descargar Código
         uses: actions/checkout@v4
 
+      - name: Configurar Visual Studio / MSVC C++ Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
+          cache: true
 
       - name: Habilitar Soporte de Windows Desktop
         run: flutter config --enable-windows-desktop
+
+      - name: Diagnóstico de Entorno Flutter
+        run: flutter doctor -v
 
       - name: Generar Archivos de Plataforma Windows
         working-directory: ./frontend
@@ -35,8 +41,17 @@ jobs:
 
       - name: Empaquetar Release en ZIP
         working-directory: ./frontend
+        shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\TrackerApp_Windows_x64.zip -Force
+          $releasePath = if (Test-Path "build\windows\x64\runner\Release") { 
+              "build\windows\x64\runner\Release" 
+          } elseif (Test-Path "build\windows\runner\Release") { 
+              "build\windows\runner\Release" 
+          } else { 
+              Get-ChildItem -Path "build\windows" -Recurse -Filter "*.exe" | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+          }
+          Write-Host "Empaquetando desde: $releasePath"
+          Compress-Archive -Path "$releasePath\*" -DestinationPath "build\windows\TrackerApp_Windows_x64.zip" -Force
 
       - name: Subir Binario de Windows al Artifact
         uses: actions/upload-artifact@v4
