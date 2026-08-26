@@ -1,16 +1,35 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.4.0
+version: v2.5.0
 estado: activo
 fecha: 2026-08-25
-tags: [proyecto, changelog, versiones, victor-engineer, signature-red, anti-slop, frontend-ui]
+tags: [proyecto, changelog, versiones, animations, fluid-motion, microinteractions, hero-transitions, frontend-ui]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.5.0] - 2026-08-25 (Fluid Motion & Microinteractions System)
+
+### Added & Animated
+- **Microinteracciones en Tarjetas de Juego (`_GameCard`):**
+  - Efecto hover interactivo con escala suave (`1.035`), resplandor carmesí (`#DC2626` 0.22 opacity) y transición de borde en 220ms (`Curves.easeOutCubic`).
+  - Respuesta táctil al toque (press down scale `0.97`) en 180ms.
+- **Transiciones Cinematográficas Hero:**
+  - Vuelo y acople fluido de portadas (`Hero(tag: 'game-cover-${id}')`) entre el grid de biblioteca y la pantalla de detalle (`GameDetailScreen`).
+- **Entrada Escalonada del Grid (Staggered Animations):**
+  - Cascada de entrada suave con fade-in y desplazamiento vertical (`16px -> 0px`) con curvas cúbicas calculadas por índice (`TweenAnimationBuilder`).
+- **Pulsing Glow en Hero Spotlight:**
+  - Animación continua de respiración luminosa para el punto de estado `JUGANDO AHORA` con `AnimationController`.
+- **Barras de Progreso Animadas:**
+  - Llenado progresivo de las barras de progreso HLTB en Dashboard y Game Detail con `TweenAnimationBuilder` (600ms `Curves.easeOutCubic`).
+- **Navegación Fluida de Pantallas (`_buildFluidPageRoute`):**
+  - Transición personalizada compartida con fade y deslizamiento suave (260ms) para Ficha, Búsqueda, Analíticas y Configuración.
+
+---
 
 ## [2.4.0] - 2026-08-25 (Victor Engineer Signature Red - Anti-Slop Redesign)
 
@@ -48,11 +67,3 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Modal avanzado de adición con DatePicker, horas iniciales y selector desplegable de géneros.
 - Buscador en tiempo real en la biblioteca dentro del Dashboard.
 - Soporte y workflow de compilación para Windows PC (Desktop).
-
----
-
-## [2.0.0] - 2026-07-19
-### Added
-- Migración completa a Notion API directa con rate limiter y caché en memoria.
-- Eliminación de Supabase.
-- Rediseño visual "Arcade Noir".

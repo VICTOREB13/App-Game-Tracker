@@ -313,46 +313,49 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         ),
                       ),
 
-                    // Centered Main Cover Card
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.6),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: _coverUrlController.text.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: _coverUrlController.text,
-                                height: 220,
-                                width: 160,
-                                fit: BoxFit.cover,
-                                placeholder: (_, __) => Container(
-                                    height: 220,
-                                    width: 160,
-                                    color: const Color(0xFF1C2237)),
-                                errorWidget: (_, __, ___) => Container(
+                    // Centered Main Cover Card with Hero animation
+                    Hero(
+                      tag: 'game-cover-${widget.game.notionPageId}',
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.6),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: _coverUrlController.text.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: _coverUrlController.text,
                                   height: 220,
                                   width: 160,
-                                  color: const Color(0xFF1C2237),
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Container(
+                                      height: 220,
+                                      width: 160,
+                                      color: const Color(0xFF18181B)),
+                                  errorWidget: (_, __, ___) => Container(
+                                    height: 220,
+                                    width: 160,
+                                    color: const Color(0xFF18181B),
+                                    child: const Icon(Icons.sports_esports_rounded,
+                                        size: 50, color: Color(0xFF71717A)),
+                                  ),
+                                )
+                              : Container(
+                                  height: 220,
+                                  width: 160,
+                                  color: const Color(0xFF18181B),
                                   child: const Icon(Icons.sports_esports_rounded,
-                                      size: 50, color: Color(0xFF3A4060)),
+                                      size: 50, color: Color(0xFF71717A)),
                                 ),
-                              )
-                            : Container(
-                                height: 220,
-                                width: 160,
-                                color: const Color(0xFF1C2237),
-                                child: const Icon(Icons.sports_esports_rounded,
-                                    size: 50, color: Color(0xFF3A4060)),
-                              ),
+                        ),
                       ),
                     ),
                   ],
@@ -496,7 +499,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF00F0FF),
+                                color: const Color(0xFFDC2626),
                               ),
                             ),
                           ],
@@ -504,12 +507,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         const SizedBox(height: 8),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 8,
-                            backgroundColor: const Color(0xFF1C2237),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF00F0FF)),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.0, end: progress),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, value, child) {
+                              return LinearProgressIndicator(
+                                value: value,
+                                minHeight: 8,
+                                backgroundColor: const Color(0xFF27272A),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                    Color(0xFFDC2626)),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -520,14 +530,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               'Historia: ${hltbMain.toInt()}h',
                               style: GoogleFonts.inter(
                                   fontSize: 11,
-                                  color: const Color(0xFF6B7394)),
+                                  color: const Color(0xFFA1A1AA)),
                             ),
                             if (hltbComp > 0)
                               Text(
                                 '100% Completista: ${hltbComp.toInt()}h',
                                 style: GoogleFonts.inter(
                                     fontSize: 11,
-                                    color: const Color(0xFF6B7394)),
+                                    color: const Color(0xFFA1A1AA)),
                               ),
                             Text(
                               hours >= hltbMain
@@ -537,8 +547,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: hours >= hltbMain
-                                    ? const Color(0xFFFF2D78)
-                                    : const Color(0xFFFFBE0B),
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFF59E0B),
                               ),
                             ),
                           ],
@@ -580,12 +590,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141927),
+                    color: const Color(0xFF121215),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _isGenreAccordionExpanded
-                          ? const Color(0xFF00F0FF).withOpacity(0.5)
-                          : const Color(0xFF1C2237),
+                          ? const Color(0xFFDC2626).withOpacity(0.5)
+                          : const Color(0xFF27272A),
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -606,14 +616,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               Row(
                                 children: [
                                   const Icon(Icons.category_rounded,
-                                      size: 18, color: Color(0xFF00F0FF)),
+                                      size: 18, color: Color(0xFFDC2626)),
                                   const SizedBox(width: 10),
                                   Text(
                                     'Seleccionar Géneros',
-                                    style: GoogleFonts.spaceGrotesk(
+                                    style: GoogleFonts.outfit(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFF0F2F5),
+                                      color: const Color(0xFFFAFAFA),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -621,7 +631,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00F0FF)
+                                      color: const Color(0xFFDC2626)
                                           .withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
@@ -630,7 +640,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                       style: GoogleFonts.inter(
                                         fontSize: 11,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF00F0FF),
+                                        color: const Color(0xFFDC2626),
                                       ),
                                     ),
                                   ),
@@ -640,7 +650,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                 _isGenreAccordionExpanded
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFF6B7394),
+                                color: const Color(0xFFA1A1AA),
                                 size: 22,
                               ),
                             ],
@@ -648,7 +658,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         ),
                       ),
                       if (_isGenreAccordionExpanded) ...[
-                        const Divider(height: 1, color: Color(0xFF1C2237)),
+                        const Divider(height: 1, color: Color(0xFF27272A)),
                         Padding(
                           padding: const EdgeInsets.all(14),
                           child: Wrap(
@@ -665,17 +675,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                         ? FontWeight.w600
                                         : FontWeight.normal,
                                     color: isSelected
-                                        ? const Color(0xFF0A0E1A)
-                                        : const Color(0xFF6B7394),
+                                        ? Colors.white
+                                        : const Color(0xFFA1A1AA),
                                   ),
                                 ),
                                 selected: isSelected,
-                                selectedColor: const Color(0xFF00F0FF),
-                                backgroundColor: const Color(0xFF1C2237),
+                                selectedColor: const Color(0xFFDC2626),
+                                backgroundColor: const Color(0xFF18181B),
                                 side: BorderSide(
                                   color: isSelected
                                       ? Colors.transparent
-                                      : const Color(0xFF1C2237),
+                                      : const Color(0xFF27272A),
                                 ),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(6)),
@@ -705,7 +715,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                   _selectedGenres.join(' • '),
                                   style: GoogleFonts.inter(
                                     fontSize: 12,
-                                    color: const Color(0xFF6B7394),
+                                    color: const Color(0xFFA1A1AA),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -916,9 +926,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF141927),
+          color: const Color(0xFF121215),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1C2237)),
+          border: Border.all(color: const Color(0xFF27272A)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -928,12 +938,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               children: [
                 Text(label,
                     style: GoogleFonts.inter(
-                        fontSize: 10, color: const Color(0xFF6B7394))),
+                        fontSize: 10, color: const Color(0xFFA1A1AA))),
                 if (date != null && onClear != null)
                   GestureDetector(
                     onTap: onClear,
                     child: const Icon(Icons.close_rounded,
-                        size: 12, color: Color(0xFF6B7394)),
+                        size: 12, color: Color(0xFFA1A1AA)),
                   ),
               ],
             ),
@@ -941,14 +951,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             Row(
               children: [
                 const Icon(Icons.calendar_today_rounded,
-                    size: 14, color: Color(0xFF00F0FF)),
+                    size: 14, color: Color(0xFFDC2626)),
                 const SizedBox(width: 6),
                 Text(
                   date == null
                       ? 'Seleccionar'
                       : DateFormat('dd/MM/yyyy').format(date),
                   style: GoogleFonts.inter(
-                      fontSize: 13, color: const Color(0xFFF0F2F5)),
+                      fontSize: 13, color: const Color(0xFFFAFAFA)),
                 ),
               ],
             ),

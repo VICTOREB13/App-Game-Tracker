@@ -18,9 +18,12 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with SingleTickerProviderStateMixin {
   final _notion = NotionService.instance;
   final _searchController = TextEditingController();
+
+  late final AnimationController _pulseController;
 
   List<Game> _games = [];
   List<Game> _filteredGames = [];
@@ -43,13 +46,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
     _fetchGames();
   }
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Route _buildFluidPageRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.035),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 260),
+      reverseTransitionDuration: const Duration(milliseconds: 200),
+    );
   }
 
   Future<void> _fetchGames({bool forceRefresh = false}) async {
@@ -70,8 +103,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar juegos de Notion: $e'),
-            backgroundColor: const Color(0xFFFF2D78),
+            content: Text('Error al cargar juegos de Notion: $e',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFFDC2626),
           ),
         );
         setState(() {
@@ -569,7 +603,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               tooltip: 'Estadísticas',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AnalyticsScreen()),
+                _buildFluidPageRoute(const AnalyticsScreen()),
               ),
             ),
             IconButton(
@@ -578,7 +612,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  _buildFluidPageRoute(const SettingsScreen()),
                 );
                 if (result == true) _fetchGames(forceRefresh: true);
               },
@@ -723,21 +757,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             itemCount: _filteredGames.length,
                             itemBuilder: (context, index) {
                               final game = _filteredGames[index];
-                              return GestureDetector(
-                                onTap: () async {
-                                  final res = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          GameDetailScreen(game: game),
+                              return TweenAnimationBuilder<double>(
+                                key: ValueKey('stagger_${game.notionPageId}_$index'),
+                                tween: Tween<double>(begin: 0.0, end: 1.0),
+                                duration: Duration(milliseconds: 320 + ((index % 10) * 35)),
+                                curve: Curves.easeOutQuart,
+                                builder: (context, animValue, child) {
+                                  return Opacity(
+                                    opacity: animValue,
+                                    child: Transform.translate(
+                                      offset: Offset(0, 16 * (1.0 - animValue)),
+                                      child: child,
                                     ),
                                   );
-                                  if (res == true) {
-                                    _fetchGames(forceRefresh: true);
-                                  }
                                 },
-                                onLongPress: () => _showQuickActionMenu(game),
-                                child: _GameCard(game: game),
+                                child: _GameCard(
+                                  game: game,
+                                  onTap: () async {
+                                    final res = await Navigator.push(
+                                      context,
+                                      _buildFluidPageRoute(
+                                        GameDetailScreen(game: game),
+                                      ),
+                                    );
+                                    if (res == true) {
+                                      _fetchGames(forceRefresh: true);
+                                    }
+                                  },
+                                  onLongPress: () => _showQuickActionMenu(game),
+                                ),
                               );
                             },
                           ),
@@ -749,7 +797,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () async {
           final res = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const SearchScreen()),
+            _buildFluidPageRoute(const SearchScreen()),
           );
           if (res == true) _fetchGames(forceRefresh: true);
         },
@@ -843,15 +891,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xFFDC2626),
-                                  ),
+                                AnimatedBuilder(
+                                  animation: _pulseController,
+                                  builder: (context, child) {
+                                    return Container(
+                                      width: 7,
+                                      height: 7,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFFDC2626),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFFDC2626).withOpacity(
+                                                0.3 + 0.6 * _pulseController.value),
+                                            blurRadius: 4 + 6 * _pulseController.value,
+                                            spreadRadius: 1 + 1.5 * _pulseController.value,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                                const SizedBox(width: 5),
+                                const SizedBox(width: 6),
                                 Text(
                                   'JUGANDO AHORA',
                                   style: GoogleFonts.inter(
@@ -909,12 +970,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 5),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress.clamp(0.0, 1.0),
-                          minHeight: 4,
-                          backgroundColor: const Color(0xFF27272A),
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFFDC2626)),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0.0, end: progress.clamp(0.0, 1.0)),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, animProgress, child) {
+                            return LinearProgressIndicator(
+                              value: animProgress,
+                              minHeight: 4,
+                              backgroundColor: const Color(0xFF27272A),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFDC2626)),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -1292,12 +1360,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _GameCard extends StatelessWidget {
+class _GameCard extends StatefulWidget {
   final Game game;
-  const _GameCard({required this.game});
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _GameCard({
+    required this.game,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  State<_GameCard> createState() => _GameCardState();
+}
+
+class _GameCardState extends State<_GameCard> {
+  bool _isHovered = false;
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
+    final game = widget.game;
     Color statusColor;
     switch (game.status) {
       case 'Jugando':
@@ -1317,179 +1401,240 @@ class _GameCard extends StatelessWidget {
     final hltb = game.hltbMain ?? 0;
     final progress = hltb > 0 ? (hours / hltb).clamp(0.0, 1.0) : 0.0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF121215),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF27272A),
-          width: 1,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Cover image
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                game.coverUrl != null && game.coverUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: game.coverUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: const Color(0xFF18181B),
-                          child: const Center(
-                            child: Icon(Icons.gamepad_rounded,
-                                color: Color(0xFF71717A), size: 32),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: const Color(0xFF18181B),
-                          child: const Center(
-                            child: Icon(Icons.gamepad_rounded,
-                                color: Color(0xFF71717A), size: 32),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: const Color(0xFF18181B),
-                        child: const Center(
-                          child: Icon(Icons.gamepad_rounded,
-                              color: Color(0xFF71717A), size: 32),
-                        ),
-                      ),
-                // Gradient overlay at bottom of image
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 44,
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Color(0xFF121215)],
-                      ),
-                    ),
-                  ),
-                ),
-                // Status indicator - top right red dot
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: statusColor,
-                      boxShadow: [
-                        BoxShadow(
-                          color: statusColor.withOpacity(0.6),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Rating pill if available
-                if (game.rating != null && game.rating!.isNotEmpty)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF09090B).withOpacity(0.75),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                            color: const Color(0xFFF59E0B).withOpacity(0.5),
-                            width: 0.5),
-                      ),
-                      child: Text(
-                        game.rating!,
-                        style: GoogleFonts.inter(
-                          fontSize: 8,
-                          color: const Color(0xFFF59E0B),
-                        ),
-                      ),
-                    ),
-                  ),
-                // Micro-progress bar at bottom of cover if HLTB available
-                if (hltb > 0 && hours > 0)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 3,
-                      backgroundColor: Colors.transparent,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(statusColor),
-                    ),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.97 : (_isHovered ? 1.03 : 1.0),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: const Color(0xFF121215),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _isHovered
+                    ? const Color(0xFFDC2626).withOpacity(0.7)
+                    : const Color(0xFF27272A),
+                width: _isHovered ? 1.2 : 1,
+              ),
+              boxShadow: [
+                if (_isHovered)
+                  BoxShadow(
+                    color: const Color(0xFFDC2626).withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 6),
+                  )
+                else
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
               ],
             ),
-          ),
-          // Info
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+            clipBehavior: Clip.antiAlias,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  game.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    color: const Color(0xFFFAFAFA),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (game.platform != null &&
-                              game.platform!.isNotEmpty) ...[
-                            PlatformHelper.getIcon(game.platform!, size: 12),
-                            const SizedBox(width: 4),
-                          ],
-                          Flexible(
+                // Cover image with Hero
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Hero(
+                        tag: 'game-cover-${game.notionPageId}',
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(13)),
+                          child: AnimatedScale(
+                            scale: _isHovered ? 1.05 : 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
+                            child: game.coverUrl != null &&
+                                    game.coverUrl!.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: game.coverUrl!,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => Container(
+                                      color: const Color(0xFF18181B),
+                                      child: const Center(
+                                        child: Icon(Icons.gamepad_rounded,
+                                            color: Color(0xFF71717A), size: 32),
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        Container(
+                                      color: const Color(0xFF18181B),
+                                      child: const Center(
+                                        child: Icon(Icons.gamepad_rounded,
+                                            color: Color(0xFF71717A), size: 32),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    color: const Color(0xFF18181B),
+                                    child: const Center(
+                                      child: Icon(Icons.gamepad_rounded,
+                                          color: Color(0xFF71717A), size: 32),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                      // Gradient overlay at bottom of image
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 44,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Color(0xFF121215)],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Status indicator - top right dot with glow
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: statusColor,
+                            boxShadow: [
+                              BoxShadow(
+                                color: statusColor.withOpacity(0.6),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Rating pill if available
+                      if (game.rating != null && game.rating!.isNotEmpty)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF09090B).withOpacity(0.85),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color:
+                                      const Color(0xFFF59E0B).withOpacity(0.5),
+                                  width: 0.5),
+                            ),
                             child: Text(
-                              game.platform ?? '',
-                              overflow: TextOverflow.ellipsis,
+                              game.rating!,
                               style: GoogleFonts.inter(
-                                color: const Color(0xFFA1A1AA),
-                                fontSize: 11,
+                                fontSize: 8,
+                                color: const Color(0xFFF59E0B),
                               ),
                             ),
                           ),
+                        ),
+                      // Micro-progress bar at bottom of cover if HLTB available
+                      if (hltb > 0 && hours > 0)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.0, end: progress),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, animProg, _) {
+                              return LinearProgressIndicator(
+                                value: animProg,
+                                minHeight: 3,
+                                backgroundColor: Colors.transparent,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(statusColor),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Info
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        game.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          color: _isHovered
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFFFAFAFA),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (game.platform != null &&
+                                    game.platform!.isNotEmpty) ...[
+                                  PlatformHelper.getIcon(game.platform!,
+                                      size: 12),
+                                  const SizedBox(width: 4),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    game.platform ?? '',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      color: const Color(0xFFA1A1AA),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _StatusBadge(
+                            status: game.status,
+                            color: statusColor,
+                          ),
                         ],
                       ),
-                    ),
-                    _StatusBadge(
-                      status: game.status,
-                      color: statusColor,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
