@@ -67,3 +67,11 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Modal avanzado de adición con DatePicker, horas iniciales y selector desplegable de géneros.
 - Buscador en tiempo real en la biblioteca dentro del Dashboard.
 - Soporte y workflow de compilación para Windows PC (Desktop).
+
+---
+
+## [2.0.0] - 2026-07-19
+### Added
+- Migración completa a Notion API directa con rate limiter y caché en memoria.
+- Eliminación de Supabase.
+- Rediseño visual "Arcade Noir".
