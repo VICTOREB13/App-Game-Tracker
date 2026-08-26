@@ -1,51 +1,48 @@
 ---
 tipo: plan
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.3.0
+version: v2.4.0
 estado: activo
 fecha: 2026-08-25
-tags: [plan, ui-refactor, dashboard-filters, clean-toolbar, ux-optimization]
+tags: [plan, branding, victor-engineer, design-system, red-accent, anti-slop, frontend-ui]
 ---
 
-# 📋 Plan de Implementación: Reorganización y Limpieza de Barra de Filtros (v2.3.0)
+# 📋 Plan de Implementación: Rediseño Visual "Victor Engineer" Signature Red (v2.4.0)
 
-## 🎯 Diagnóstico del Problema Visual Actual
-
-En el Dashboard actual existen **dos filas apiladas** de controles:
-1. **Fila 1:** Chips de Estado + Dropdown de Orden + Dropdown de Género.
-2. **Fila 2:** Carrusel horizontal de Plataformas (12+ chips).
-
-**Problemas detectados:**
-- Saturación visual y desalineación en pantallas grandes y móviles.
-- Demasiado espacio vertical consumido antes de ver las carátulas de los juegos.
-- Competencia visual entre estados, consolas y géneros en tiras horizontales desconectadas.
+## 🎯 Objetivo
+Transformar toda la interfaz de la aplicación adoptando la identidad visual y estilo de marca personal de **Victor Engineer** extraída de su web oficial (`Homepage`), eliminando cualquier aspecto genérico ("anti-slop") y consolidando una estética de software premium de ingeniería.
 
 ---
 
-## 💡 Opciones de Solución de Diseño
+## 🎨 Sistema de Diseño Victor Engineer (Design Tokens)
 
-### 🌟 Opción 1: Barra Unificada de Filtros (Clean Unified Toolbar) — [RECOMENDADA]
-- **Estructura en 1 sola fila:**
-  - **Izquierda:** Segmented Control limpio para los estados: `[ Todos | Jugando | Por jugar | Jugado ]`.
-  - **Derecha:** Tres botones desplegables elegantes estilo dropdown pill:
-    - 🎮 `Plataforma: Todas ▾` (Menú emergente con iconos oficiales).
-    - 🏷️ `Género: Todos ▾`.
-    - ↕️ `Ordenar ▾`.
-- **Beneficios:** Reduce la altura visual en un 50%, unifica todos los controles en una sola línea armónica y se ve nativo tanto en PC como en móvil.
+### 1. Paleta Cromática
+- **Fondo Principal (Scaffold):** `#09090B` (Zinc-950 / Obsidian puro).
+- **Superficies y Tarjetas:** `#121215` / `#18181B` (Zinc-900 con bordes sutiles `#27272A` / `rgba(255, 255, 255, 0.08)`).
+- **Acento Primario de Marca:** `#DC2626` (Red-600) & `#EF4444` (Red-500) con resplandores `rgba(220, 38, 38, 0.25)`.
+- **Texto Primario:** `#FAFAFA` (Zinc-50).
+- **Texto Secundario:** `#A1A1AA` (Zinc-400).
+- **Texto Muted:** `#71717A` (Zinc-500).
+- **Estados de Juego:**
+  - `Jugando`: `#DC2626` (Rojo Victor Engineer con indicador de pulso).
+  - `Jugado`: `#10B981` (Verde Esmeralda de culminación).
+  - `Por jugar`: `#F59E0B` (Ámbar cálido de backlog).
 
-### 🎛️ Opción 2: Botón de Filtros Avanzados en Modal / Drawer
-- Mantener en pantalla únicamente los estados principales `[ Todos | Jugando | Por jugar | Jugado ]`.
-- Un botón flotante o en AppBar `[ 🎛️ Filtros ]` que abre un modal inferior (en móvil) o popover (en PC) con selectores dedicados de Plataformas y Géneros.
+### 2. Tipografía Oficial
+- **Display / Titulares / Marca:** `GoogleFonts.outfit()` (Tipografía display oficial de Victor Engineer).
+- **Cuerpo / Controles / Números:** `GoogleFonts.inter()` (Legibilidad técnica).
 
-### 📂 Opción 3: Acordeón Desplegable de Plataformas
-- Mantener los estados y debajo un botón colapsable `[ Mostrar Filtros de Consola (12) ▾ ]`.
+### 3. Logotipo e Isotipo de Marca
+- Icono oficial `VE` (`#DC2626` squircle con tipografía blanca gruesa).
+- Encabezados de marca: `Victor` + `Engineer` (en rojo).
 
 ---
 
-## 🛠️ Plan de Tareas Propuesto para Opción 1
+## 🛠️ Tareas de Implementación
 
-- [ ] (Frontend) Rediseñar el contenedor superior de `dashboard.dart` a una barra unificada en una sola fila.
-- [ ] (Frontend) Implementar el dropdown de Plataformas con iconos temáticos en lugar del carrusel horizontal apilado.
-- [ ] (Frontend) Compactar los dropdowns de Género y Ordenamiento en botones pill estilizados con indicadores activos.
-- [ ] (Frontend) Añadir botón de reset rápido cuando haya filtros activos de consola o género.
-- [ ] (Auditor) Verificar adaptabilidad responsive en resoluciones de móvil (scroll horizontal suave de la barra) y PC (alineación justificada).
+- [ ] (Frontend) Actualizar `main.dart` con los tokens de color globales de Victor Engineer (`#09090B`, `#DC2626`, `Outfit` + `Inter`).
+- [ ] (Frontend) Rediseñar `dashboard.dart` con la barra superior de marca `Victor Engineer`, Hero Spotlight en rojo de marca, chips y menú unificado.
+- [ ] (Frontend) Rediseñar `setup_screen.dart` con la estética Victor Engineer, el isotipo `VE` y gradientes de resplandor carmesí.
+- [ ] (Frontend) Actualizar `game_detail_screen.dart` con encabezados en `Outfit`, botones de acción rápida en rojo y ficha cinematográfica ajustada.
+- [ ] (Frontend) Actualizar `search_screen.dart` y `analytics_screen.dart` con la nueva paleta y tipografía coherente.
+- [ ] (Auditor) Validar consistencia visual, contraste de color accesible (WCAG AA) y armonía de diseño.

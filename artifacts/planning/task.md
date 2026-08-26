@@ -1,21 +1,21 @@
 ---
 tipo: task
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.3.0
+version: v2.4.0
 estado: completado
 fecha: 2026-08-25
-tags: [tareas, checklist, ui-refactor, filters, clean-toolbar]
+tags: [tareas, checklist, branding, victor-engineer, red-theme, anti-slop, frontend-ui]
 ---
 
-# ✅ Lista de Tareas (Task Checklist) - Iteración v2.3.0
+# ✅ Lista de Tareas (Task Checklist) - Iteración v2.4.0 (Victor Engineer Red Theme)
 
-## 🎨 Reorganización de Barra de Filtros (`Frontend-UI`)
-- [x] (Frontend) Unificar los filtros de estado, plataforma, género y orden en una sola barra horizontal compacta.
-- [x] (Frontend) Convertir la tira de 12+ plataformas en un menú desplegable elegante con iconos oficiales.
-- [x] (Frontend) Estilizar los dropdowns de Género y Ordenamiento en botones compactos con feedback visual de filtro activo.
-- [x] (Frontend) Añadir botón de limpieza de filtros activos (`[ ✕ Limpiar ]` y en estado vacío).
-- [x] (Frontend) Crear componente compartido `PlatformHelper` para unificar logos, insignias y colores de consolas en Dashboard, Ficha y Buscador.
+## 🎨 Rediseño de Marca Victor Engineer (`Frontend-UI`)
+- [x] (Frontend) Actualizar `main.dart` con el tema global Victor Engineer (`#09090B`, `#121215`, `#DC2626`, `GoogleFonts.outfit` + `GoogleFonts.inter`).
+- [x] (Frontend) Rediseñar la cabecera y Hero Spotlight de `dashboard.dart` con la firma `Victor Engineer`, isotipo `VE` y acentos rojos.
+- [x] (Frontend) Rediseñar `setup_screen.dart` con el isotipo `VE` y el estilo de tarjeta de ingeniería de software.
+- [x] (Frontend) Rediseñar `game_detail_screen.dart` con tipografía `Outfit`, botones de guardado e incremento en rojo Victor Engineer.
+- [x] (Frontend) Actualizar `search_screen.dart` y `analytics_screen.dart` con la paleta coordinada y fuentes `Outfit`.
 
 ## 🛡️ Auditoría & Quality Gate (`Systems-Auditor`)
-- [x] (Auditor) Probar fluidez visual en pantallas de PC anchas y en teléfonos móviles.
-- [x] (Auditor) Validar eliminación de la segunda fila apilada reduciendo el 50% del espacio vertical.
+- [x] (Auditor) Verificar contraste y jerarquía visual anti-slop.
+- [x] (Auditor) Probar fluidez y ausencia de errores de renderizado.

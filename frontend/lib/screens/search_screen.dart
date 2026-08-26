@@ -239,15 +239,15 @@ class _SearchScreenState extends State<SearchScreen> {
                                     children: [
                                       Text('Estado',
                                           style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
+                                              color: const Color(0xFFA1A1AA),
                                               fontSize: 12)),
                                       const SizedBox(height: 4),
                                       DropdownButtonFormField<String>(
                                         value: selectedStatus,
-                                        dropdownColor: const Color(0xFF1C2237),
+                                        dropdownColor: const Color(0xFF18181B),
                                         style: GoogleFonts.inter(
                                             fontSize: 13,
-                                            color: const Color(0xFFF0F2F5)),
+                                            color: const Color(0xFFFAFAFA)),
                                         items: _availableStatuses
                                             .map((s) => DropdownMenuItem(
                                                 value: s,
@@ -276,16 +276,16 @@ class _SearchScreenState extends State<SearchScreen> {
                                     children: [
                                       Text('Plataforma',
                                           style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
+                                              color: const Color(0xFFA1A1AA),
                                               fontSize: 12)),
                                       const SizedBox(height: 4),
                                       DropdownButtonFormField<String>(
                                         value: selectedPlatform,
-                                        dropdownColor: const Color(0xFF141927),
+                                        dropdownColor: const Color(0xFF18181B),
                                         borderRadius: BorderRadius.circular(12),
                                         style: GoogleFonts.inter(
                                             fontSize: 13,
-                                            color: const Color(0xFFF0F2F5)),
+                                            color: const Color(0xFFFAFAFA)),
                                         items: _availablePlatforms
                                             .map((s) => DropdownMenuItem(
                                                 value: s,
@@ -327,7 +327,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     children: [
                                       Text('Fecha de Inicio',
                                           style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
+                                              color: const Color(0xFFA1A1AA),
                                               fontSize: 12)),
                                       const SizedBox(height: 4),
                                       InkWell(
@@ -343,8 +343,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                               data: ThemeData.dark().copyWith(
                                                 colorScheme:
                                                     const ColorScheme.dark(
-                                                  primary: Color(0xFF00F0FF),
-                                                  surface: Color(0xFF141927),
+                                                  primary: Color(0xFFDC2626),
+                                                  surface: Color(0xFF121215),
                                                 ),
                                               ),
                                               child: child!,
@@ -545,13 +545,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                             ),
                                             selected: isSelected,
                                             selectedColor:
-                                                const Color(0xFF00F0FF),
+                                                const Color(0xFFDC2626),
                                             backgroundColor:
-                                                const Color(0xFF141927),
+                                                const Color(0xFF18181B),
                                             side: BorderSide(
                                               color: isSelected
                                                   ? Colors.transparent
-                                                  : const Color(0xFF1C2237),
+                                                  : const Color(0xFF27272A),
                                             ),
                                             shape: RoundedRectangleBorder(
                                                 borderRadius:
@@ -583,7 +583,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               selectedGenres.join(' • '),
                                               style: GoogleFonts.inter(
                                                 fontSize: 11,
-                                                color: const Color(0xFF6B7394),
+                                                color: const Color(0xFFA1A1AA),
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
@@ -611,16 +611,20 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Text(
                             'Cancelar',
                             style: GoogleFonts.inter(
-                                color: const Color(0xFF6B7394)),
+                                color: const Color(0xFFA1A1AA)),
                           ),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
                           onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFDC2626),
+                            foregroundColor: Colors.white,
+                          ),
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: Text(
                             'Añadir a Notion',
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.outfit(
                                 fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -659,7 +663,7 @@ class _SearchScreenState extends State<SearchScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+        child: CircularProgressIndicator(color: Color(0xFFDC2626)),
       ),
     );
 
@@ -702,8 +706,8 @@ class _SearchScreenState extends State<SearchScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${rawgGame['name']} añadido a Notion con éxito',
-                style: GoogleFonts.inter(color: const Color(0xFF0A0E1A))),
-            backgroundColor: const Color(0xFF00F0FF),
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
         Navigator.pop(context, true); // Return to dashboard
@@ -714,7 +718,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al guardar en Notion: $e'),
-            backgroundColor: const Color(0xFFFF2D78),
+            backgroundColor: const Color(0xFFDC2626),
           ),
         );
       }
@@ -725,7 +729,8 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Buscar y Añadir Juegos', style: GoogleFonts.spaceGrotesk()),
+        title: Text('Buscar y Añadir Juegos',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
       ),
       body: Center(
         child: Container(

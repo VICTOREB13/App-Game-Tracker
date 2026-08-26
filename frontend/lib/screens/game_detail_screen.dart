@@ -259,11 +259,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ficha del Juego', style: GoogleFonts.spaceGrotesk()),
+        title: Text('Ficha del Juego',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon:
-                const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF2D78)),
+            icon: const Icon(Icons.delete_outline_rounded,
+                color: Color(0xFFDC2626)),
             tooltip: 'Eliminar juego',
             onPressed: _deleteGame,
           ),
@@ -301,8 +302,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      const Color(0xFF0A0E1A).withOpacity(0.6),
-                                      const Color(0xFF0A0E1A),
+                                      const Color(0xFF09090B).withOpacity(0.6),
+                                      const Color(0xFF09090B),
                                     ],
                                   ),
                                 ),
@@ -772,20 +773,29 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 // Save button
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 52,
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _saveChanges,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: const Color(0xFFDC2626).withOpacity(0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     child: _isSaving
                         ? const SizedBox(
-                            width: 24,
-                            height: 24,
+                            width: 22,
+                            height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF0A0E1A),
+                              color: Colors.white,
                             ),
                           )
                         : Text('Guardar Todo en Notion',
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.outfit(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -803,15 +813,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       onPressed: () => _addQuickHours(hoursToAdd),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        backgroundColor: const Color(0xFF1C2237),
-        foregroundColor: const Color(0xFF00F0FF),
+        backgroundColor: const Color(0xFF121215),
+        foregroundColor: const Color(0xFFDC2626),
         elevation: 0,
-        side: const BorderSide(color: Color(0xFF00F0FF), width: 0.8),
+        side: const BorderSide(color: Color(0xFFDC2626), width: 0.8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: Text(
         label,
-        style: GoogleFonts.spaceGrotesk(
+        style: GoogleFonts.outfit(
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),
@@ -822,10 +832,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Widget _buildSectionHeader(String text) {
     return Text(
       text,
-      style: GoogleFonts.spaceGrotesk(
+      style: GoogleFonts.outfit(
         fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: const Color(0xFF00F0FF),
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFDC2626),
         letterSpacing: 0.5,
       ),
     );
@@ -835,16 +845,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     Color color;
     switch (status) {
       case 'Jugando':
-        color = const Color(0xFF00F0FF);
+        color = const Color(0xFFDC2626);
         break;
       case 'Por jugar':
-        color = const Color(0xFFFFBE0B);
+        color = const Color(0xFFF59E0B);
         break;
       case 'Jugado':
-        color = const Color(0xFFFF2D78);
+        color = const Color(0xFF10B981);
         break;
       default:
-        color = const Color(0xFF6B7394);
+        color = const Color(0xFFA1A1AA);
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -874,9 +884,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     return DropdownButtonFormField<String>(
       value: items.contains(value) ? value : items.first,
-      dropdownColor: const Color(0xFF141927),
+      dropdownColor: const Color(0xFF18181B),
       borderRadius: BorderRadius.circular(12),
-      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFF0F2F5)),
+      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFFAFAFA)),
       items: items
           .map((s) => DropdownMenuItem(
                 value: s,

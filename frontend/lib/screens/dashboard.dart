@@ -439,20 +439,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 controller: _searchController,
                 autofocus: true,
                 style: GoogleFonts.inter(
-                    fontSize: 15, color: const Color(0xFFF0F2F5)),
+                    fontSize: 15, color: const Color(0xFFFAFAFA)),
                 decoration: InputDecoration(
                   hintText: 'Buscar en tu biblioteca...',
-                  hintStyle: GoogleFonts.inter(color: const Color(0xFF6B7394)),
+                  hintStyle: GoogleFonts.inter(color: const Color(0xFF71717A)),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   filled: false,
                   prefixIcon: const Icon(Icons.search_rounded,
-                      color: Color(0xFF00F0FF), size: 20),
+                      color: Color(0xFFDC2626), size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close_rounded,
-                              color: Color(0xFF6B7394), size: 20),
+                              color: Color(0xFFA1A1AA), size: 20),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -472,32 +472,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
               )
             : Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      'assets/images/app_logo.jpg',
-                      width: 28,
-                      height: 28,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF141927),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF00F0FF)),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC2626),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFDC2626).withOpacity(0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                        child: const Icon(Icons.sports_esports_rounded,
-                            size: 16, color: Color(0xFF00F0FF)),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'VE',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    'Mi Biblioteca',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Victor ',
+                          style: GoogleFonts.outfit(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFAFAFA),
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Engineer',
+                          style: GoogleFonts.outfit(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -507,8 +527,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(
               _isSearchActive ? Icons.close_rounded : Icons.search_rounded,
               color: _isSearchActive
-                  ? const Color(0xFFFF2D78)
-                  : const Color(0xFF00F0FF),
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFFFAFAFA),
             ),
             tooltip: _isSearchActive ? 'Cerrar búsqueda' : 'Buscar juegos',
             onPressed: () {
@@ -531,9 +551,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFF00F0FF)),
+                          strokeWidth: 2, color: Color(0xFFDC2626)),
                     )
-                  : const Icon(Icons.refresh_rounded, color: Color(0xFF00F0FF)),
+                  : const Icon(Icons.refresh_rounded, color: Color(0xFFA1A1AA)),
               tooltip: 'Refrescar de Notion',
               onPressed: _isRefreshing
                   ? null
@@ -543,7 +563,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
             ),
             IconButton(
-              icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFFFFBE0B)),
+              icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFFDC2626)),
               tooltip: 'Estadísticas',
               onPressed: () => Navigator.push(
                 context,
@@ -551,7 +571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.settings_rounded, color: Color(0xFF6B7394)),
+              icon: const Icon(Icons.settings_rounded, color: Color(0xFF71717A)),
               tooltip: 'Configuración',
               onPressed: () async {
                 final result = await Navigator.push(
@@ -679,9 +699,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           size: 16),
                                       label: const Text('Restablecer filtros'),
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFF00F0FF),
+                                        foregroundColor: const Color(0xFFDC2626),
                                         side: const BorderSide(
-                                            color: Color(0xFF00F0FF)),
+                                            color: Color(0xFFDC2626)),
                                       ),
                                     ),
                                   ],
@@ -714,7 +734,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _fetchGames(forceRefresh: true);
                                   }
                                 },
-                                onLongPress: () => _showQuickActionMenu(game),
+                                onLongPress: () => _showQuickActionBottomSheet(game),
                                 child: _GameCard(game: game),
                               );
                             },
@@ -731,12 +751,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
           if (res == true) _fetchGames(forceRefresh: true);
         },
-        backgroundColor: const Color(0xFF00F0FF),
-        foregroundColor: const Color(0xFF0A0E1A),
+        backgroundColor: const Color(0xFFDC2626),
+        foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: Text(
           'Añadir',
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -752,12 +772,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF141927),
+        color: const Color(0xFF121215),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF00F0FF).withOpacity(0.35)),
+        border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.35)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00F0FF).withOpacity(0.08),
+            color: const Color(0xFFDC2626).withOpacity(0.08),
             blurRadius: 16,
             spreadRadius: 1,
           ),
@@ -795,9 +815,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : Container(
                           width: 60,
                           height: 80,
-                          color: const Color(0xFF1C2237),
+                          color: const Color(0xFF27272A),
                           child: const Icon(Icons.sports_esports_rounded,
-                              color: Color(0xFF3A4060)),
+                              color: Color(0xFF71717A)),
                         ),
                 ),
                 const SizedBox(width: 14),
@@ -812,10 +832,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00F0FF).withOpacity(0.15),
+                              color: const Color(0xFFDC2626).withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                  color: const Color(0xFF00F0FF).withOpacity(0.4),
+                                  color: const Color(0xFFDC2626).withOpacity(0.4),
                                   width: 0.5),
                             ),
                             child: Row(
@@ -826,7 +846,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   height: 6,
                                   decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Color(0xFF00F0FF),
+                                    color: Color(0xFFDC2626),
                                   ),
                                 ),
                                 const SizedBox(width: 5),
@@ -835,7 +855,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF00F0FF),
+                                    color: const Color(0xFFDC2626),
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -850,10 +870,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 4),
                       Text(
                         game.title,
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFFF0F2F5),
+                          color: const Color(0xFFFAFAFA),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -869,17 +889,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : '${hours % 1 == 0 ? hours.toInt() : hours}h jugadas',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFF6B7394),
+                              color: const Color(0xFFA1A1AA),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (hltb > 0)
                             Text(
                               '$percentText%',
-                              style: GoogleFonts.spaceGrotesk(
+                              style: GoogleFonts.outfit(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF00F0FF),
+                                color: const Color(0xFFDC2626),
                               ),
                             ),
                         ],
@@ -890,9 +910,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: LinearProgressIndicator(
                           value: progress.clamp(0.0, 1.0),
                           minHeight: 4,
-                          backgroundColor: const Color(0xFF1C2237),
+                          backgroundColor: const Color(0xFF27272A),
                           valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFF00F0FF)),
+                              Color(0xFFDC2626)),
                         ),
                       ),
                     ],
@@ -905,8 +925,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 10),
-                    backgroundColor: const Color(0xFF00F0FF),
-                    foregroundColor: const Color(0xFF0A0E1A),
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     minimumSize: const Size(42, 42),
@@ -917,7 +937,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const Icon(Icons.add_rounded, size: 16),
                       Text(
                         '1h',
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.outfit(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -938,16 +958,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color chipColor;
     switch (label) {
       case 'Jugando':
-        chipColor = const Color(0xFF00F0FF);
+        chipColor = const Color(0xFFDC2626);
         break;
       case 'Por jugar':
-        chipColor = const Color(0xFFFFBE0B);
+        chipColor = const Color(0xFFF59E0B);
         break;
       case 'Jugado':
-        chipColor = const Color(0xFFFF2D78);
+        chipColor = const Color(0xFF10B981);
         break;
       default:
-        chipColor = const Color(0xFF6B7394);
+        chipColor = const Color(0xFFA1A1AA);
     }
 
     return Padding(
@@ -958,7 +978,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? const Color(0xFF0A0E1A) : chipColor,
+            color: isSelected ? Colors.white : chipColor,
           ),
         ),
         selected: isSelected,
@@ -989,13 +1009,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: isFiltered
-            ? const Color(0xFF00F0FF).withOpacity(0.15)
-            : const Color(0xFF1C2237),
+            ? const Color(0xFFDC2626).withOpacity(0.15)
+            : const Color(0xFF121215),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFiltered
-              ? const Color(0xFF00F0FF)
-              : Colors.transparent,
+              ? const Color(0xFFDC2626)
+              : const Color(0xFF27272A),
         ),
       ),
       child: DropdownButtonHideUnderline(
@@ -1003,20 +1023,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value: platforms.contains(_selectedPlatformFilter)
               ? _selectedPlatformFilter
               : 'Todas',
-          dropdownColor: const Color(0xFF141927),
+          dropdownColor: const Color(0xFF18181B),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
               fontSize: 12,
               color: isFiltered
-                  ? const Color(0xFF00F0FF)
-                  : const Color(0xFFF0F2F5)),
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFFFAFAFA)),
           icon: Padding(
             padding: const EdgeInsets.only(left: 4),
             child: Icon(Icons.arrow_drop_down_rounded,
                 size: 20,
                 color: isFiltered
-                    ? const Color(0xFF00F0FF)
-                    : const Color(0xFF6B7394)),
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFA1A1AA)),
           ),
           items: platforms
               .map((p) => DropdownMenuItem(
@@ -1029,7 +1049,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 8),
                         ] else ...[
                           const Icon(Icons.videogame_asset_outlined,
-                              size: 14, color: Color(0xFF6B7394)),
+                              size: 14, color: Color(0xFF71717A)),
                           const SizedBox(width: 8),
                         ],
                         Text(
@@ -1040,8 +1060,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color: p == _selectedPlatformFilter
-                                ? const Color(0xFF00F0FF)
-                                : const Color(0xFFF0F2F5),
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFFFAFAFA),
                           ),
                         ),
                       ],
@@ -1069,13 +1089,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: isFiltered
-            ? const Color(0xFF00F0FF).withOpacity(0.15)
-            : const Color(0xFF1C2237),
+            ? const Color(0xFFDC2626).withOpacity(0.15)
+            : const Color(0xFF121215),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFiltered
-              ? const Color(0xFF00F0FF)
-              : Colors.transparent,
+              ? const Color(0xFFDC2626)
+              : const Color(0xFF27272A),
         ),
       ),
       child: DropdownButtonHideUnderline(
@@ -1083,20 +1103,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           value: genres.contains(_selectedGenreFilter)
               ? _selectedGenreFilter
               : 'Todos',
-          dropdownColor: const Color(0xFF141927),
+          dropdownColor: const Color(0xFF18181B),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
               fontSize: 12,
               color: isFiltered
-                  ? const Color(0xFF00F0FF)
-                  : const Color(0xFFF0F2F5)),
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFFFAFAFA)),
           icon: Padding(
             padding: const EdgeInsets.only(left: 4),
             child: Icon(Icons.arrow_drop_down_rounded,
                 size: 20,
                 color: isFiltered
-                    ? const Color(0xFF00F0FF)
-                    : const Color(0xFF6B7394)),
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFA1A1AA)),
           ),
           items: genres
               .map((s) => DropdownMenuItem(
@@ -1105,7 +1125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.category_outlined,
-                            size: 14, color: Color(0xFF6B7394)),
+                            size: 14, color: Color(0xFF71717A)),
                         const SizedBox(width: 8),
                         Text(
                           s == 'Todos' ? 'Género: Todos' : s,
@@ -1115,8 +1135,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                             color: s == _selectedGenreFilter
-                                ? const Color(0xFF00F0FF)
-                                : const Color(0xFFF0F2F5),
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFFFAFAFA),
                           ),
                         ),
                       ],
@@ -1140,20 +1160,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C2237),
+        color: const Color(0xFF121215),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF27272A)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedSort,
-          dropdownColor: const Color(0xFF141927),
+          dropdownColor: const Color(0xFF18181B),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
-              fontSize: 12, color: const Color(0xFFF0F2F5)),
+              fontSize: 12, color: const Color(0xFFFAFAFA)),
           icon: const Padding(
             padding: EdgeInsets.only(left: 4),
             child: Icon(Icons.sort_rounded,
-                size: 16, color: Color(0xFF6B7394)),
+                size: 16, color: Color(0xFFA1A1AA)),
           ),
           items: ['Recientes', 'A-Z']
               .map((s) => DropdownMenuItem(
@@ -1181,10 +1202,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFFF2D78).withOpacity(0.12),
+          color: const Color(0xFFDC2626).withOpacity(0.12),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFFFF2D78).withOpacity(0.4),
+            color: const Color(0xFFDC2626).withOpacity(0.4),
             width: 1,
           ),
         ),
@@ -1192,14 +1213,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.close_rounded,
-                size: 14, color: Color(0xFFFF2D78)),
+                size: 14, color: Color(0xFFDC2626)),
             const SizedBox(width: 4),
             Text(
               'Limpiar',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFFFF2D78),
+                color: const Color(0xFFDC2626),
               ),
             ),
           ],
@@ -1221,16 +1242,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF141927),
+            color: const Color(0xFF121215),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1C2237)),
+            border: Border.all(color: const Color(0xFF27272A)),
           ),
           child: Column(
             children: [
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
-                    color: Color(0xFF1C2237),
+                    color: Color(0xFF18181B),
                     borderRadius:
                         BorderRadius.vertical(top: Radius.circular(12)),
                   ),
@@ -1245,7 +1266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 12,
                       width: double.infinity,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C2237),
+                        color: const Color(0xFF18181B),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -1254,7 +1275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       height: 10,
                       width: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1C2237),
+                        color: const Color(0xFF18181B),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -1273,32 +1294,33 @@ class _GameCard extends StatelessWidget {
   final Game game;
   const _GameCard({required this.game});
 
-  Color _getStatusColor() {
-    switch (game.status) {
-      case 'Jugando':
-        return const Color(0xFF00F0FF);
-      case 'Jugado':
-        return const Color(0xFFFF2D78);
-      case 'Por jugar':
-        return const Color(0xFFFFBE0B);
-      default:
-        return const Color(0xFF6B7394);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final statusColor = _getStatusColor();
+    Color statusColor;
+    switch (game.status) {
+      case 'Jugando':
+        statusColor = const Color(0xFFDC2626);
+        break;
+      case 'Por jugar':
+        statusColor = const Color(0xFFF59E0B);
+        break;
+      case 'Jugado':
+        statusColor = const Color(0xFF10B981);
+        break;
+      default:
+        statusColor = const Color(0xFFA1A1AA);
+    }
+
     final hours = game.hoursPlayed ?? 0;
     final hltb = game.hltbMain ?? 0;
     final progress = hltb > 0 ? (hours / hltb).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF141927),
+        color: const Color(0xFF121215),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF1C2237),
+          color: const Color(0xFF27272A),
           width: 1,
         ),
       ),
@@ -1316,25 +1338,25 @@ class _GameCard extends StatelessWidget {
                         imageUrl: game.coverUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: const Color(0xFF1C2237),
+                          color: const Color(0xFF18181B),
                           child: const Center(
                             child: Icon(Icons.gamepad_rounded,
-                                color: Color(0xFF3A4060), size: 32),
+                                color: Color(0xFF71717A), size: 32),
                           ),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: const Color(0xFF1C2237),
+                          color: const Color(0xFF18181B),
                           child: const Center(
                             child: Icon(Icons.gamepad_rounded,
-                                color: Color(0xFF3A4060), size: 32),
+                                color: Color(0xFF71717A), size: 32),
                           ),
                         ),
                       )
                     : Container(
-                        color: const Color(0xFF1C2237),
+                        color: const Color(0xFF18181B),
                         child: const Center(
                           child: Icon(Icons.gamepad_rounded,
-                              color: Color(0xFF3A4060), size: 32),
+                              color: Color(0xFF71717A), size: 32),
                         ),
                       ),
                 // Gradient overlay at bottom of image
@@ -1348,12 +1370,12 @@ class _GameCard extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Color(0xFF141927)],
+                        colors: [Colors.transparent, Color(0xFF121215)],
                       ),
                     ),
                   ),
                 ),
-                // Status indicator - top right neon dot
+                // Status indicator - top right red dot
                 Positioned(
                   top: 8,
                   right: 8,
@@ -1382,17 +1404,17 @@ class _GameCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0A0E1A).withOpacity(0.75),
+                        color: const Color(0xFF09090B).withOpacity(0.75),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                            color: const Color(0xFFFFBE0B).withOpacity(0.5),
+                            color: const Color(0xFFF59E0B).withOpacity(0.5),
                             width: 0.5),
                       ),
                       child: Text(
                         game.rating!,
                         style: GoogleFonts.inter(
                           fontSize: 8,
-                          color: const Color(0xFFFFBE0B),
+                          color: const Color(0xFFF59E0B),
                         ),
                       ),
                     ),
@@ -1424,8 +1446,8 @@ class _GameCard extends StatelessWidget {
                   game.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFFF0F2F5),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFFFAFAFA),
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -1448,7 +1470,7 @@ class _GameCard extends StatelessWidget {
                               game.platform ?? '',
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                color: const Color(0xFF6B7394),
+                                color: const Color(0xFFA1A1AA),
                                 fontSize: 11,
                               ),
                             ),

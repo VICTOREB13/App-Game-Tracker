@@ -57,13 +57,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Jugado':
-        return const Color(0xFFFF2D78);
+        return const Color(0xFF10B981);
       case 'Jugando':
-        return const Color(0xFF00F0FF);
+        return const Color(0xFFDC2626);
       case 'Por jugar':
-        return const Color(0xFFFFBE0B);
+        return const Color(0xFFF59E0B);
       default:
-        return const Color(0xFF6B7394);
+        return const Color(0xFFA1A1AA);
     }
   }
 
@@ -99,7 +99,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     if (_isLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF00F0FF)),
+          child: CircularProgressIndicator(color: Color(0xFFDC2626)),
         ),
       );
     }
@@ -128,7 +128,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Estadísticas & Analíticas', style: GoogleFonts.spaceGrotesk()),
+        title: Text('Estadísticas & Analíticas',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
       ),
       body: Center(
         child: Container(
@@ -503,7 +504,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           children: [
             Text(
               value,
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.outfit(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: color,
@@ -513,7 +514,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               label,
               style: GoogleFonts.inter(
-                  fontSize: 10, color: const Color(0xFF6B7394)),
+                  fontSize: 10, color: const Color(0xFFA1A1AA)),
               textAlign: TextAlign.center,
             ),
           ],

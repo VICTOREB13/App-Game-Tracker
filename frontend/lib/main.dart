@@ -30,107 +30,106 @@ class TrackerApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Game Tracker',
+      title: 'Victor Engineer - Game Tracker',
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0E1A),
+        scaffoldBackgroundColor: const Color(0xFF09090B),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF00F0FF),       // Neon cyan
-          secondary: Color(0xFFFF2D78),     // Neon magenta
-          tertiary: Color(0xFFFFBE0B),      // Neon amber
-          surface: Color(0xFF141927),
-          onSurface: Color(0xFFF0F2F5),
+          primary: Color(0xFFDC2626), // Victor Engineer Signature Red
+          secondary: Color(0xFFEF4444),
+          tertiary: Color(0xFFF59E0B),
+          surface: Color(0xFF121215),
+          onSurface: Color(0xFFFAFAFA),
         ),
-        cardColor: const Color(0xFF141927),
-        dividerColor: const Color(0xFF1C2237),
+        cardColor: const Color(0xFF121215),
+        dividerColor: const Color(0xFF27272A),
         textTheme: GoogleFonts.interTextTheme(
           ThemeData.dark().textTheme,
         ).copyWith(
-          // Display headings use Space Grotesk
-          headlineLarge: GoogleFonts.spaceGrotesk(
+          headlineLarge: GoogleFonts.outfit(
             fontSize: 32,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
-          headlineMedium: GoogleFonts.spaceGrotesk(
+          headlineMedium: GoogleFonts.outfit(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
-          headlineSmall: GoogleFonts.spaceGrotesk(
+          headlineSmall: GoogleFonts.outfit(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
-          titleLarge: GoogleFonts.spaceGrotesk(
+          titleLarge: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
           bodyLarge: GoogleFonts.inter(
             fontSize: 16,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
           bodyMedium: GoogleFonts.inter(
             fontSize: 14,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
           bodySmall: GoogleFonts.inter(
             fontSize: 12,
-            color: const Color(0xFF6B7394),
+            color: const Color(0xFFA1A1AA),
           ),
           labelSmall: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
-            color: const Color(0xFF6B7394),
+            color: const Color(0xFF71717A),
           ),
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.transparent,
+          backgroundColor: const Color(0xFF09090B),
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: GoogleFonts.spaceGrotesk(
-            fontSize: 22,
+          titleTextStyle: GoogleFonts.outfit(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFF0F2F5),
+            color: const Color(0xFFFAFAFA),
           ),
-          iconTheme: const IconThemeData(color: Color(0xFFF0F2F5)),
+          iconTheme: const IconThemeData(color: Color(0xFFFAFAFA)),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF141927),
+          fillColor: const Color(0xFF121215),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF1C2237)),
+            borderSide: const BorderSide(color: Color(0xFF27272A)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF1C2237)),
+            borderSide: const BorderSide(color: Color(0xFF27272A)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF00F0FF), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
           ),
-          labelStyle: GoogleFonts.inter(color: const Color(0xFF6B7394)),
-          hintStyle: GoogleFonts.inter(color: const Color(0xFF3A4060)),
+          labelStyle: GoogleFonts.inter(color: const Color(0xFFA1A1AA)),
+          hintStyle: GoogleFonts.inter(color: const Color(0xFF71717A)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00F0FF),
-            foregroundColor: const Color(0xFF0A0E1A),
+            backgroundColor: const Color(0xFFDC2626),
+            foregroundColor: const Color(0xFFFAFAFA),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            textStyle: GoogleFonts.spaceGrotesk(
+            textStyle: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         chipTheme: ChipThemeData(
-          backgroundColor: const Color(0xFF1C2237),
-          selectedColor: const Color(0xFF00F0FF),
+          backgroundColor: const Color(0xFF18181B),
+          selectedColor: const Color(0xFFDC2626),
           labelStyle: GoogleFonts.inter(fontSize: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

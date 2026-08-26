@@ -30,7 +30,7 @@ class _SetupScreenState extends State<SetupScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -109,66 +109,77 @@ class _SetupScreenState extends State<SetupScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF09090B),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                FadeTransition(
-                  opacity: _pulseAnimation,
+                ScaleTransition(
+                  scale: _pulseAnimation,
                   child: Container(
-                    width: 104,
-                    height: 104,
+                    width: 88,
+                    height: 88,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFF1C2237),
-                        width: 1.5,
-                      ),
+                      color: const Color(0xFFDC2626),
+                      borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00F0FF).withOpacity(0.12),
-                          blurRadius: 24,
+                          color: const Color(0xFFDC2626).withOpacity(0.4),
+                          blurRadius: 28,
                           spreadRadius: 2,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      'assets/images/app_logo.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFF141927),
-                        child: const Icon(
-                          Icons.sports_esports_rounded,
-                          size: 48,
-                          color: Color(0xFF00F0FF),
-                        ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'VE',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 38,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
-                Text(
-                  'Game Tracker',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFF0F2F5),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Victor ',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFFAFAFA),
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Engineer',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Conecta con tu base de datos de Notion',
+                  'Entertainment Tracker • Notion Integration',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF6B7394),
+                    fontSize: 13,
+                    color: const Color(0xFFA1A1AA),
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 40),
 
                 // Token field
                 _buildValidatedField(
@@ -179,7 +190,7 @@ class _SetupScreenState extends State<SetupScreen>
                   isValid: _tokenValid,
                   isValidating: _isValidating && !_tokenValid,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // Database ID field
                 _buildValidatedField(
@@ -196,22 +207,22 @@ class _SetupScreenState extends State<SetupScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141927),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF1C2237)),
+                    color: const Color(0xFF121215),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFF27272A)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.info_outline,
-                          size: 16, color: Color(0xFF6B7394)),
+                          size: 16, color: Color(0xFF71717A)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'El Database ID se encuentra en la URL de tu base de datos en Notion. Asegúrate de compartir la DB con tu integración.',
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: const Color(0xFF6B7394),
+                            color: const Color(0xFFA1A1AA),
                             height: 1.4,
                           ),
                         ),
@@ -226,22 +237,22 @@ class _SetupScreenState extends State<SetupScreen>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF2D78).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: const Color(0xFFDC2626).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: const Color(0xFFFF2D78).withOpacity(0.3)),
+                          color: const Color(0xFFDC2626).withOpacity(0.4)),
                     ),
                     child: Row(
                       children: [
                         const Icon(Icons.error_outline,
-                            size: 18, color: Color(0xFFFF2D78)),
+                            size: 18, color: Color(0xFFDC2626)),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _errorMessage!,
                             style: GoogleFonts.inter(
                               fontSize: 13,
-                              color: const Color(0xFFFF2D78),
+                              color: const Color(0xFFDC2626),
                             ),
                           ),
                         ),
@@ -254,16 +265,25 @@ class _SetupScreenState extends State<SetupScreen>
                 // Connect button
                 SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 52,
                   child: ElevatedButton(
                     onPressed: _isValidating ? null : _validateAndConnect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: const Color(0xFFDC2626).withOpacity(0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     child: _isValidating
                         ? const SizedBox(
-                            width: 24,
-                            height: 24,
+                            width: 22,
+                            height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF0A0E1A),
+                              color: Colors.white,
                             ),
                           )
                         : Row(
@@ -272,8 +292,8 @@ class _SetupScreenState extends State<SetupScreen>
                               const Icon(Icons.link_rounded, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'Conectar',
-                                style: GoogleFonts.spaceGrotesk(
+                                'Conectar Base de Datos',
+                                style: GoogleFonts.outfit(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -302,12 +322,12 @@ class _SetupScreenState extends State<SetupScreen>
       controller: controller,
       style: GoogleFonts.inter(
         fontSize: 14,
-        color: const Color(0xFFF0F2F5),
+        color: const Color(0xFFFAFAFA),
       ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF6B7394)),
+        prefixIcon: Icon(icon, color: const Color(0xFF71717A)),
         suffixIcon: isValidating
             ? const Padding(
                 padding: EdgeInsets.all(12),
@@ -316,12 +336,12 @@ class _SetupScreenState extends State<SetupScreen>
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFF00F0FF),
+                    color: Color(0xFFDC2626),
                   ),
                 ),
               )
             : isValid
-                ? const Icon(Icons.check_circle, color: Color(0xFF00F0FF))
+                ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
                 : null,
       ),
     );
