@@ -185,8 +185,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('+${deltaHours}h registradas en ${game.title}'),
-        backgroundColor: const Color(0xFF00F0FF),
+        content: Text('+${deltaHours}h registradas en ${game.title}',
+            style: GoogleFonts.inter(color: Colors.white)),
+        backgroundColor: const Color(0xFF10B981),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -232,8 +233,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${game.title} marcado como "$newStatus"'),
-            backgroundColor: const Color(0xFF00F0FF),
+            content: Text('${game.title} marcado como "$newStatus"',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFF10B981),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -247,10 +249,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _showQuickActionMenu(Game game) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF141927),
+      backgroundColor: const Color(0xFF121215),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: Color(0xFF1C2237)),
+        side: BorderSide(color: Color(0xFF27272A)),
       ),
       builder: (context) {
         return SafeArea(
@@ -275,9 +277,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : Container(
                               width: 44,
                               height: 56,
-                              color: const Color(0xFF1C2237),
+                              color: const Color(0xFF18181B),
                               child: const Icon(Icons.sports_esports_rounded,
-                                  color: Color(0xFF3A4060)),
+                                  color: Color(0xFF71717A)),
                             ),
                     ),
                     const SizedBox(width: 12),
@@ -287,10 +289,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             game.title,
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFF0F2F5),
+                              color: const Color(0xFFFAFAFA),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -300,7 +302,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             '${game.platform ?? 'Sin plataforma'} • ${game.hoursPlayed ?? 0}h jugadas',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: const Color(0xFF6B7394),
+                              color: const Color(0xFFA1A1AA),
                             ),
                           ),
                         ],
@@ -309,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Divider(color: Color(0xFF1C2237)),
+                const Divider(color: Color(0xFF27272A)),
                 const SizedBox(height: 8),
 
                 // Quick Status Switcher
@@ -318,18 +320,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF6B7394),
+                    color: const Color(0xFFA1A1AA),
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildStatusQuickButton(game, 'Por jugar', const Color(0xFFFFBE0B)),
+                    _buildStatusQuickButton(game, 'Por jugar', const Color(0xFFF59E0B)),
                     const SizedBox(width: 8),
-                    _buildStatusQuickButton(game, 'Jugando', const Color(0xFF00F0FF)),
+                    _buildStatusQuickButton(game, 'Jugando', const Color(0xFFDC2626)),
                     const SizedBox(width: 8),
-                    _buildStatusQuickButton(game, 'Jugado', const Color(0xFFFF2D78)),
+                    _buildStatusQuickButton(game, 'Jugado', const Color(0xFF10B981)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -340,16 +342,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00F0FF).withOpacity(0.12),
+                      color: const Color(0xFFDC2626).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.timer_rounded,
-                        color: Color(0xFF00F0FF), size: 20),
+                        color: Color(0xFFDC2626), size: 20),
                   ),
                   title: Text(
                     'Registrar sesión (+1 hora)',
                     style: GoogleFonts.inter(
-                        fontSize: 14, color: const Color(0xFFF0F2F5)),
+                        fontSize: 14, color: const Color(0xFFFAFAFA)),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -363,16 +365,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C2237),
+                      color: const Color(0xFF18181B),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.edit_rounded,
-                        color: Color(0xFFF0F2F5), size: 20),
+                        color: Color(0xFFFAFAFA), size: 20),
                   ),
                   title: Text(
                     'Ver detalle / Editar ficha',
                     style: GoogleFonts.inter(
-                        fontSize: 14, color: const Color(0xFFF0F2F5)),
+                        fontSize: 14, color: const Color(0xFFFAFAFA)),
                   ),
                   onTap: () async {
                     Navigator.pop(context);
@@ -407,10 +409,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isCurrent ? color.withOpacity(0.2) : const Color(0xFF1C2237),
+            color: isCurrent ? color.withOpacity(0.2) : const Color(0xFF18181B),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isCurrent ? color : const Color(0xFF1C2237),
+              color: isCurrent ? color : const Color(0xFF27272A),
               width: 1,
             ),
           ),
@@ -420,7 +422,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-              color: isCurrent ? color : const Color(0xFF6B7394),
+              color: isCurrent ? color : const Color(0xFFA1A1AA),
             ),
           ),
         ),
@@ -734,7 +736,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     _fetchGames(forceRefresh: true);
                                   }
                                 },
-                                onLongPress: () => _showQuickActionBottomSheet(game),
+                                onLongPress: () => _showQuickActionMenu(game),
                                 child: _GameCard(game: game),
                               );
                             },
