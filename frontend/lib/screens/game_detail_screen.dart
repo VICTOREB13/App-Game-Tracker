@@ -1552,37 +1552,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               // Cover
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: _coverUrlController.text.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: _coverUrlController.text,
-                        width: 76,
-                        height: 104,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(
-                          width: 76,
-                          height: 104,
-                          color: isDark
-                              ? const Color(0xFF18181B)
-                              : const Color(0xFFF4F4F5),
-                          child: Icon(Icons.gamepad_rounded,
-                              size: 28,
-                              color: isDark
-                                  ? const Color(0xFF71717A)
-                                  : const Color(0xFFA1A1AA)),
-                        ),
-                      )
-                    : Container(
-                        width: 76,
-                        height: 104,
-                        color: isDark
-                            ? const Color(0xFF18181B)
-                            : const Color(0xFFF4F4F5),
-                        child: Icon(Icons.gamepad_rounded,
-                            size: 28,
-                            color: isDark
-                                ? const Color(0xFF71717A)
-                                : const Color(0xFFA1A1AA)),
-                      ),
+                child: AppCoverImage(
+                  coverUrl: _coverUrlController.text,
+                  width: 76,
+                  height: 104,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               const SizedBox(width: 14),
 
@@ -1787,17 +1763,5 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _hoursController.dispose();
-    _hltbMainController.dispose();
-    _hltbCompController.dispose();
-    _coverUrlController.dispose();
-    _summaryController.dispose();
-    _linkController.dispose();
-    super.dispose();
   }
 }
