@@ -1,39 +1,71 @@
 ---
 tipo: task
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.6.0
+version: v2.7.1
 estado: completado
 fecha: 2026-08-26
-tags: [tareas, checklist, offline-cache, dual-view, pagination, multi-year, gamification, social-card, project-planner]
+tags: [tareas, checklist, v2.7.1, offline-cache, dual-view, pagination, multi-year, gamification, social-card, light-mode, hotfix, project-planner]
 ---
 
-# ✅ Lista de Tareas (Task Checklist) - Iteración Definitiva v2.6.0
+# ✅ Checklist de Tareas Técnicas (v2.7.1)
 
-## ⚡ 1. Caché Persistente Offline & Carga Instantánea (`Backend-Architect`)
-- [x] (Backend) Implementar `saveLocalCache()` y `getLocalCache()` en `notion_service.dart` con `SharedPreferences`.
-- [x] (Frontend) Conectar `dashboard.dart` para renderizado instantáneo (0 ms) y refresco asíncrono en background (*Stale-While-Revalidate*).
-- [x] (Frontend) Agregar indicador discreto de *"Modo Local / Sin Conexión"* en caso de desconexión.
+Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados.
 
-## 🎛️ 2. Selector de Vista Dual & Paginación Configurable (`Frontend-UI`)
-- [x] (Frontend) Agregar botón toggle `[ ⊞ Grid | ☰ Lista ]` en la barra de herramientas del `DashboardScreen`.
-- [x] (Frontend) Crear el componente `_GameListRow` optimizado con hover, miniatura, badges de plataforma y botón `+1h`.
-- [x] (Frontend) Implementar controles de paginación (selector de 10, 25, 50, 100 o Todos, botones Anterior/Siguiente e indicador de página).
-- [x] (Frontend) Persistir preferencias de vista y tamaño de página en `SharedPreferences`.
+---
 
-## 🎯 3. Gamificación y Metas Anuales Dinámicas Multi-Año (`Frontend-UI`)
-- [x] (Frontend) Crear selector interactivo de año `< [Año] >` en `AnalyticsScreen` con año actual por defecto.
-- [x] (Frontend) Implementar persistencia de metas independientes por año (`annual_game_goal_${year}`) en `SharedPreferences`.
-- [x] (Frontend) Diseñar tarjeta de Meta Anual con anillo/barra de progreso en `#DC2626` calculada para el año seleccionado.
-- [x] (Frontend) Implementar sección de Récords Personales (El Titán, La Obra Maestra, Aventura Corta).
-- [x] (Frontend) Calcular y mostrar tasa de eficiencia de resolución del Backlog.
+## ⚡ 1. Caché Persistente Offline & Carga Instantánea (0 ms)
+- [x] `(Backend-Architect)` Implementar métodos `saveLocalCache()` y `getLocalCache()` en `notion_service.dart` usando `SharedPreferences`.
+- [x] `(Frontend-UI)` Conectar `DashboardScreen` para renderizado inmediato en **0 ms** desde el almacenamiento local antes de llamadas a red.
+- [x] `(Backend-Architect)` Implementar sincronización asíncrona en segundo plano con Notion (*Stale-While-Revalidate*).
+- [x] `(Frontend-UI)` Diseñar e integrar indicador sutil de *"Modo Local / Sin Conexión"* en caso de fallos de red.
 
-## 🖼️ 4. Generador de Tarjeta Social / Reseña Exportable (`Frontend-UI`)
-- [x] (Frontend) Agregar botón de exportación en `GameDetailScreen`.
-- [x] (Frontend) Diseñar componente visual de la Tarjeta Social con branding Victor Engineer (`VE` squircle, carátula, estrellas, horas, cita).
-- [x] (Frontend) Implementar captura mediante `RepaintBoundary` y guardado como PNG en la carpeta `Descargas`.
+---
 
-## 🛡️ 5. Auditoría de Calidad (`Systems-Auditor`)
-- [x] (Auditor) Verificar que la app cargue en 0 ms con caché persistente y no falle sin internet.
-- [x] (Auditor) Verificar navegación fluida entre páginas y alternancia instantánea entre Grid y Lista (60 FPS).
-- [x] (Auditor) Verificar cálculo histórico y futuro al cambiar entre años en Analíticas.
-- [x] (Auditor) Validar generación y guardado del archivo PNG en Windows.
+## 🎛️ 2. Selector de Vista Dual & Paginación Inteligente
+- [x] `(Frontend-UI)` Crear botón toggle `[ ⊞ Grid | ☰ Lista ]` en la barra de herramientas del `DashboardScreen`.
+- [x] `(Frontend-UI)` Construir el componente `_GameListRow` (54px) con hover reactivo, miniatura (36x48), insignias de plataforma, estado, barra HLTB y acción rápida `+1h`.
+- [x] `(Frontend-UI)` Implementar barra de paginación con selector de registros (10, 25, 50, 100 o Todos), botones `< Anterior`, indicador de página y `Siguiente >`.
+- [x] `(Frontend-UI)` Persistir preferencias de vista y paginación en `SharedPreferences`.
+- [x] `(Frontend-UI)` Asegurar reseteo automático a página 1 al aplicar nuevos filtros o buscar juegos.
+
+---
+
+## 🎯 3. Gamificación y Metas Anuales Dinámicas Multi-Año
+- [x] `(Frontend-UI)` Construir el selector temporal interactivo `< [Año] >` en `AnalyticsScreen`.
+- [x] `(Backend-Architect)` Diseñar persistencia de metas independientes por año (`annual_game_goal_${year}`) en disco local.
+- [x] `(Frontend-UI)` Crear tarjeta de meta anual con barra de progreso circular animada en acento rojo `#DC2626`.
+- [x] `(Frontend-UI)` Implementar sección de Récords Personales (*El Titán*, *Obra Maestra*, *Aventura Ágil*).
+- [x] `(Frontend-UI)` Calcular medidor de salud de la biblioteca (*Backlog Health*) y tasa de finalización.
+
+---
+
+## 🖼️ 4. Generador de Tarjeta Social / Reseña Exportable (PNG)
+- [x] `(Frontend-UI)` Agregar botón de exportación en `GameDetailScreen`.
+- [x] `(Frontend-UI)` Diseñar el componente gráfico en formato 16:9 con isotipo squircle `VE`, carátula, estrellas, horas jugadas, fecha de finalización y cita de reseña.
+- [x] `(Frontend-UI)` Implementar captura mediante `RepaintBoundary` a 2.5x pixel ratio y guardado automático en `%USERPROFILE%\Downloads` en Windows.
+
+---
+
+## ☀️ 5. Arquitectura de Temas, Modo Claro & Pulido Anti-Slop
+- [x] `(Frontend-UI)` Crear `ThemeManager` (`ChangeNotifier`) con soporte para modos `dark`, `light` y `system` con persistencia en `SharedPreferences`.
+- [x] `(Frontend-UI)` Diseñar `AppTheme.darkTheme` (Obsidian Zinc `#09090B`) y `AppTheme.lightTheme` (Crisp Zinc `#FAFAFA`).
+- [x] `(Frontend-UI)` Crear fachada `AppColors` con tokens semánticos reactivos al contexto.
+- [x] `(Frontend-UI)` Agregar toggle directo de tema con iconos de sol/luna en la barra superior del Dashboard.
+- [x] `(Frontend-UI)` Rediseñar completamente `SettingsScreen` eliminando estilos antiguos y agregando selector de temas de 3 opciones.
+- [x] `(Frontend-UI)` Migrar componentes en `DashboardScreen`, `AnalyticsScreen`, `GameDetailScreen`, `SearchScreen` y `SetupScreen` a `AppColors`.
+
+---
+
+## 🛡️ 6. Estabilización de Build CI/CD & Hotfix v2.7.1
+- [x] `(Systems-Auditor)` Diagnosticar el fallo de compilación en Windows CI (`The method 'createGame' isn't defined for the type 'NotionService'`).
+- [x] `(Backend-Architect)` Restaurar la llamada canónica `await notion.createPage(notion.gamesDbId, properties)` en `search_screen.dart`.
+- [x] `(Backend-Architect)` Añadir método de conveniencia `createGame()` en `NotionService` para interoperabilidad completa.
+- [x] `(DevOps-Engineer)` Actualizar número de versión a `2.7.1+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
+- [x] `(DevOps-Engineer)` Verificar pipeline de integración continua y publicación en GitHub.
+
+---
+
+## 📋 7. Auditoría de Calidad y Puesta al Día de Artefactos
+- [x] `(Systems-Auditor)` Validar ausencia de consultas N+1 y límites estrictos de árbol de widgets (DOM virtualization).
+- [x] `(Systems-Auditor)` Redactar reporte formal de auditoría en `artifacts/audit_reports/audit_report.md` con veredicto `PASS`.
+- [x] `(Project-Planner)` Actualizar `project_overview.md`, `architecture.md`, `api_spec.md`, `implementation_plan.md` y `task.md` con enlaces wikilink `[[PRJ_...]]` y frontmatter completo.

@@ -1,107 +1,79 @@
 ---
 tipo: plan
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.6.0
-estado: pendiente_aprobacion
+version: v2.7.1
+estado: completado
 fecha: 2026-08-26
-tags: [plan, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, victor-engineer, project-planner]
+tags: [plan, v2.7.1, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, victor-engineer]
 ---
 
-# 📋 Plan de Implementación: Iteración Definitiva (v2.6.0)
+# 📋 Plan de Implementación Consolidado (v2.7.1)
 
-Este plan detalla las 4 mejoras seleccionadas para consolidar la versión definitiva de **App-Rastreador-de-Entretenimiento** bajo la identidad y sistema de diseño **Victor Engineer**, incorporando la **paginación configurable** y el **sistema multi-año dinámico**:
-
-1. **⚡ Caché Persistente Offline & Carga Instantánea (0 ms)** con patrón *Stale-While-Revalidate*.
-2. **🎛️ Selector de Vista Dual (Grid vs. Lista) & Sistema de Paginación Inteligente (10, 25, 50, 100, Todos):** Flexibilidad de visualización y control de densidad.
-3. **🎯 Gamificación y Metas Anuales Dinámicas Multi-Año:** Selector de año histórico/futuro (2025, 2026, 2027...), metas independientes por año y récords del backlog.
-4. **🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG):** Captura gráfica estilizada con branding oficial Victor Engineer para compartir logros y reseñas.
+Plan integral de evolución técnica orquestado por el rol **Project-Planner** y ejecutado en conjunto por **Backend-Architect**, **Frontend-UI**, **Systems-Auditor** y **DevOps-Engineer**, consolidando la arquitectura final del **Rastreador de Entretenimiento Personal**.
 
 ---
 
-## 🔍 Detalles Técnicos por Componente
+## 🎯 Objetivos de la Versión
 
-### 1. ⚡ Caché Persistente Offline & Carga Instantánea (0 ms)
-- **Objetivo:** Eliminar el tiempo de espera inicial en frío y permitir la consulta fluida de la biblioteca sin conexión.
-- **Mecanismo (*Stale-While-Revalidate*):**
-  - Al recibir los datos de Notion, serializar la lista de juegos a JSON y almacenarla en disco local mediante `SharedPreferences` (`'cached_games_payload_v1'`).
-  - Al abrir el `DashboardScreen`, leer primero la caché de disco y poblar el estado en **0 ms**.
-  - Lanzar en segundo plano `_fetchGames(background: true)`. Si hay cambios o registros actualizados en Notion, refrescar silenciosamente el estado de la UI y sincronizar la caché local.
-  - En caso de fallo de red o modo offline, mantener los datos locales sin bloquear al usuario y mostrar un indicador discreto de *"Modo Local / Sin Conexión"*.
-
----
-
-### 2. 🎛️ Selector de Vista Dual & Paginación Configurable
-- **Objetivo:** Darle flexibilidad al usuario para elegir entre una experiencia visual cinematográfica y una vista rápida tipo tabla, con control de paginación para bibliotecas grandes.
-- **Selector de Vista en Toolbar:**
-  - Botón toggle `[ ⊞ Grid | ☰ Lista ]` con estado persistido en `SharedPreferences` (`'preferred_library_view_mode'`).
-- **Widget `_GameListRow` (Modo Lista Compacta):**
-  - Fila optimizada de 54px de alto con hover reactivo (`#18181B`).
-  - Miniatura de portada con esquinas redondeadas (36x48px).
-  - Título en `GoogleFonts.outfit()`, badge temático de plataforma (`PlatformHelper`).
-  - Pill de estado coloreado (`Jugando`, `Por jugar`, `Jugado`).
-  - Horas jugadas con micro-barra de progreso HLTB y calificación en estrellas.
-  - Botón de registro rápido integrado (`+1h`) y soporte para `onTap` y `onLongPress`.
-- **Sistema de Paginación Inteligente:**
-  - Selector de tamaño de página: **`10`**, **`25`**, **`50`**, **`100`** o **`Todos`** (persistido en `SharedPreferences`).
-  - Barra de navegación inferior estilizada:
-    - Botón `[ < Anterior ]` (deshabilitado en pág. 1).
-    - Indicador central: *"Página X de Y (Total: N juegos)"*.
-    - Botón `[ Siguiente > ]` (deshabilitado en última pág.).
-  - Reseteo automático a la página 1 al aplicar nuevos filtros de estado, plataforma, género o búsqueda en tiempo real.
+1. **Rendimiento & Disponibilidad Inmediata:** Carga en **0 ms** sin pantallas de espera inicial mediante caché local persistente con patrón *Stale-While-Revalidate*.
+2. **Visualización y Ergonomía Visual:** Soporte nativo dual de **Modo Oscuro (Obsidian Zinc)** y **Modo Claro (Crisp Zinc)** con alternancia en tiempo real y persistencia.
+3. **Control de Biblioteca:** Selector de vista dual (Grid de carátulas cinematográficas vs. Lista de alta densidad) y paginador dinámico con tamaños de 10, 25, 50, 100 o Todos los juegos.
+4. **Gamificación Dinámica sin Obsolescencia:** Sistema de metas y balances multi-año interactivo (`< [Año] >`) para consultar el pasado o planificar años venideros (2025, 2026, 2027...).
+5. **Viralidad y Logros Compartibles:** Exportación directa a PNG de tarjetas sociales con calificación y reseña en alta resolución.
+6. **Estabilidad y Resiliencia en CI/CD:** Garantizar compilaciones automáticas limpias y sin fallos en GitHub Actions para Windows x64.
 
 ---
 
-### 3. 🎯 Gamificación y Metas Anuales Dinámicas Multi-Año (Backlog Crusher)
-- **Objetivo:** Que el sistema de metas sea dinámico en el tiempo, permitiendo consultar años pasados (histórico) y planificar años futuros (2026, 2027, etc.) sin quedarse nunca estancado.
-- **Selector Dinámico de Año:**
-  - Cabecera con selector interactivo `< 2025 | 2026 | 2027 >` (o dropdown) centrado por defecto en `DateTime.now().year`.
-  - La meta anual se almacena de forma independiente para cada año en `SharedPreferences` (`annual_game_goal_${year}`).
-  - Si el usuario viaja a 2027, la app crea y gestiona la meta de 2027; si viaja a 2026 o 2025, muestra el recuento histórico exacto de juegos culminados en ese año y si la meta fue alcanzada.
-- **Anillo y Barra de Progreso Circular:**
-  - Gráfico de progreso animado en rojo `#DC2626` con feedback: *"X de Y Juegos Completados en [Año] (Z%)"*.
-- **Salón de la Fama / Récords Personales (Global y por Año):**
-  - 👑 **"El Titán":** Juego completado con más horas acumuladas.
-  - ⭐ **"La Obra Maestra":** Juego culminado con máxima puntuación (5 estrellas) y mayores horas.
-  - ⚡ **"Aventura Corta":** Juego completado en menor tiempo (horas HLTB).
-- **Tasa de Eficiencia del Backlog:**
-  - Ratio porcentual entre juegos terminados vs. juegos en espera.
+## 🔍 Desglose por Fases de Construcción
 
----
+### Fase 1: ⚡ Caché Persistente Offline & Carga Instantánea (0 ms)
+- **Rol Responsable:** `Backend-Architect` & `Frontend-UI`
+- **Implementación:**
+  - Implementación de `saveLocalCache()` y `getLocalCache()` en `NotionService` utilizando `SharedPreferences` con clave `'notion_persistent_games_cache_v1'`.
+  - Carga inmediata de la biblioteca en `DashboardScreen` al inicializar el estado antes de cualquier llamada HTTP.
+  - Sincronización en segundo plano con Notion y actualización de la UI si se detectan cambios (*Stale-While-Revalidate*).
+  - Manejo de contingencias sin conexión (*Offline Mode*) con indicador sutil en pantalla.
 
-### 4. 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG)
-- **Objetivo:** Permitir al usuario exportar una imagen de alta resolución con su reseña, calificación y horas con la estética oficial Victor Engineer para compartir en redes o Discord.
-- **Arquitectura de Captura:**
-  - Botón en `GameDetailScreen`: `[ 📤 Compartir Ficha / Exportar ]`.
-  - Diálogo modal de previsualización que renderiza una tarjeta de diseño profesional (relación 16:9 / tarjeta de reseña):
-    - Fondo Obsidian `#09090B` con resplandor carmesí ambiental.
-    - Isotipo squircle `VE` + marca *"Victor Engineer • Game Tracker"*.
-    - Carátula cinematográfica, Título, Plataforma con logo oficial, Estrellas de calificación (`★★★★★`), Horas totales jugadas, Fecha de culminación y cita de las notas/resumen personal.
-  - Envuelto en un `RepaintBoundary`.
-  - Botón *"Guardar PNG"*:
-    - Extrae el render a través de `toImage(pixelRatio: 2.5)` -> `toByteData(format: ui.ImageByteFormat.png)`.
-    - En Windows Desktop, guarda directamente el archivo en la carpeta `Descargas` del usuario (`%USERPROFILE%\Downloads\Reseña_VE_{Titulo}.png`) y muestra un SnackBar de confirmación con la ruta.
+### Fase 2: 🎛️ Vista Dual & Sistema de Paginación Inteligente
+- **Rol Responsable:** `Frontend-UI`
+- **Implementación:**
+  - Toggle `[ ⊞ Grid | ☰ Lista ]` en la barra de herramientas del Dashboard con persistencia en `'preferred_library_view_mode'`.
+  - Creación del componente `_GameListRow`: fila de 54px con miniatura 36x48, badges de plataforma mapeados por `PlatformHelper`, estado, barra HLTB y acción rápida `+1h`.
+  - Selector de tamaño de página: 10, 25, 50, 100 o Todos los juegos, persistido en `'preferred_page_size'`.
+  - Barra de navegación con botones `< Anterior`, indicador `Página X de Y` y `Siguiente >`.
+  - Reseteo automático a página 1 al aplicar filtros o términos de búsqueda.
 
----
+### Fase 3: 🎯 Gamificación y Metas Anuales Dinámicas Multi-Año
+- **Rol Responsable:** `Frontend-UI` & `Backend-Architect`
+- **Implementación:**
+  - Stepper temporal interactivo `< [Año] >` en `AnalyticsScreen` con año en curso por defecto.
+  - Almacenamiento independiente de metas por año (`annual_game_goal_${year}`) en `SharedPreferences`.
+  - Tarjeta de meta anual con barra de progreso circular en acento rojo Victor Engineer `#DC2626`.
+  - Salón de la Fama con récords personales: *El Titán* (más horas), *Obra Maestra* (5 estrellas y máxima dedicación) y *Aventura Ágil* (completado más rápido).
+  - Medidor de salud del backlog y tasa porcentual de finalización.
 
-## 📂 Archivos a Modificar / Crear
+### Fase 4: 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG)
+- **Rol Responsable:** `Frontend-UI`
+- **Implementación:**
+  - Botón de exportación en la pantalla de detalle (`GameDetailScreen`).
+  - Modal con tarjeta gráfica en formato 16:9 con isotipo squircle `VE`, carátula, estrellas, horas y cita personal.
+  - Captura en alta resolución (pixel ratio 2.5x) mediante `RepaintBoundary`.
+  - Guardado directo del archivo PNG en `%USERPROFILE%\Downloads` en Windows.
 
-### `frontend/lib/services/notion_service.dart`
-- Añadir métodos `saveLocalCache(List<dynamic> pages)` y `Future<List<dynamic>?> getLocalCache()`.
-- Soporte para detección de modo offline y fallback transparente.
+### Fase 5: ☀️ Modo Claro "Crisp Zinc" & Arquitectura de Temas
+- **Rol Responsable:** `Frontend-UI`
+- **Implementación:**
+  - Creación de `ThemeManager` (`ChangeNotifier`) y helper de colores semánticos `AppColors`.
+  - Definición de `AppTheme.darkTheme` (Obsidian Zinc `#09090B`) y `AppTheme.lightTheme` (Crisp Zinc `#FAFAFA`).
+  - Enlace reactivo en `main.dart` con `AnimatedBuilder` sobre `ThemeManager.instance`.
+  - Toggle directo de 1 clic en la barra superior del Dashboard (`Icons.light_mode_rounded` / `Icons.dark_mode_rounded`).
+  - Selector de 3 opciones en `SettingsScreen`: *Oscuro*, *Claro* y *Sistema*.
+  - Adaptación cromática de `DashboardScreen`, `AnalyticsScreen`, `GameDetailScreen`, `SearchScreen`, `SettingsScreen` y `SetupScreen`.
 
-### `frontend/lib/screens/dashboard.dart`
-- Integrar la carga instantánea desde caché local en `initState()`.
-- Añadir selector toggle Grid / Lista compacta en la barra de herramientas.
-- Implementar la lógica de paginación (páginas, selector de 10/25/50/100/Todos, botones Anterior/Siguiente).
-- Implementar el widget `_GameListRow` para la vista compacta.
-- Persistir las preferencias de vista y paginación con `SharedPreferences`.
-
-### `frontend/lib/screens/analytics_screen.dart`
-- Implementar el selector de año dinámico `< [Año] >`.
-- Implementar la tarjeta de **Meta Anual** dependiente del año seleccionado con persistencia independiente (`annual_game_goal_${year}`).
-- Implementar el bloque de **Récords Personales (Titán, Obra Maestra, Aventura Corta)** y tasa de finalización del backlog.
-
-### `frontend/lib/screens/game_detail_screen.dart`
-- Añadir botón de exportar/compartir en el AppBar o cabecera.
-- Crear el componente visual de la **Tarjeta Social Victor Engineer** con `RepaintBoundary`.
-- Implementar la función de exportación a archivo PNG en disco.
+### Fase 6: 🛡️ Estabilización de Compilación & CI/CD Release v2.7.1
+- **Rol Responsable:** `Systems-Auditor` & `DevOps-Engineer`
+- **Implementación:**
+  - Corrección del error de compilación `createGame` en `search_screen.dart` restaurando `await notion.createPage(notion.gamesDbId, properties)`.
+  - Implementación del helper de conveniencia `createGame()` en `NotionService` para interoperabilidad completa.
+  - Sincronización de versión a `2.7.1+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
+  - Ejecución de auditoría de calidad con veredicto `Status: PASS`.
