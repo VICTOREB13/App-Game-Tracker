@@ -1,15 +1,30 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.1
+version: v3.0.2
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.1, optimization, memory-limits, purge-notion-id, sqlite, local-first, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.2, howlongtobeat, hltb-service, steam-sync, auto-culmination, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.0.2] - 2026-08-27 (Native HowLongToBeat Service & Auto-Enrichment)
+
+### Added & Changed
+- **Servicio Nativo HowLongToBeat (`HltbService`):**
+  - Implementación de cliente HTTP directo contra la API interna moderna de HowLongToBeat (`/api/search/site/init` y `/api/search/site`).
+  - Extracción automática de la duración en horas de la **Historia Principal (Campaña)** y **100% Completista** sin requerir claves de API de terceros.
+  - Gestión automática de tokens de seguridad (`x-auth-token`, `x-hp-key`, `x-hp-val`) y reintentos transparentes ante expiración.
+- **Sincronización Automática en Steam (`SteamService`):**
+  - Al sincronizar juegos desde Steam (propios o compartidos por Family Sharing), el sistema consulta HowLongToBeat si el juego no tiene duración registrada.
+  - Auto-culminación activa: si las horas jugadas acumuladas alcanzan o superan `hltb_main`, el juego se marca de inmediato como *Jugado* y se registra la fecha de culminación.
+- **Búsqueda Instantánea en Detalle de Juego (`GameDetailScreen`):**
+  - Nuevo botón interactivo **"Buscar en HLTB"** en la sección de Metadatos de duración con microanimación de carga y autocompletado en tiempo real de los campos numéricos de Campaña y Completista.
+- **Enriquecimiento Masivo de Biblioteca (`SettingsScreen`):**
+  - Nueva acción en Configuración: **"Buscar Metadatos HLTB en mi Biblioteca"**, que recorre todos los títulos que carecen de estimaciones, consulta HowLongToBeat, actualiza SQLite y reporta cuántos juegos fueron enriquecidos y auto-culminados.
 
 ## [3.0.1] - 2026-08-27 (Purge Legacy Notion Page ID & Defensive Memory Limits)
 

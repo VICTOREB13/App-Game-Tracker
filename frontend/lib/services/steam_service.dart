@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/game.dart';
 import 'database_service.dart';
 import 'string_normalizer.dart';
+import 'hltb_service.dart';
 
 /// Resumen estructurado del resultado de la sincronización con Steam
 class SteamSyncResult {
@@ -259,6 +260,8 @@ class SteamService {
         DateTime? finalCompletedDate = matchedGame.completedDate;
         String finalStatus = matchedGame.status;
         num? finalSteamId = matchedGame.steamId ?? appid;
+        num? finalHltbMain = matchedGame.hltbMain;
+        num? finalHltbComp = matchedGame.hltbCompletionist;
 
         // 1. Horas jugadas
         if (roundedNewHours != roundedCurrentHours) {
@@ -278,8 +281,27 @@ class SteamService {
           needsUpdate = true;
         }
 
-        // 4. Auto-Culminación por HLTB
-        final hltbMain = matchedGame.hltbMain?.toDouble();
+        // 4. HLTB: si faltan los metadatos de duración, consultarlos en HowLongToBeat
+        if (finalHltbMain == null || finalHltbMain == 0) {
+          try {
+            final hltbData = await HltbService.instance.searchHltb(matchedGame.title);
+            if (hltbData != null) {
+              if (hltbData.mainStory != null) {
+                finalHltbMain = hltbData.mainStory;
+                needsUpdate = true;
+              }
+              if (hltbData.completionist != null) {
+                finalHltbComp = hltbData.completionist;
+                needsUpdate = true;
+              }
+            }
+          } catch (e) {
+            debugPrint('Error buscando HLTB para ${matchedGame.title}: $e');
+          }
+        }
+
+        // 5. Auto-Culminación por HLTB
+        final hltbMain = finalHltbMain?.toDouble();
         if (hltbMain != null &&
             hltbMain > 0 &&
             roundedNewHours >= hltbMain &&
@@ -298,6 +320,8 @@ class SteamService {
             startDate: finalStartDate,
             completedDate: finalCompletedDate,
             status: finalStatus,
+            hltbMain: finalHltbMain,
+            hltbCompletionist: finalHltbComp,
             updatedAt: DateTime.now(),
           );
           await db.updateGame(updated);
@@ -312,8 +336,33 @@ class SteamService {
         final steamCoverUrl =
             'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/$appid/header.jpg';
 
+        // Consultar HowLongToBeat para el nuevo juego
+        num? newHltbMain;
+        num? newHltbComp;
+        try {
+          final hltbData = await HltbService.instance.searchHltb(name);
+          if (hltbData != null) {
+            newHltbMain = hltbData.mainStory;
+            newHltbComp = hltbData.completionist;
+          }
+        } catch (e) {
+          debugPrint('Error buscando HLTB para juego nuevo $name: $e');
+        }
+
         // Regla: si horas > 1h -> "Jugado", sino "Por Jugar"
-        final status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
+        String status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
+        DateTime? completedDate;
+
+        // Auto-culminar si horas >= HLTB historia principal
+        if (newHltbMain != null &&
+            newHltbMain > 0 &&
+            roundedNewHours >= newHltbMain) {
+          status = 'Jugado';
+          completedDate = DateTime.now();
+          autoCulminatedCount++;
+          details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $newHltbMain h)');
+        }
+
         final startDate = roundedNewHours > 0 ? DateTime.now() : null;
 
         final newGame = Game(
@@ -323,7 +372,10 @@ class SteamService {
           platform: 'PC',
           hoursPlayed: roundedNewHours,
           steamId: appid,
+          hltbMain: newHltbMain,
+          hltbCompletionist: newHltbComp,
           startDate: startDate,
+          completedDate: completedDate,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );

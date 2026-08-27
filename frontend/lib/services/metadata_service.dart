@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/game.dart';
 import 'database_service.dart';
+import 'hltb_service.dart';
 
 /// Servicio de enriquecimiento automático de metadatos (RAWG, Wikipedia y HLTB)
 /// Replicación de `rellenar_metadata()` de `games.py`.
@@ -53,7 +54,7 @@ class MetadataService {
     return null;
   }
 
-  /// Busca metadatos en RAWG API (portada HD, géneros y tiempo estimado HLTB)
+  /// Busca metadatos en RAWG API (portada HD y géneros)
   Future<Map<String, dynamic>?> searchRawg(String gameTitle, String rawgKey) async {
     if (rawgKey.trim().isEmpty) return null;
 
@@ -78,7 +79,6 @@ class MetadataService {
           return {
             'cover_url': match['background_image']?.toString(),
             'genres': genres,
-            'hltb_main': (match['playtime'] as num?)?.toDouble(),
           };
         }
       }
@@ -94,15 +94,46 @@ class MetadataService {
     String? newCover = game.coverUrl;
     List<String> newGenres = List.from(game.genres);
     num? newHltbMain = game.hltbMain;
+    num? newHltbComp = game.hltbCompletionist;
     String? newLink = game.link;
     String newStatus = game.status;
     DateTime? newCompletedDate = game.completedDate;
 
-    // 1. RAWG: si falta portada o géneros o HLTB
+    // 1. HowLongToBeat: si falta la duración de campaña o completista
+    final needsHltb = (newHltbMain == null || newHltbMain == 0) ||
+        (newHltbComp == null || newHltbComp == 0);
+    if (needsHltb) {
+      try {
+        final hltbData = await HltbService.instance.searchHltb(game.title);
+        if (hltbData != null) {
+          if (hltbData.mainStory != null && (newHltbMain == null || newHltbMain == 0)) {
+            newHltbMain = hltbData.mainStory;
+            modified = true;
+          }
+          if (hltbData.completionist != null && (newHltbComp == null || newHltbComp == 0)) {
+            newHltbComp = hltbData.completionist;
+            modified = true;
+          }
+
+          // Auto-culminación inmediata si las horas acumuladas superan HLTB
+          final hours = game.hoursPlayed ?? 0;
+          if (newHltbMain != null &&
+              newHltbMain! > 0 &&
+              hours >= newHltbMain! &&
+              game.status != 'Jugado') {
+            newStatus = 'Jugado';
+            newCompletedDate ??= DateTime.now();
+            modified = true;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error enriqueciendo HLTB (${game.title}): $e');
+      }
+    }
+
+    // 2. RAWG: si falta portada o géneros
     if (rawgKey != null && rawgKey.trim().isNotEmpty) {
-      final needsRawg = (newCover == null || newCover.isEmpty) ||
-          newGenres.isEmpty ||
-          (newHltbMain == null || newHltbMain == 0);
+      final needsRawg = (newCover == null || newCover.isEmpty) || newGenres.isEmpty;
 
       if (needsRawg) {
         final rawgData = await searchRawg(game.title, rawgKey);
@@ -115,24 +146,11 @@ class MetadataService {
             newGenres = List<String>.from(rawgData['genres']);
             modified = true;
           }
-          if ((newHltbMain == null || newHltbMain == 0) &&
-              rawgData['hltb_main'] != null &&
-              rawgData['hltb_main'] > 0) {
-            newHltbMain = rawgData['hltb_main'];
-            modified = true;
-
-            // Auto-culminación inmediata si las horas acumuladas ya superan HLTB
-            final hours = game.hoursPlayed ?? 0;
-            if (hours >= newHltbMain! && game.status != 'Jugado') {
-              newStatus = 'Jugado';
-              newCompletedDate ??= DateTime.now();
-            }
-          }
         }
       }
     }
 
-    // 2. Wikipedia: si falta el enlace de referencia
+    // 3. Wikipedia: si falta el enlace de referencia
     if (newLink == null || newLink.trim().isEmpty) {
       final wikiUrl = await searchWikipedia(game.title);
       if (wikiUrl != null && wikiUrl.isNotEmpty) {
@@ -146,6 +164,7 @@ class MetadataService {
         coverUrl: newCover,
         genres: newGenres,
         hltbMain: newHltbMain,
+        hltbCompletionist: newHltbComp,
         link: newLink,
         status: newStatus,
         completedDate: newCompletedDate,
@@ -155,6 +174,5 @@ class MetadataService {
       return enriched;
     }
 
-    return game;
   }
 }

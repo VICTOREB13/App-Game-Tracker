@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/game.dart';
 import '../services/database_service.dart';
 import '../services/theme_manager.dart';
+import '../services/hltb_service.dart';
 import '../widgets/platform_helper.dart';
 import '../widgets/app_cover_image.dart';
 
@@ -25,6 +26,7 @@ class GameDetailScreen extends StatefulWidget {
 class _GameDetailScreenState extends State<GameDetailScreen> {
   final GlobalKey _socialCardKey = GlobalKey();
   bool _isExporting = false;
+  bool _isFetchingHltb = false;
   late TextEditingController _titleController;
   late TextEditingController _hoursController;
   late TextEditingController _hltbMainController;
@@ -126,6 +128,64 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     _summaryController.dispose();
     _linkController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchHltbData() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() => _isFetchingHltb = true);
+    try {
+      final result = await HltbService.instance.searchHltb(title);
+      if (!mounted) return;
+
+      if (result != null && (result.mainStory != null || result.completionist != null)) {
+        setState(() {
+          if (result.mainStory != null) {
+            _hltbMainController.text = result.mainStory!.toString();
+          }
+          if (result.completionist != null) {
+            _hltbCompController.text = result.completionist!.toString();
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ HowLongToBeat: Campaña ${result.mainStory ?? 0}h • 100% ${result.completionist ?? 0}h',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'No se encontraron estimaciones en HowLongToBeat para "$title"',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error consultando HowLongToBeat: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingHltb = false);
+      }
+    }
   }
 
   Future<void> _pickLocalImage() async {
@@ -963,7 +1023,39 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 const SizedBox(height: 24),
 
                 // HLTB Settings Section
-                _buildSectionHeader('Metadatos HowLongToBeat'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSectionHeader('Metadatos HowLongToBeat'),
+                    TextButton.icon(
+                      onPressed: _isFetchingHltb ? null : _fetchHltbData,
+                      icon: _isFetchingHltb
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFDC2626),
+                              ),
+                            )
+                          : const Icon(Icons.timer_outlined,
+                              size: 16, color: Color(0xFFDC2626)),
+                      label: Text(
+                        _isFetchingHltb ? 'Buscando...' : 'Buscar en HLTB',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFDC2626),
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [

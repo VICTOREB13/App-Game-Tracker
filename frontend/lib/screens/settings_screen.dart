@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../services/steam_service.dart';
 import '../services/theme_manager.dart';
 import '../services/backup_service.dart';
+import '../services/hltb_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _dbPath = '';
   bool _isTestingSteam = false;
   bool _isSyncingSteam = false;
+  bool _isSyncingHltb = false;
 
   @override
   void initState() {
@@ -246,6 +248,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } finally {
       if (mounted) setState(() => _isSyncingSteam = false);
+    }
+  }
+
+  Future<void> _syncAllHltb() async {
+    final db = DatabaseService.instance;
+    final allGames = await db.getAllGames();
+    final pending = allGames
+        .where((g) =>
+            (g.hltbMain == null || g.hltbMain == 0) ||
+            (g.hltbCompletionist == null || g.hltbCompletionist == 0))
+        .toList();
+
+    if (pending.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Todos los juegos ya tienen metadatos de HowLongToBeat'),
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSyncingHltb = true);
+
+    int enrichedCount = 0;
+    int autoCulminatedCount = 0;
+
+    for (int i = 0; i < pending.length; i++) {
+      final game = pending[i];
+      try {
+        final result = await HltbService.instance.searchHltb(game.title);
+        if (result != null &&
+            (result.mainStory != null || result.completionist != null)) {
+          final newMain = result.mainStory ?? game.hltbMain;
+          final newComp = result.completionist ?? game.hltbCompletionist;
+
+          String finalStatus = game.status;
+          DateTime? finalCompleted = game.completedDate;
+
+          final hours = game.hoursPlayed ?? 0;
+          if (newMain != null &&
+              newMain > 0 &&
+              hours >= newMain &&
+              game.status != 'Jugado') {
+            finalStatus = 'Jugado';
+            finalCompleted ??= DateTime.now();
+            autoCulminatedCount++;
+          }
+
+          final updated = game.copyWith(
+            hltbMain: newMain,
+            hltbCompletionist: newComp,
+            status: finalStatus,
+            completedDate: finalCompleted,
+            updatedAt: DateTime.now(),
+          );
+
+          await db.updateGame(updated);
+          enrichedCount++;
+        }
+      } catch (e) {
+        debugPrint('Error enriqueciendo HLTB (${game.title}): $e');
+      }
+
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    await _loadSettings();
+
+    if (mounted) {
+      setState(() => _isSyncingHltb = false);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface(context),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
+              const SizedBox(width: 10),
+              Text('HowLongToBeat Sincronizado',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          content: Text(
+            'Se enriquecieron $enrichedCount videojuegos con duración de Campaña y Completista.\n'
+            '${autoCulminatedCount > 0 ? "🏆 $autoCulminatedCount juegos auto-culminados a 'Jugado'." : ""}',
+            style: GoogleFonts.inter(fontSize: 13, height: 1.4),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -546,6 +654,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 32),
 
+              // HowLongToBeat Integration & Bulk Enrichment
+              _buildSectionHeader('Duración & Campaña (HowLongToBeat)'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border(context)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDC2626).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.timer_outlined,
+                              size: 18, color: Color(0xFFDC2626)),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Sincronización HowLongToBeat Directa',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Consulta la duración estimada de la Historia Principal y Completista al 100% directamente desde HowLongToBeat sin requerir API Keys. Habilita la auto-culminación inteligente cuando tus horas registradas alcanzan la duración de campaña.',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(context),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSyncingHltb ? null : _syncAllHltb,
+                        icon: _isSyncingHltb
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.sync_rounded, size: 18),
+                        label: Text(
+                          _isSyncingHltb
+                              ? 'Consultando HowLongToBeat...'
+                              : 'Buscar Metadatos HLTB en mi Biblioteca',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
               // Copia de Seguridad & Portabilidad (JSON)
               _buildSectionHeader('Copia de Seguridad & Portabilidad (JSON)'),
               const SizedBox(height: 12),
@@ -672,7 +863,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v3.0.1 (Local-First)',
+                      'Rastreador de Entretenimiento Personal • v3.0.2 (Local-First)',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
