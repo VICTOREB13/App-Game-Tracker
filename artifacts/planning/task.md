@@ -82,3 +82,16 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Garantizar la detención del spinner de recarga en el AppBar mediante bloque `finally` con feedback mediante SnackBar.
 - [x] `(DevOps-Engineer)` Sincronizar número de versión a `2.7.2+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
 - [x] `(Frontend-UI)` Adaptar modal y exportador PNG de tarjeta social (`RepaintBoundary`) a modos Claro y Oscuro con conmutador en vivo `[ ☀️ Claro | 🌙 Oscuro ]`.
+
+---
+
+## 🎮 9. Logotipos de Plataformas de Alto Contraste & Multi-Modo (Claro/Oscuro/Exportación)
+- [x] `(Frontend-UI)` Generar e incorporar icono 1:1 de **Nintendo Switch** (`assets/images/nintendo_switch_logo.png`) en rojo oficial (`#E60012`) Joy-Con.
+- [x] `(Frontend-UI)` Generar e incorporar insignia 1:1 de **Nintendo** (`assets/images/nintendo_badge_red.png`) en píldora roja con texto blanco para plataformas clásicas (DS, Wii, etc.).
+- [x] `(Frontend-UI)` Generar e incorporar esfera 1:1 de **Xbox** (`assets/images/xbox_logo_green.png`) en verde oficial (`#107C10`).
+- [x] `(Frontend-UI)` Generar e incorporar logotipo 1:1 de **GOG** (`assets/images/gog_logo_purple.png`) en púrpura oficial (`#9B59B6`) de alto contraste.
+- [x] `(Frontend-UI)` Generar e incorporar escudo con borde protector de **Epic Games** (`assets/images/epic_games_logo_bordered.png`) para fondos oscuros y claros.
+- [x] `(Frontend-UI)` Corregir mapeo de **Steam / PC** para utilizar el icono circular azul/blanco (`steam-logo-steam-icon-transparent-free-png.webp`) en lugar del texto blanco que desaparecía en modo claro.
+- [x] `(Frontend-UI)` Refactorizar `PlatformHelper.getIcon()` para soportar tintado `color` y `BlendMode.srcIn` en modo monocromático sin desvirtuar logos a todo color.
+- [x] `(Frontend-UI)` Actualizar la tarjeta social en `game_detail_screen.dart` para renderizar logotipos a todo color (`isColor: true`), garantizando visibilidad 100% nítida en previsualización y exportaciones tanto en Claro como Oscuro.
+

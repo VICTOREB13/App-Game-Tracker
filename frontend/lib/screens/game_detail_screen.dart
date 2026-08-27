@@ -1415,11 +1415,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       children: [
                         if (_selectedPlatform.isNotEmpty) ...[
                           PlatformHelper.getIcon(_selectedPlatform,
-                              size: 13,
-                              color: isDark
-                                  ? const Color(0xFFA1A1AA)
-                                  : const Color(0xFF71717A)),
-                          const SizedBox(width: 4),
+                              size: 14,
+                              isColor: true),
+                          const SizedBox(width: 5),
                           Text(
                             _selectedPlatform,
                             style: GoogleFonts.inter(

@@ -35,28 +35,25 @@ class PlatformHelper {
       return isColor
           ? 'assets/images/Playstation_logo_colour.svg.webp'
           : 'assets/images/PlayStation-Logo.wine.png';
+    } else if (p.contains('switch')) {
+      return 'assets/images/nintendo_switch_logo.png';
     } else if (p.contains('nintendo') ||
-        p.contains('switch') ||
         p.contains('wii') ||
         p.contains('ds') ||
         p.contains('64')) {
-      return isColor
-          ? 'assets/images/nintendo_PNG19.png'
-          : 'assets/images/nintendo-logo-1-1.png';
+      return 'assets/images/nintendo_badge_red.png';
     } else if (p.contains('xbox')) {
       return isColor
-          ? 'assets/images/logo-Xbox.png'
+          ? 'assets/images/xbox_logo_green.png'
           : 'assets/images/xbox-2-logo-png-transparent.png';
     } else if (p.contains('steam')) {
-      return isColor
-          ? 'assets/images/steam-logo.png'
-          : 'assets/images/steam-logo-steam-icon-transparent-free-png.webp';
+      return 'assets/images/steam-logo-steam-icon-transparent-free-png.webp';
     } else if (p.contains('gog')) {
-      return 'assets/images/GOG_LOGO_DARK.png';
+      return 'assets/images/gog_logo_purple.png';
     } else if (p.contains('epic')) {
-      return 'assets/images/Epic_Games_logo.svg.webp';
+      return 'assets/images/epic_games_logo_bordered.png';
     } else if (p == 'pc' || p == 'computadora') {
-      return 'assets/images/steam-logo.png';
+      return 'assets/images/steam-logo-steam-icon-transparent-free-png.webp';
     }
     return null;
   }
@@ -73,11 +70,14 @@ class PlatformHelper {
     final asset = useAsset ? getAssetPath(platform, isColor: isColor) : null;
 
     if (asset != null) {
+      final bool shouldTint = color != null && !isColor;
       return Image.asset(
         asset,
         width: size,
         height: size,
         fit: BoxFit.contain,
+        color: shouldTint ? color : null,
+        colorBlendMode: shouldTint ? BlendMode.srcIn : null,
         errorBuilder: (context, error, stackTrace) {
           return _fallbackIcon(p, size, iconColor);
         },
@@ -120,7 +120,7 @@ class PlatformHelper {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          getIcon(platform, size: iconSize, color: color, isColor: isColor),
+          getIcon(platform, size: iconSize, isColor: isColor),
           const SizedBox(width: 5),
           Text(
             platform,

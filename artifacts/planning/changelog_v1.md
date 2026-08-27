@@ -30,6 +30,13 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - La ventana modal de compartir y exportar reseña en PNG (`_showSocialCardDialog`) ahora detecta y adopta automáticamente el modo visual activo del usuario (Claro u Oscuro).
   - Se incorporó un conmutador interactivo `[ ☀️ Claro | 🌙 Oscuro ]` en la cabecera del modal que permite previsualizar y alternar el tema de la postal gráfica antes de exportar.
   - En modo claro, la tarjeta se renderiza con fondo blanco puro `#FFFFFF`, bordes zinc `#E4E4E7`, tipografía oscura `#09090B` y branding `#DC2626`. El archivo exportado se guarda automáticamente con el sufijo `_Light_` o `_Dark_` en la carpeta Descargas.
+- **Logotipos de Plataformas de Alto Contraste & Multi-Modo:**
+  - **Nintendo Switch:** Generado e implementado el nuevo icono 1:1 Joy-Con (`nintendo_switch_logo.png`) en rojo oficial (`#E60012`), resolviendo el problema de invisibilidad y distorsión que sufría el banner de texto 4:1 en modo oscuro y claro.
+  - **Nintendo Retro (DS, Wii, N64):** Generada insignia 1:1 (`nintendo_badge_red.png`) en píldora roja con tipografía blanca nítida, 100% legible sobre fondos oscuros y claros.
+  - **Xbox:** Generada esfera 1:1 (`xbox_logo_green.png`) en verde oficial `#107C10`, erradicando el logo negro plano que se perdía en temas oscuros.
+  - **Steam / PC:** Corregido el mapeo de recursos para cargar el icono circular azul/blanco (`steam-logo-steam-icon-transparent-free-png.webp`) en vez del texto blanco plano que se camuflaba en modo claro.
+  - **GOG & Epic Games:** Creados recursos optimizados (`gog_logo_purple.png` en púrpura oficial y `epic_games_logo_bordered.png` con contorno de escudo protector).
+  - **Renderizado en Tarjeta Social y App:** `PlatformHelper.getIcon()` ahora preserva el color oficial (`isColor: true`) en insignias y fichas sociales, garantizando contraste y legibilidad absoluta tanto en previsualización como en archivos exportados.
 
 ---
 
