@@ -142,6 +142,15 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(DevOps-Engineer)` Actualizar `build_apk.yml` para usar el keystore permanente e inyectar dinámicamente la versión (`build-name`) desde `pubspec.yaml`, resolviendo el error "Conflicto con un paquete ya existente" al actualizar en Android.
 - [x] `(Systems-Auditor)` Validar que `tracker_app.exe` y el APK de Android exhiban la identidad oficial de Victor Engineer sin depender del icono por defecto de Flutter.
 
+---
+
+## 🧹 14. Limpieza de Assets Huérfanos & Optimización de Dependencias (v2.8.3)
+- [x] `(Systems-Auditor)` Auditar exhaustivamente todas las imágenes de `frontend/assets/images/` contra el código fuente Dart para identificar archivos huérfanos y redundantes.
+- [x] `(Systems-Auditor)` Eliminar 7 imágenes obsoletas y duplicadas (`Epic_Games_logo.svg.webp`, `GOG_LOGO_DARK.png`, `logo-Xbox.png`, `nintendo-logo-1-1.png`, `nintendo_logo_red.png`, `nintendo_PNG19.png`, `steam-logo.png`), ahorrando más de 361 KB en el bundle de distribución.
+- [x] `(Backend-Architect)` Auditar dependencias en `frontend/pubspec.yaml` y eliminar paquetes no utilizados (`dio: ^5.4.0` y `flutter_staggered_grid_view: ^0.7.0`) para aligerar la compilación y evitar dependencias transitivas innecesarias.
+- [x] `(Systems-Auditor)` Verificar que los 14 archivos Dart conserven únicamente imports activos y funcionalidades esenciales sin código muerto.
+
+
 
 
 

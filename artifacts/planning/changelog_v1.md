@@ -12,6 +12,19 @@ tags: [proyecto, changelog, versiones, v2.8.1, mobile-responsive, dual-row-filte
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [2.8.3] - 2026-08-27 (Code & Asset Optimization / Bloatware Removal)
+
+### Removed & Optimized
+- **Limpieza de Assets Huérfanos y Redundantes:**
+  - Auditados todos los archivos multimedia de [`frontend/assets/images/`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/) contra el código de la aplicación.
+  - Eliminadas 7 imágenes no utilizadas (`Epic_Games_logo.svg.webp`, `GOG_LOGO_DARK.png`, `logo-Xbox.png`, `nintendo-logo-1-1.png`, `nintendo_logo_red.png`, `nintendo_PNG19.png` y `steam-logo.png`), reduciendo el peso del bundle final en más de **361 KB**.
+- **Purga de Dependencias Inactivas (`pubspec.yaml`):**
+  - Eliminado `dio: ^5.4.0`: Toda la conectividad de red con Notion API y RAWG API se realiza de forma nativa y robusta a través de `http: ^1.2.0`, haciendo que `dio` fuera un paquete completamente redundante.
+  - Eliminado `flutter_staggered_grid_view: ^0.7.0`: La app emplea layouts responsivos propios con `GridView.builder` y delegados nativos de Flutter, prescindiendo de este paquete externo.
+  - Se redujo la superficie de dependencias transitivas, acelerando los tiempos de descarga y compilación en CI/CD.
+- **Auditoría de Código y Depuración:**
+  - Verificados los 14 archivos Dart de `lib/`: 100% de los imports activos y utilizados.
+
 ## [2.8.2] - 2026-08-27 (Official Victor Engineer Native Branding & Iconography)
 
 ### Added & Enhanced
