@@ -112,16 +112,22 @@ class NotionParser {
   }
 
   /// Build a select property
-  static Map<String, dynamic> buildSelect(String name) {
+  static Map<String, dynamic> buildSelect(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return {'select': null};
+    }
     return {
-      'select': {'name': name},
+      'select': {'name': name.trim()},
     };
   }
 
   /// Build a multi_select property
   static Map<String, dynamic> buildMultiSelect(List<String> names) {
     return {
-      'multi_select': names.map((n) => {'name': n}).toList(),
+      'multi_select': names
+          .where((n) => n.trim().isNotEmpty)
+          .map((n) => {'name': n.trim()})
+          .toList(),
     };
   }
 
@@ -146,14 +152,14 @@ class NotionParser {
 
   /// Build a rich_text property
   static Map<String, dynamic> buildRichText(String? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return {'rich_text': []};
     }
     return {
       'rich_text': [
         {
           'type': 'text',
-          'text': {'content': value},
+          'text': {'content': value.trim()},
         }
       ],
     };
@@ -161,14 +167,24 @@ class NotionParser {
 
   /// Build a url property
   static Map<String, dynamic> buildUrl(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return {'url': null};
+    }
     return {
-      'url': value,
+      'url': value.trim(),
     };
   }
 
   /// Build an external files property (for cover images)
   static Map<String, dynamic> buildExternalFile(String? url) {
-    if (url == null || url.isEmpty) {
+    if (url == null || url.trim().isEmpty) {
+      return {'files': []};
+    }
+    final cleanUrl = url.trim();
+    // Notion API rejects hosted file URLs (AWS S3) if sent as 'external'
+    if (cleanUrl.contains('amazonaws.com') ||
+        cleanUrl.contains('prod-files-secure') ||
+        cleanUrl.contains('notion-static.com')) {
       return {'files': []};
     }
     return {
@@ -176,7 +192,7 @@ class NotionParser {
         {
           'type': 'external',
           'name': 'cover',
-          'external': {'url': url},
+          'external': {'url': cleanUrl},
         }
       ],
     };

@@ -150,6 +150,16 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Backend-Architect)` Auditar dependencias en `frontend/pubspec.yaml` y eliminar paquetes no utilizados (`dio: ^5.4.0` y `flutter_staggered_grid_view: ^0.7.0`) para aligerar la compilación y evitar dependencias transitivas innecesarias.
 - [x] `(Systems-Auditor)` Verificar que los 14 archivos Dart conserven únicamente imports activos y funcionalidades esenciales sin código muerto.
 
+---
+
+## 🛠️ 15. Corrección de Error 400 al Guardar Cambios en Notion (v2.8.4)
+- [x] `(Backend-Architect)` Diagnosticar y reproducir el error HTTP 400 (`validation_error: A file with type external cannot contain a Notion hosted file url`). Identificado que ocurría en páginas con portadas alojadas internamente en Notion (S3).
+- [x] `(Backend-Architect)` Actualizar `toNotionProperties()` en `Game` para aceptar el flag `includeCover` y filtrar URLs alojadas en AWS S3/Notion para no enviarlas como `external`.
+- [x] `(Frontend-UI)` Modificar `_saveChanges()` en `GameDetailScreen` para comparar si la portada realmente cambió; si no cambió, omitir `Portada` del PATCH preservando el archivo original de Notion.
+- [x] `(Backend-Architect)` Fortalecer constructores de `NotionParser` (`buildSelect`, `buildUrl`, `buildExternalFile`, `buildRichText`, `buildMultiSelect`) ante cadenas vacías y nulos.
+- [x] `(Backend-Architect)` Mejorar `NotionApiException` para deserializar el JSON de error de Notion y mostrar mensajes de error legibles en español en la interfaz.
+
+
 
 
 

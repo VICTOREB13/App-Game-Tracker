@@ -12,6 +12,16 @@ tags: [proyecto, changelog, versiones, v2.8.1, mobile-responsive, dual-row-filte
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [2.8.4] - 2026-08-27 (Fix Notion API Error 400 on Game Edit & Update)
+
+### Fixed & Enhanced
+- **Corrección de Error HTTP 400 al Guardar Cambios en Notion:**
+  - Diagnosticado el origen del error: juegos con portadas subidas directamente a Notion se almacenan como archivos S3 internos (`prod-files-secure.s3...`). Al guardar cualquier cambio desde el detalle del juego, la app re-enviaba esa URL con `type: external`, provocando el rechazo inmediato de la API de Notion: *"A file with type external cannot contain a Notion hosted file url. Use type file."*
+  - Modificado [`_saveChanges()`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/lib/screens/game_detail_screen.dart) para comparar si la URL de la portada fue realmente editada por el usuario. Si no fue modificada, se omite el campo `Portada` del payload PATCH, preservando la portada original en Notion sin provocar errores.
+  - Actualizado [`toNotionProperties()`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/lib/models/game.dart) para filtrar URLs alojadas en AWS S3/Notion e impedir su envío como enlaces externos.
+  - Robusteza en constructores de [`NotionParser`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/lib/services/notion_parser.dart) (`buildSelect`, `buildUrl`, `buildRichText`, `buildMultiSelect`) para enviar `null` o estructuras limpias en lugar de cadenas vacías que puedan invalidar el esquema de Notion.
+  - Mejorada la clase `NotionApiException` en [`notion_service.dart`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/lib/services/notion_service.dart) para parsear el campo `message` de la respuesta JSON de error de Notion y mostrar explicaciones claras en el SnackBar.
+
 ## [2.8.3] - 2026-08-27 (Code & Asset Optimization / Bloatware Removal)
 
 ### Removed & Optimized

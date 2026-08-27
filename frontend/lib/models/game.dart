@@ -63,7 +63,10 @@ class Game {
   }
 
   /// Build Notion properties map for creating/updating a page
-  Map<String, dynamic> toNotionProperties({bool includeTitle = true}) {
+  Map<String, dynamic> toNotionProperties({
+    bool includeTitle = true,
+    bool includeCover = true,
+  }) {
     final props = <String, dynamic>{};
 
     if (includeTitle) {
@@ -71,22 +74,10 @@ class Game {
     }
 
     props['Estado'] = NotionParser.buildStatus(status);
-
-    if (platform != null) {
-      props['Plataforma'] = NotionParser.buildSelect(platform!);
-    }
-
-    if (hoursPlayed != null) {
-      props['Horas Jugadas'] = NotionParser.buildNumber(hoursPlayed);
-    }
-
-    if (genres.isNotEmpty) {
-      props['Géneros'] = NotionParser.buildMultiSelect(genres);
-    }
-
-    if (rating != null) {
-      props['Calificación'] = NotionParser.buildSelect(rating!);
-    }
+    props['Plataforma'] = NotionParser.buildSelect(platform);
+    props['Horas Jugadas'] = NotionParser.buildNumber(hoursPlayed);
+    props['Géneros'] = NotionParser.buildMultiSelect(genres);
+    props['Calificación'] = NotionParser.buildSelect(rating);
 
     if (hltbMain != null) {
       props['HLTB Principal'] = NotionParser.buildNumber(hltbMain);
@@ -96,25 +87,19 @@ class Game {
       props['HLTB Completista'] = NotionParser.buildNumber(hltbCompletionist);
     }
 
-    if (summary != null) {
-      props['Resumen'] = NotionParser.buildRichText(summary);
-    }
+    props['Resumen'] = NotionParser.buildRichText(summary);
+    props['Link'] = NotionParser.buildUrl(link);
+    props['Fecha de Inicio'] = NotionParser.buildDate(startDate);
+    props['Fecha de Culminación (primera campaña)'] =
+        NotionParser.buildDate(completedDate);
 
-    if (link != null) {
-      props['Link'] = NotionParser.buildUrl(link);
-    }
-
-    if (startDate != null) {
-      props['Fecha de Inicio'] = NotionParser.buildDate(startDate);
-    }
-
-    if (completedDate != null) {
-      props['Fecha de Culminación (primera campaña)'] =
-          NotionParser.buildDate(completedDate);
-    }
-
-    if (coverUrl != null && coverUrl!.isNotEmpty) {
-      props['Portada'] = NotionParser.buildExternalFile(coverUrl);
+    if (includeCover && coverUrl != null && coverUrl!.isNotEmpty) {
+      final isNotionHosted = coverUrl!.contains('amazonaws.com') ||
+          coverUrl!.contains('prod-files-secure') ||
+          coverUrl!.contains('notion-static.com');
+      if (!isNotionHosted) {
+        props['Portada'] = NotionParser.buildExternalFile(coverUrl);
+      }
     }
 
     return props;

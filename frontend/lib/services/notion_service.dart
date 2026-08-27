@@ -393,6 +393,18 @@ class NotionApiException implements Exception {
 
   NotionApiException(this.message, [this.responseBody]);
 
+  String get detailedMessage {
+    if (responseBody != null && responseBody!.isNotEmpty) {
+      try {
+        final decoded = json.decode(responseBody!);
+        if (decoded is Map && decoded['message'] != null) {
+          return decoded['message'].toString();
+        }
+      } catch (_) {}
+    }
+    return message;
+  }
+
   @override
-  String toString() => 'NotionApiException: $message';
+  String toString() => 'NotionApiException: $detailedMessage';
 }

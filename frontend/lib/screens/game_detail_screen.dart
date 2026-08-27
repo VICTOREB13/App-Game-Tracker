@@ -161,9 +161,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
     try {
+      final newCover = _coverUrlController.text.trim();
+      final originalCover = (widget.game.coverUrl ?? '').trim();
+      final bool coverChanged = newCover != originalCover;
+
       final updatedGame = Game(
         notionPageId: widget.game.notionPageId,
-        title: _titleController.text,
+        title: _titleController.text.trim(),
         status: _selectedStatus,
         platform: _selectedPlatform,
         hoursPlayed: double.tryParse(_hoursController.text),
@@ -171,36 +175,47 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         rating: _selectedRating,
         hltbMain: double.tryParse(_hltbMainController.text),
         hltbCompletionist: double.tryParse(_hltbCompController.text),
-        coverUrl: _coverUrlController.text,
-        summary: _summaryController.text.isNotEmpty
-            ? _summaryController.text
+        coverUrl: newCover.isNotEmpty ? newCover : null,
+        summary: _summaryController.text.trim().isNotEmpty
+            ? _summaryController.text.trim()
             : null,
-        link: _linkController.text.isNotEmpty ? _linkController.text : null,
+        link: _linkController.text.trim().isNotEmpty
+            ? _linkController.text.trim()
+            : null,
         startDate: _startDate,
         completedDate: _completedDate,
       );
 
+      // Si la portada no fue modificada, no enviamos 'Portada' en el PATCH
+      // para preservar cualquier imagen existente de Notion (S3) y evitar error 400.
+      final props = updatedGame.toNotionProperties(
+        includeCover: coverChanged,
+      );
+
       await _notion.updatePage(
         widget.game.notionPageId,
-        updatedGame.toNotionProperties(),
+        props,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Cambios guardados en Notion',
-                style: GoogleFonts.inter(color: const Color(0xFF0A0E1A))),
-            backgroundColor: const Color(0xFF00F0FF),
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFF10B981),
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg =
+            e is NotionApiException ? e.detailedMessage : e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar: $e'),
+            content: Text('Error al guardar: $errorMsg'),
             backgroundColor: const Color(0xFFFF2D78),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
