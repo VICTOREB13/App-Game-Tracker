@@ -81,3 +81,4 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Backend-Architect)` Añadir timeout HTTP de 15 segundos a todas las peticiones a Notion para evitar bloqueos indefinidos.
 - [x] `(Frontend-UI)` Garantizar la detención del spinner de recarga en el AppBar mediante bloque `finally` con feedback mediante SnackBar.
 - [x] `(DevOps-Engineer)` Sincronizar número de versión a `2.7.2+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
+- [x] `(Frontend-UI)` Adaptar modal y exportador PNG de tarjeta social (`RepaintBoundary`) a modos Claro y Oscuro con conmutador en vivo `[ ☀️ Claro | 🌙 Oscuro ]`.

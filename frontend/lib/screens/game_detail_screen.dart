@@ -1005,29 +1005,33 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   void _showSocialCardDialog() {
+    final isCurrentDark = Theme.of(context).brightness == Brightness.dark;
+    bool cardIsDark = isCurrentDark;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return Dialog(
-            backgroundColor: const Color(0xFF09090B),
+            backgroundColor: AppColors.surface(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFF27272A), width: 1),
+              side: BorderSide(color: AppColors.border(context), width: 1),
             ),
             insetPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 580),
+              constraints: const BoxConstraints(maxWidth: 600),
               padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Header
+                  // Header with title and theme selector
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
                             padding: const EdgeInsets.all(6),
@@ -1045,18 +1049,119 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFAFAFA),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded,
-                            size: 18, color: Color(0xFFA1A1AA)),
-                        onPressed: () => Navigator.pop(ctx),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                            minWidth: 28, minHeight: 28),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Theme Switcher for card (Claro / Oscuro)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSubtle(context),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: AppColors.border(context)),
+                            ),
+                            padding: const EdgeInsets.all(2),
+                            child: Row(
+                              children: [
+                                InkWell(
+                                  onTap: () => setDialogState(
+                                      () => cardIsDark = false),
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: !cardIsDark
+                                          ? const Color(0xFFDC2626)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.light_mode_rounded,
+                                          size: 12,
+                                          color: !cardIsDark
+                                              ? Colors.white
+                                              : AppColors.textSecondary(
+                                                  context),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Claro',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: !cardIsDark
+                                                ? Colors.white
+                                                : AppColors.textSecondary(
+                                                    context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => setDialogState(
+                                      () => cardIsDark = true),
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: cardIsDark
+                                          ? const Color(0xFFDC2626)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.dark_mode_rounded,
+                                          size: 12,
+                                          color: cardIsDark
+                                              ? Colors.white
+                                              : AppColors.textSecondary(
+                                                  context),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Oscuro',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: cardIsDark
+                                                ? Colors.white
+                                                : AppColors.textSecondary(
+                                                    context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded,
+                                size: 18,
+                                color: AppColors.textSecondary(context)),
+                            onPressed: () => Navigator.pop(ctx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1065,7 +1170,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   // RepaintBoundary Card
                   RepaintBoundary(
                     key: _socialCardKey,
-                    child: _buildSocialCardPreview(),
+                    child: _buildSocialCardPreview(isDark: cardIsDark),
                   ),
                   const SizedBox(height: 20),
 
@@ -1078,7 +1183,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         child: Text(
                           'Cerrar',
                           style: GoogleFonts.inter(
-                              color: const Color(0xFFA1A1AA)),
+                              color: AppColors.textSecondary(context)),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1087,7 +1192,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             ? null
                             : () async {
                                 setDialogState(() => _isExporting = true);
-                                await _exportSocialCard();
+                                await _exportSocialCard(isDark: cardIsDark);
                                 if (mounted) {
                                   setDialogState(() => _isExporting = false);
                                   Navigator.pop(ctx);
@@ -1133,7 +1238,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
-  Widget _buildSocialCardPreview() {
+  Widget _buildSocialCardPreview({required bool isDark}) {
     final title = _titleController.text.trim().isEmpty
         ? widget.game.title
         : _titleController.text.trim();
@@ -1145,12 +1250,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D10),
+        color: isDark ? const Color(0xFF0D0D10) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF27272A), width: 1.2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFDC2626).withOpacity(0.12),
+            color: isDark
+                ? const Color(0xFFDC2626).withOpacity(0.12)
+                : Colors.black.withOpacity(0.08),
             blurRadius: 24,
             spreadRadius: 1,
             offset: const Offset(0, 6),
@@ -1198,7 +1308,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           style: GoogleFonts.outfit(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFAFAFA),
+                            color: isDark
+                                ? const Color(0xFFFAFAFA)
+                                : const Color(0xFF09090B),
                           ),
                         ),
                         TextSpan(
@@ -1213,7 +1325,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           text: ' • Game Tracker',
                           style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: const Color(0xFFA1A1AA),
+                            color: isDark
+                                ? const Color(0xFFA1A1AA)
+                                : const Color(0xFF71717A),
                           ),
                         ),
                       ],
@@ -1253,17 +1367,27 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         errorWidget: (_, __, ___) => Container(
                           width: 76,
                           height: 104,
-                          color: const Color(0xFF18181B),
-                          child: const Icon(Icons.gamepad_rounded,
-                              size: 28, color: Color(0xFF71717A)),
+                          color: isDark
+                              ? const Color(0xFF18181B)
+                              : const Color(0xFFF4F4F5),
+                          child: Icon(Icons.gamepad_rounded,
+                              size: 28,
+                              color: isDark
+                                  ? const Color(0xFF71717A)
+                                  : const Color(0xFFA1A1AA)),
                         ),
                       )
                     : Container(
                         width: 76,
                         height: 104,
-                        color: const Color(0xFF18181B),
-                        child: const Icon(Icons.gamepad_rounded,
-                            size: 28, color: Color(0xFF71717A)),
+                        color: isDark
+                            ? const Color(0xFF18181B)
+                            : const Color(0xFFF4F4F5),
+                        child: Icon(Icons.gamepad_rounded,
+                            size: 28,
+                            color: isDark
+                                ? const Color(0xFF71717A)
+                                : const Color(0xFFA1A1AA)),
                       ),
               ),
               const SizedBox(width: 14),
@@ -1280,7 +1404,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       style: GoogleFonts.outfit(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFFAFAFA),
+                        color: isDark
+                            ? const Color(0xFFFAFAFA)
+                            : const Color(0xFF09090B),
                         height: 1.15,
                       ),
                     ),
@@ -1288,13 +1414,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     Row(
                       children: [
                         if (_selectedPlatform.isNotEmpty) ...[
-                          PlatformHelper.getIcon(_selectedPlatform, size: 13),
+                          PlatformHelper.getIcon(_selectedPlatform,
+                              size: 13,
+                              color: isDark
+                                  ? const Color(0xFFA1A1AA)
+                                  : const Color(0xFF71717A)),
                           const SizedBox(width: 4),
                           Text(
                             _selectedPlatform,
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFFA1A1AA),
+                              color: isDark
+                                  ? const Color(0xFFA1A1AA)
+                                  : const Color(0xFF71717A),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1343,7 +1475,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFAFAFA),
+                            color: isDark
+                                ? const Color(0xFFFAFAFA)
+                                : const Color(0xFF09090B),
                           ),
                         ),
                         if (_completedDate != null) ...[
@@ -1352,7 +1486,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             '•  ${DateFormat('dd MMM yyyy').format(_completedDate!)}',
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              color: const Color(0xFFA1A1AA),
+                              color: isDark
+                                  ? const Color(0xFFA1A1AA)
+                                  : const Color(0xFF71717A),
                             ),
                           ),
                         ],
@@ -1369,11 +1505,18 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF18181B),
+                color: isDark
+                    ? const Color(0xFF18181B)
+                    : const Color(0xFFF4F4F5),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF27272A)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF27272A)
+                      : const Color(0xFFE4E4E7),
+                ),
               ),
               child: Text(
                 '“$summary”',
@@ -1382,7 +1525,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   fontStyle: FontStyle.italic,
-                  color: const Color(0xFFA1A1AA),
+                  color: isDark
+                      ? const Color(0xFFA1A1AA)
+                      : const Color(0xFF3F3F46),
                   height: 1.3,
                 ),
               ),
@@ -1393,7 +1538,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
-  Future<void> _exportSocialCard() async {
+  Future<void> _exportSocialCard({bool isDark = true}) async {
     try {
       final boundary = _socialCardKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
@@ -1405,6 +1550,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       final pngBytes = byteData.buffer.asUint8List();
 
       String savePath = '';
+      final modeSuffix = isDark ? 'Dark' : 'Light';
       if (Platform.isWindows) {
         final userProfile = Platform.environment['USERPROFILE'] ?? '';
         final downloadsDir = Directory('$userProfile\\Downloads');
@@ -1415,13 +1561,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             .replaceAll(RegExp(r'[^\w\s-]'), '')
             .replaceAll(' ', '_');
         final filePath =
-            '${downloadsDir.path}\\Resena_VE_${cleanTitle}_${DateTime.now().millisecondsSinceEpoch}.png';
+            '${downloadsDir.path}\\Resena_VE_${cleanTitle}_${modeSuffix}_${DateTime.now().millisecondsSinceEpoch}.png';
         final file = File(filePath);
         await file.writeAsBytes(pngBytes);
         savePath = filePath;
       } else {
         final file =
-            File('Resena_VE_${DateTime.now().millisecondsSinceEpoch}.png');
+            File('Resena_VE_${modeSuffix}_${DateTime.now().millisecondsSinceEpoch}.png');
         await file.writeAsBytes(pngBytes);
         savePath = file.path;
       }
@@ -1430,7 +1576,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Tarjeta exportada en Descargas: $savePath',
+              'Tarjeta ($modeSuffix) exportada en Descargas: $savePath',
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: const Color(0xFF10B981),

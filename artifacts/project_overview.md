@@ -51,10 +51,11 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
   - ⚡ *Aventura Ágil* (Juego completado en menor tiempo).
 - Medidor de salud de biblioteca (*Backlog Health*) y desglose porcentual de finalización.
 
-### 7. 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG)
+### 7. 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG) Adaptativa
 - Captura de alta resolución mediante `RepaintBoundary` (pixel ratio 2.5x).
+- **Adaptabilidad Cromática Dinámica:** Detecta el modo visual activo (Claro u Oscuro) y permite conmutar en vivo mediante toggle `[ ☀️ Claro | 🌙 Oscuro ]` antes de exportar.
 - Generación de imagen lista para compartir en Discord o redes sociales con branding oficial `VE`, carátula, estrellas, horas, fecha y cita personal.
-- Guardado directo en la carpeta `%USERPROFILE%\Downloads` en Windows.
+- Guardado directo en la carpeta `%USERPROFILE%\Downloads` en Windows con sufijo `_Light_` o `_Dark_`.
 
 ### 8. 🔍 Búsqueda Inteligente y Autocompletado (RAWG API)
 - Búsqueda en catálogo de más de 500,000 videojuegos con carátulas en HD.

@@ -26,7 +26,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Smart Sync & Optimización de Sincronización con Notion:**
   - **Chequeo Ultrarrápido (Head Check):** Antes de descargar todos los registros, la app consulta únicamente 1 registro remoto ordenado por `last_edited_time`. Si coincide con la marca de tiempo de la caché local, retorna de inmediato sin transferir cientos de registros innecesarios.
   - **Timeout HTTP de Seguridad:** Incorporado un límite estricto de 15 segundos en todas las llamadas de red (`http.get`, `http.post`, `http.patch`) para evitar que la app quede congelada o esperando indefinidamente.
-  - **Garantía de Desactivación del Spinner:** Añadido bloque `finally` en `_fetchGames` para asegurar que el indicador de carga del AppBar se detenga siempre, junto a un SnackBar de confirmación de sincronización.
+- **Tarjeta Social Exportable Adaptativa (Modo Claro / Oscuro):**
+  - La ventana modal de compartir y exportar reseña en PNG (`_showSocialCardDialog`) ahora detecta y adopta automáticamente el modo visual activo del usuario (Claro u Oscuro).
+  - Se incorporó un conmutador interactivo `[ ☀️ Claro | 🌙 Oscuro ]` en la cabecera del modal que permite previsualizar y alternar el tema de la postal gráfica antes de exportar.
+  - En modo claro, la tarjeta se renderiza con fondo blanco puro `#FFFFFF`, bordes zinc `#E4E4E7`, tipografía oscura `#09090B` y branding `#DC2626`. El archivo exportado se guarda automáticamente con el sufijo `_Light_` o `_Dark_` en la carpeta Descargas.
 
 ---
 

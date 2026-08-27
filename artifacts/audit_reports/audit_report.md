@@ -22,6 +22,7 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 | **Smart Sync & Timeout HTTP** | Red & Concurrencia | `PASS` | Consulta de verificación con `page_size: 1` ($350$ ms). Timeout de 15s previene bloqueos de UI. |
 | **Despeje de FAB (+ Añadir)** | UI / Layout | `PASS` | Paginador centrado con zona libre de 100px; eliminada toda colisión con botones de página. |
 | **Contraste de Filtros Modo Claro** | UX / Accesibilidad | `PASS` | Chips y dropdowns sobre fondo blanco `#FFFFFF` y bordes zinc `#E4E4E7`. Ratio > 18:1. |
+| **Exportación Social Dual (Light/Dark)** | Render / PNG | `PASS` | `RepaintBoundary` hereda el tema activo y permite conmutar `[Claro / Oscuro]` antes de guardar. |
 | **Sincronización de Versión** | Configuración | `PASS` | `pubspec.yaml`, `SettingsScreen`, `changelog_v1.md` alineados en `v2.7.2`. |
 
 ---
