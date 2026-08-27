@@ -29,7 +29,7 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 | **Preservación Visual 100%** | Frontend UI/UX | `PASS` | Paleta Zinc & Crimson Red (`#DC2626`), tipografías Outfit/Inter, temas Obsidian Zinc / Crisp Zinc, vistas Grid/List y Spotlight Hero intactos. |
 | **Portabilidad & Respaldo JSON** | `BackupService` | `PASS` | Exportación e importación directa a SQLite con soporte de formato v3 y compatibilidad hacia atrás con copias de seguridad previas. |
 | **CI/CD Exclusivo en Tags** | `.github/workflows/release.yml` | `PASS` | Automatización condicionada estrictamente a `push: tags: ['v*']`, compilando Windows x64 ZIP y APK Android firmado con `release.keystore` (hasta 2054). |
-| **Protección contra Forks** | `.github/workflows/sync-docs.yml` | `PASS` | Condición `if: github.repository == 'victorengineer-dev/App-Game-Tracker'` que previene errores en forks de usuarios externos. |
+| **Protección contra Forks** | `.github/workflows/sync-docs.yml` | `PASS` | Condición `if: github.repository == 'VICTOREB13/App-Game-Tracker'` que previene errores en forks de usuarios externos. |
 
 ---
 

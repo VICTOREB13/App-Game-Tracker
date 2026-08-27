@@ -80,7 +80,7 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 
 ## 🚀 8. Seguridad, CI/CD Automatizado & Documentación Open Source
 - [x] `(DevOps-Engineer)` Actualizar `README.md` con la versión final v3.0.5 y enlaces oficiales a [victorengineer.fyi](https://victorengineer.fyi).
-- [x] `(DevOps-Engineer)` Proteger workflow `.github/workflows/sync-docs.yml` agregando `if: github.repository == 'victorengineer-dev/App-Game-Tracker'`.
+- [x] `(DevOps-Engineer)` Proteger workflow `.github/workflows/sync-docs.yml` agregando `if: github.repository == 'VICTOREB13/App-Game-Tracker'`.
 - [x] `(DevOps-Engineer)` Blindar `.gitignore` con exclusiones de bases de datos locales (`*.db`, `*.sqlite`), backups JSON y archivos `.env`.
 - [x] `(DevOps-Engineer)` Verificar pipeline de releases `.github/workflows/release.yml` en tags (`v*`) para compilar Windows x64 ZIP y APK firmado permanente.
 - [x] `(Project-Planner)` Actualizar todos los artefactos del proyecto al estado v3.0.5.

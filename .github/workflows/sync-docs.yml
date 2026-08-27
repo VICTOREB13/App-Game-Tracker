@@ -10,7 +10,7 @@ on:
 jobs:
   sync-to-vault:
     runs-on: ubuntu-latest
-    if: github.repository == 'victorengineer-dev/App-Game-Tracker'
+    if: github.repository == 'VICTOREB13/App-Game-Tracker'
     steps:
       - name: 📥 Clonar Repositorio del Proyecto
         uses: actions/checkout@v4

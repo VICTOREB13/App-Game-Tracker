@@ -57,7 +57,7 @@ A diferencia de soluciones dependientes de la nube lenta o bases de datos de ter
 
 ## 🚀 Instalación y Descarga
 
-Puedes descargar los instaladores precompilados de la última versión estable directamente desde la sección de **[Releases](https://github.com/victorengineer-dev/App-Game-Tracker/releases)**:
+Puedes descargar los instaladores precompilados de la última versión estable directamente desde la sección de **[Releases](https://github.com/VICTOREB13/App-Game-Tracker/releases)**:
 
 - **Windows x64 (PC):** Descarga `App-Game-Tracker-Windows-x64.zip`, descomprímelo y ejecuta `tracker_app.exe`.
 - **Android:** Descarga `App-Game-Tracker-Android.apk` e instálalo en tu dispositivo móvil.
@@ -90,7 +90,7 @@ El repositorio incluye el archivo [`sample_games_library.json`](sample_games_lib
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/victorengineer-dev/App-Game-Tracker.git
+git clone https://github.com/VICTOREB13/App-Game-Tracker.git
 cd App-Game-Tracker/frontend
 
 # 2. Restaurar dependencias
@@ -144,4 +144,4 @@ Este proyecto se distribuye bajo la licencia **MIT**. Para más detalles, consul
 
 - **Autor:** Victor Engineer
 - **Sitio Web Oficial:** [https://victorengineer.fyi](https://victorengineer.fyi)
-- **Repositorio:** [victorengineer-dev/App-Game-Tracker](https://github.com/victorengineer-dev/App-Game-Tracker)
+- **Repositorio:** [VICTOREB13/App-Game-Tracker](https://github.com/VICTOREB13/App-Game-Tracker)
