@@ -30,6 +30,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Calidad de Vida en Biblioteca (Dashboard QoL):**
   - **Contador de Filtros Activos:** El botón de limpieza en la barra de herramientas ahora muestra dinámicamente la cantidad de filtros aplicados (`Limpiar (X)`).
   - **Botón de Borrado Rápido en Buscador:** Borrado instantáneo del término de búsqueda con un toque.
+- **Pulido Visual del Modal de Filtros (`FilterModalSheet`):**
+  - **Eliminación de Barra Negra:** Erradicado el divisor huérfano entre el buscador y la lista que generaba una línea oscura discordante en modo claro.
+  - **Bordes Redondeados Completos:** Aplicado radio de curvatura total (`BorderRadius.circular(24)`) y margen inferior flotante con `Clip.antiAlias` para que el modal termine con elegantes bordes redondeados tanto en la parte superior como inferior.
 
 ## [2.7.2] - 2026-08-26 (Light Mode Contrast Polish, Smart Sync & FAB Clearance)
 

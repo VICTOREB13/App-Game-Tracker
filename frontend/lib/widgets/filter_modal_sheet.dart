@@ -91,22 +91,26 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 520),
-        margin: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+        margin: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 20,
         ),
         decoration: BoxDecoration(
           color: surfaceColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
               blurRadius: 30,
               spreadRadius: 4,
-              offset: const Offset(0, -4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.82,
@@ -213,9 +217,7 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-
-              const Divider(height: 1, thickness: 1),
+              const SizedBox(height: 8),
 
               // Lista de Opciones
               Flexible(

@@ -116,6 +116,9 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Integrar sección de "Copia de Seguridad & Portabilidad" en `SettingsScreen` con botones para Exportar e Importar JSON.
 - [x] `(DevOps-Engineer)` Actualizar número de versión a `2.8.0+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
 - [x] `(Systems-Auditor)` Ejecutar auditoría de calidad, validación de integridad JSON y accesibilidad táctil.
+- [x] `(Frontend-UI)` Eliminar línea divisoria oscura huérfana entre el buscador y la lista en `FilterModalSheet`.
+- [x] `(Frontend-UI)` Aplicar bordes redondeados completos (`BorderRadius.circular(24)`) y margen inferior flotante en `FilterModalSheet` tanto para Géneros como Plataformas.
+
 
 
 
