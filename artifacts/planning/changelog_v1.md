@@ -15,10 +15,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 ## [2.8.2] - 2026-08-27 (Official Victor Engineer Native Branding & Iconography)
 
 ### Added & Enhanced
-- **Icono Oficial Nativo Victor Engineer (`icon.svg` & `app_icon.ico`):**
-  - Restaurado el vector oficial [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg) con el logotipo original de Victor Engineer (fondo rojo `#DC2626` con siglas blancas **VE** en negrita).
-  - Generado `app_icon.ico` multi-resolución (16x16, 32x32, 48x48, 64x64, 128x128, 256x256) para Windows y la suite completa de lanzador Android (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
-  - Ahora `tracker_app.exe` en el Explorador de Windows, la Barra de Tareas y la ventana principal exhibe el logotipo oficial y exclusivo de Victor Engineer.
+- **Icono de Aplicación Gamer y Preservación de `icon.svg`:**
+  - Preservado intacto el vector oficial [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg) original de Victor Engineer (con las siglas **VE**).
+  - Configurado el icono ejecutable (`app_icon.ico`) y de la app móvil (`app_icon.png` y mipmaps de Android) con el mando gamer 2D minimalista sobre fondo rojo Victor Engineer (`#DC2626`).
 - **Firma Criptográfica Permanente de Android (`release.keystore`):**
   - Resuelto el error *"Conflicto con un paquete ya existente"* al intentar actualizar la app en Android sin desinstalarla.
   - El error ocurría porque cada compilación en GitHub Actions se ejecuta en una máquina virtual efímera nueva, generando una clave temporal `debug.keystore` con una huella digital criptográfica (SHA-256) diferente en cada ejecución. Como Android prohíbe actualizar un paquete con firmas distintas por seguridad, bloqueaba la actualización.
