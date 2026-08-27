@@ -2,11 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 
-import '../services/notion_service.dart';
+import '../services/database_service.dart';
+import '../services/steam_service.dart';
 import '../services/theme_manager.dart';
 import '../services/backup_service.dart';
-import 'setup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -16,10 +17,15 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _notion = NotionService.instance;
   final _rawgKeyController = TextEditingController();
-  bool _isConnected = false;
-  String _dbId = '';
+  final _steamKeyController = TextEditingController();
+  final _steamIdController = TextEditingController();
+
+  int _gameCount = 0;
+  double _totalHours = 0.0;
+  String _dbPath = '';
+  bool _isTestingSteam = false;
+  bool _isSyncingSteam = false;
 
   @override
   void initState() {
@@ -27,12 +33,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadSettings();
   }
 
+  @override
+  void dispose() {
+    _rawgKeyController.dispose();
+    _steamKeyController.dispose();
+    _steamIdController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final count = await DatabaseService.instance.getGameCount();
+    final hours = await DatabaseService.instance.getTotalHours();
+    final path = await DatabaseService.instance.getDatabasePath();
+
     setState(() {
-      _isConnected = _notion.isConfigured;
-      _dbId = _notion.gamesDbId;
       _rawgKeyController.text = prefs.getString('rawg_key') ?? '';
+      _steamKeyController.text = prefs.getString('steam_api_key') ?? '';
+      _steamIdController.text = prefs.getString('steam_user_id') ?? '';
+      _gameCount = count;
+      _totalHours = hours;
+      _dbPath = path;
     });
   }
 
@@ -41,96 +62,204 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString('rawg_key', _rawgKeyController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('RAWG API Key guardada con éxito',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: const Color(0xFF10B981),
+        const SnackBar(
+          content: Text('RAWG API Key guardada con éxito'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  void _clearCache() {
-    _notion.clearCache();
+  Future<void> _saveSteamSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('steam_api_key', _steamKeyController.text.trim());
+    await prefs.setString('steam_user_id', _steamIdController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Caché local limpiado',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: const Color(0xFFDC2626),
+        const SnackBar(
+          content: Text('Credenciales de Steam guardadas con éxito'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  Future<void> _disconnect() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.border(context)),
-        ),
-        title: Text(
-          '¿Desconectar Notion?',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary(context),
-          ),
-        ),
-        content: Text(
-          'Se eliminarán las credenciales locales de Notion guardadas en este dispositivo.',
-          style: GoogleFonts.inter(
-            color: AppColors.textSecondary(context),
-            fontSize: 13,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.inter(color: AppColors.textSecondary(context)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-            ),
-            child: Text(
-              'Desconectar',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _testSteamConnection() async {
+    final key = _steamKeyController.text.trim();
+    final id = _steamIdController.text.trim();
 
-    if (confirm != true) return;
+    if (key.isEmpty || id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor ingresa tu Steam Web API Key y SteamID'),
+          backgroundColor: Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('notion_token');
-    await prefs.remove('notion_games_db_id');
-    _notion.clearCache();
+    setState(() => _isTestingSteam = true);
+
+    final isValid = await SteamService.instance.validateCredentials(key, id);
 
     if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const SetupScreen()),
-        (route) => false,
+      setState(() => _isTestingSteam = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isValid
+              ? '✅ Conexión con Steam validada exitosamente'
+              : '❌ No se pudo conectar con Steam. Verifica tu API Key y SteamID.'),
+          backgroundColor: isValid ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
 
-  Future<void> _editConnection() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SetupScreen()),
-    );
-    if (result == true) {
-      _loadSettings();
+  Future<void> _resolveSteamVanity() async {
+    final key = _steamKeyController.text.trim();
+    final idOrVanity = _steamIdController.text.trim();
+
+    if (key.isEmpty || idOrVanity.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ingresa primero la API Key y tu nombre o enlace de perfil'),
+          backgroundColor: Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final resolved = await SteamService.instance.resolveVanityUrl(key, idOrVanity);
+    if (resolved != null) {
+      setState(() {
+        _steamIdController.text = resolved;
+      });
+      await _saveSteamSettings();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ SteamID64 detectado: $resolved'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo resolver el nombre de usuario de Steam'),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _syncSteam() async {
+    final key = _steamKeyController.text.trim();
+    final id = _steamIdController.text.trim();
+
+    if (key.isEmpty || id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Guarda tus credenciales de Steam antes de sincronizar'),
+          backgroundColor: Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSyncingSteam = true);
+
+    try {
+      final res = await SteamService.instance.syncWithDatabase(apiKey: key, steamId: id);
+      await _loadSettings();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface(context),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppColors.border(context)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded,
+                    color: Color(0xFF10B981), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'Sincronización con Steam',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Resumen:', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                const SizedBox(height: 8),
+                Text('🎮 Juegos encontrados: ${res.totalFound}', style: GoogleFonts.inter(fontSize: 12)),
+                Text('🔄 Actualizados: ${res.updatedCount}', style: GoogleFonts.inter(fontSize: 12)),
+                Text('✨ Creados: ${res.createdCount}', style: GoogleFonts.inter(fontSize: 12)),
+                if (res.familySharingCount > 0)
+                  Text('👨‍👩‍👧‍👦 Family Sharing: ${res.familySharingCount}', style: GoogleFonts.inter(fontSize: 12)),
+                if (res.autoCulminatedCount > 0)
+                  Text('🏆 Auto-culminados por HLTB: ${res.autoCulminatedCount}', style: GoogleFonts.inter(fontSize: 12)),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Aceptar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error en sincronización: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncingSteam = false);
+    }
+  }
+
+  Future<void> _optimizeDatabase() async {
+    await DatabaseService.instance.vacuum();
+    await _loadSettings();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Base de datos SQLite optimizada'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -155,8 +284,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              // Apariencia y Tema (Modo Claro / Modo Oscuro)
-              _buildSectionHeader('Apariencia & Tema'),
+              // Apariencia y Tema
+              _buildSectionHeader('Apariencia'),
               const SizedBox(height: 12),
               AnimatedBuilder(
                 animation: ThemeManager.instance,
@@ -173,10 +302,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Selecciona el tema de la aplicación:',
+                          'Tema Visual',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: AppColors.textSecondary(context),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -214,8 +344,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Conexión Notion
-              _buildSectionHeader('Conexión Notion'),
+              // Almacenamiento Local SQLite
+              _buildSectionHeader('Base de Datos Local (SQLite)'),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -228,78 +358,153 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _isConnected
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFDC2626),
-                          ),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF10B981),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Motor SQLite Activo (Local-First)',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _isConnected ? 'Conectado a Notion' : 'Desconectado',
-                          style: GoogleFonts.outfit(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: _isConnected
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFFDC2626),
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          onPressed: _loadSettings,
+                          tooltip: 'Recargar métricas',
                         ),
                       ],
                     ),
-                    if (_isConnected) ...[
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Biblioteca: $_gameCount videojuegos registrados • ${_totalHours.toStringAsFixed(1)} horas registradas',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                    if (_dbPath.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
-                        'ID Base de Datos: ${_dbId.length > 16 ? '${_dbId.substring(0, 16)}...' : _dbId}',
+                        'Ruta: $_dbPath',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textSecondary(context),
+                          fontSize: 11,
+                          color: AppColors.textMuted(context),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: _optimizeDatabase,
+                      icon: const Icon(Icons.speed_rounded, size: 16, color: Color(0xFFDC2626)),
+                      label: Text(
+                        'Optimizar Base de Datos (Vacuum)',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textPrimary(context),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.border(context)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Integración con Steam
+              _buildSectionHeader('Sincronización con Steam'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border(context)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _steamKeyController,
+                      obscureText: true,
+                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
+                        labelText: 'Steam Web API Key',
+                        hintText: 'Clave de 32 caracteres',
+                        prefixIcon: const Icon(Icons.vpn_key_outlined, size: 18, color: Color(0xFFDC2626)),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.save_rounded, color: Color(0xFFDC2626)),
+                          onPressed: _saveSteamSettings,
+                          tooltip: 'Guardar clave',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _steamIdController,
+                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
+                        labelText: 'SteamID64 o Vanity URL',
+                        hintText: '76561198... o tu apodo de perfil',
+                        prefixIcon: const Icon(Icons.person_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search_rounded, color: Color(0xFFDC2626)),
+                          onPressed: _resolveSteamVanity,
+                          tooltip: 'Resolver Vanity URL a ID64',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Soporta juegos propios y Family Sharing con detección de horas y auto-culminación HLTB.',
+                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary(context)),
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: _editConnection,
+                            onPressed: _isTestingSteam ? null : _testSteamConnection,
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(color: AppColors.border(context)),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: Text(
-                              'Editar Conexión',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: AppColors.textPrimary(context),
-                              ),
-                            ),
+                            child: _isTestingSteam
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                : Text('Probar Conexión', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimary(context))),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: OutlinedButton(
-                            onPressed: _disconnect,
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                  color: Color(0xFFDC2626), width: 0.8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                          child: ElevatedButton.icon(
+                            onPressed: _isSyncingSteam ? null : _syncSteam,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFDC2626),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: Text(
-                              'Desconectar',
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFFDC2626),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            icon: const Icon(Icons.sync_rounded, size: 16),
+                            label: _isSyncingSteam
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Text('Sincronizar Ahora', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
                           ),
                         ),
                       ],
@@ -310,7 +515,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
 
               // RAWG API Key
-              _buildSectionHeader('Búsqueda de Juegos (RAWG)'),
+              _buildSectionHeader('Búsqueda & Metadatos (RAWG)'),
               const SizedBox(height: 12),
               TextField(
                 controller: _rawgKeyController,
@@ -333,7 +538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Permite autocompletar carátulas, géneros y plataformas al añadir juegos. Obtén una gratis en rawg.io/apidocs',
+                'Permite autocompletar carátulas, géneros y plataformas. Obtén una gratis en rawg.io/apidocs',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: AppColors.textSecondary(context),
@@ -342,7 +547,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 32),
 
               // Copia de Seguridad & Portabilidad (JSON)
-              _buildSectionHeader('Copia de Seguridad & Portabilidad'),
+              _buildSectionHeader('Copia de Seguridad & Portabilidad (JSON)'),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -355,7 +560,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Respalda toda tu biblioteca en un archivo JSON seguro o restaura una copia previa en cualquier dispositivo.',
+                      'Respalda toda tu biblioteca en un archivo JSON seguro o restaura copias previas.',
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         color: AppColors.textSecondary(context),
@@ -414,35 +619,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Cache & Offline
-              _buildSectionHeader('Almacenamiento Local & Caché'),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _clearCache,
-                  icon: const Icon(Icons.cleaning_services_rounded,
-                      size: 18, color: Color(0xFFDC2626)),
-                  label: Text(
-                    'Vaciar Caché Local',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppColors.textPrimary(context),
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.border(context)),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
               const SizedBox(height: 48),
 
-              // App info branding
+              // Branding oficial Victor Engineer
               Center(
                 child: Column(
                   children: [
@@ -493,7 +672,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v2.8.4',
+                      'Rastreador de Entretenimiento Personal • v3.0.1 (Local-First)',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
@@ -501,10 +680,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Sincronizado vía Notion API directa',
+                      'https://victorengineer.fyi',
                       style: GoogleFonts.inter(
-                        fontSize: 10,
-                        color: AppColors.textMuted(context),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFFDC2626),
                       ),
                     ),
                   ],
@@ -541,7 +721,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
@@ -591,14 +771,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Text('✅ Respaldo guardado exitosamente:\n$path'),
           backgroundColor: const Color(0xFF10B981),
           duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error al exportar respaldo: $e'),
+          content: Text('❌ Error al exportar: $e'),
           backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -638,19 +820,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Selecciona un archivo de respaldo encontrado en tu carpeta de Descargas o pega la ruta/contenido JSON:',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppColors.textSecondary(context),
-                      height: 1.4,
+                  // Botón directo para seleccionar archivo mediante FilePicker
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: ['json'],
+                          );
+                          if (result != null && result.files.single.path != null) {
+                            Navigator.pop(ctx);
+                            await _processFileImport(File(result.files.single.path!));
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFDC2626)),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.folder_open_rounded, size: 18),
+                      label: Text(
+                        'Elegir archivo JSON (Explorador)',
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
+
+                  // Botón para cargar datos de prueba ficticios
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final sampleFile = File('sample_games_library.json');
+                        if (await sampleFile.exists()) {
+                          await _processFileImport(sampleFile);
+                        } else {
+                          // Buscar en Downloads o directorio actual
+                          final alt = File('..\\sample_games_library.json');
+                          if (await alt.exists()) {
+                            await _processFileImport(alt);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('sample_games_library.json no encontrado'), backgroundColor: Color(0xFFDC2626)),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.science_outlined, size: 16, color: Color(0xFFDC2626)),
+                      label: Text(
+                        'Cargar Datos de Prueba (sample_games_library.json)',
+                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textPrimary(context)),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.border(context)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
                   if (availableBackups.isNotEmpty) ...[
                     Text(
-                      'Respaldos recientes encontrados:',
+                      'Respaldos en Descargas:',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -658,7 +900,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ...availableBackups.take(4).map((file) {
+                    ...availableBackups.take(3).map((file) {
                       final name = file.path.split(Platform.pathSeparator).last;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 6),
@@ -669,8 +911,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           },
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceSubtle(context),
                               borderRadius: BorderRadius.circular(8),
@@ -678,22 +919,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.insert_drive_file_outlined,
-                                    size: 18, color: Color(0xFFDC2626)),
-                                const SizedBox(width: 10),
+                                const Icon(Icons.insert_drive_file_outlined, size: 16, color: Color(0xFFDC2626)),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     name,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: AppColors.textPrimary(context),
-                                    ),
+                                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimary(context)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const Icon(Icons.arrow_forward_ios_rounded,
-                                    size: 12, color: Color(0xFFA1A1AA)),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFFA1A1AA)),
                               ],
                             ),
                           ),
@@ -704,9 +940,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
 
                   Text(
-                    'O especifica una ruta o contenido JSON:',
+                    'O pega la ruta o texto JSON:',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary(context),
                     ),
@@ -714,22 +950,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: textController,
-                    maxLines: 3,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.textPrimary(context),
-                    ),
+                    maxLines: 2,
+                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textPrimary(context)),
                     decoration: InputDecoration(
-                      hintText: 'C:\\ruta\\al\\archivo.json o contenido {...}',
-                      hintStyle: GoogleFonts.inter(
-                        fontSize: 11,
-                        color: AppColors.textSecondary(context),
-                      ),
+                      hintText: 'C:\\ruta\\backup.json o {"games": [...]}',
+                      hintStyle: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary(context)),
                       filled: true,
                       fillColor: AppColors.surfaceSubtle(context),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       contentPadding: const EdgeInsets.all(10),
                     ),
                   ),
@@ -740,11 +968,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                'Cancelar',
-                style: GoogleFonts.inter(
-                    color: AppColors.textSecondary(context)),
-              ),
+              child: Text('Cancelar', style: GoogleFonts.inter(color: AppColors.textSecondary(context))),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -772,12 +996,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _processFileImport(File file) async {
     try {
       final count = await BackupService.importBackupFromFile(file);
+      await _loadSettings();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('✅ ¡Éxito! Se restauraron $count juegos en la biblioteca.'),
+          content: Text('✅ ¡Éxito! Se restauraron $count juegos en SQLite.'),
           backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -786,6 +1011,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text('❌ Error al restaurar: $e'),
           backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -794,12 +1020,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _processJsonStringImport(String jsonStr) async {
     try {
       final count = await BackupService.importBackupFromJsonString(jsonStr);
+      await _loadSettings();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('✅ ¡Éxito! Se restauraron $count juegos en la biblioteca.'),
+          content: Text('✅ ¡Éxito! Se restauraron $count juegos en SQLite.'),
           backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
@@ -808,9 +1035,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SnackBar(
           content: Text('❌ Error al restaurar: $e'),
           backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 }
-

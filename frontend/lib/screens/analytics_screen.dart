@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
-import '../services/notion_service.dart';
+import '../services/database_service.dart';
 import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
 
@@ -17,7 +17,6 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  final _notion = NotionService.instance;
   List<Game> _games = [];
   bool _isLoading = true;
 
@@ -46,10 +45,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Future<void> _fetchData() async {
     try {
-      final pages = await _notion.getGames();
+      final games = await DatabaseService.instance.getAllGames();
       if (mounted) {
         setState(() {
-          _games = pages.map((p) => Game.fromNotionPage(p)).toList();
+          _games = games;
           _isLoading = false;
         });
       }

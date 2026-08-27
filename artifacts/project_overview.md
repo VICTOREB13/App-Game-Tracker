@@ -1,15 +1,15 @@
 ---
 tipo: overview
-proyecto: App_Rastreador_de_Entretenimiento_Personal
+proyecto: App_Game_Tracker
 estado: activo
-version: v2.8.4
+version: v3.0.0-planning
 fecha: 2026-08-27
-tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, victor-engineer, light-mode, dark-mode, multi-year, offline-cache, smart-sync, mobile-responsive, backup-json, permanent-signing, v2.8.4]
+tags: [proyecto, overview, sqlite, local-first, steam-api, rawg-api, flutter, entretenimiento, gaming, victor-engineer, open-source, v3.0.0]
 ---
 
 # 🚀 Visión General del Proyecto: Rastreador de Entretenimiento Personal
 
-Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android) desarrollada en **Flutter 3.22+**, conectada directamente a la **API de Notion** como base de datos en la nube sin intermediarios, enriquecida con metadatos de **RAWG API** y diseñada bajo la identidad visual de marca personal **Victor Engineer** (acento Rojo `#DC2626`, tipografías Google Fonts `Outfit` + `Inter`, y soporte nativo dual de **Modo Oscuro Obsidian Zinc** y **Modo Claro Crisp Zinc**).
+Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android) desarrollada en **Flutter 3.22+**, impulsada por un motor de almacenamiento **100% Local-First** con **SQLite**, sincronización inteligente con la **Steam Web API**, enriquecida con metadatos de **RAWG API**, empaquetada como software **Open Source** y diseñada bajo la identidad visual de marca personal **Victor Engineer** (acento Rojo `#DC2626`, tipografías Google Fonts `Outfit` + `Inter`, y soporte nativo dual de **Modo Oscuro Obsidian Zinc** y **Modo Claro Crisp Zinc**). Enlace oficial: [victorengineer.fyi](https://victorengineer.fyi).
 
 ---
 
@@ -85,9 +85,9 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 
 ## 🗺️ Índice de Artefactos del Proyecto
 
-- **Arquitectura del Sistema:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_architecture|Arquitectura del Sistema v2.8.4]]
-- **Contrato de Datos y API:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_api_spec|Especificación de API Notion y RAWG]]
-- **Plan de Implementación:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_implementation_plan|Plan de Implementación v2.8.4]]
-- **Lista de Tareas:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_task|Checklist de Tareas]]
-- **Historial de Versiones:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_changelog_v1|Changelog v1]]
-- **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_audit_report|Reporte de Auditoría]]
+- **Arquitectura del Sistema:** [[PRJ_App_Game_Tracker_architecture|Arquitectura del Sistema v3.0.0]]
+- **Contrato de Datos y API:** [[PRJ_App_Game_Tracker_api_spec|Especificación de API y Contratos SQLite]]
+- **Plan de Implementación:** [[PRJ_App_Game_Tracker_implementation_plan|Plan de Implementación v3.0.0]]
+- **Lista de Tareas:** [[PRJ_App_Game_Tracker_task|Checklist de Tareas]]
+- **Historial de Versiones:** [[PRJ_App_Game_Tracker_changelog_v1|Changelog v1]]
+- **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Game_Tracker_audit_report|Reporte de Auditoría]]

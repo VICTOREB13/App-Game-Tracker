@@ -4,9 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
-import '../services/notion_service.dart';
-import '../services/notion_parser.dart';
+import '../services/database_service.dart';
+import '../services/steam_service.dart';
 import '../services/theme_manager.dart';
+import '../widgets/app_cover_image.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 import 'game_detail_screen.dart';
@@ -24,7 +25,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
-  final _notion = NotionService.instance;
   final _searchController = TextEditingController();
 
   late final AnimationController _pulseController;
@@ -68,29 +68,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     final savedGridView = prefs.getBool('preferred_library_view_mode') ?? true;
     final savedPageSize = prefs.getInt('preferred_library_page_size') ?? 25;
 
-    // Load local disk cache immediately (0ms cold start)
-    final localPages = await _notion.getLocalCache();
-    if (localPages != null && localPages.isNotEmpty && mounted) {
-      final loadedGames =
-          localPages.map((page) => Game.fromNotionPage(page)).toList();
-      setState(() {
-        _isGridView = savedGridView;
-        _pageSize = savedPageSize;
-        _games = loadedGames;
-        _applyFilters();
-        _isLoading = false;
-      });
-    } else {
-      if (mounted) {
-        setState(() {
-          _isGridView = savedGridView;
-          _pageSize = savedPageSize;
-        });
-      }
-    }
+    setState(() {
+      _isGridView = savedGridView;
+      _pageSize = savedPageSize;
+    });
 
-    // Fetch fresh data in background (Stale-While-Revalidate)
-    _fetchGames();
+    await _fetchGames();
   }
 
   Future<void> _toggleViewMode() async {
@@ -159,14 +142,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     bool forceRefresh = false,
     bool userInitiated = false,
   }) async {
-    final hadGamesBefore = _games.isNotEmpty;
     try {
-      final pages = await _notion.getGames(
-        useCache: !forceRefresh,
-        forceFullSync: false,
-      );
-      final loadedGames =
-          pages.map((page) => Game.fromNotionPage(page)).toList();
+      final loadedGames = await DatabaseService.instance.getAllGames();
 
       if (mounted) {
         setState(() {
@@ -186,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    'Sincronizado con Notion (${loadedGames.length} juegos)',
+                    'Biblioteca local actualizada (${loadedGames.length} juegos)',
                     style: GoogleFonts.inter(
                         color: Colors.white, fontWeight: FontWeight.w500),
                   ),
@@ -202,30 +179,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isOffline = true;
+          _isLoading = false;
         });
-        if (userInitiated || !hadGamesBefore) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.wifi_off_rounded,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'No se pudo conectar con Notion. Mostrando datos locales en caché.',
-                      style: GoogleFonts.inter(color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: const Color(0xFFDC2626),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
       }
     } finally {
       if (mounted) {
@@ -235,6 +190,140 @@ class _DashboardScreenState extends State<DashboardScreen>
         });
       }
     }
+  }
+
+  Future<void> _syncWithSteam() async {
+    final prefs = await SharedPreferences.getInstance();
+    final apiKey = prefs.getString('steam_api_key') ?? '';
+    final steamId = prefs.getString('steam_user_id') ?? '';
+
+    if (apiKey.isEmpty || steamId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Configura tu Steam API Key y Steam ID en Ajustes para sincronizar.',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: const Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Ajustes',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.push(
+                context,
+                _buildFluidPageRoute(const SettingsScreen()),
+              ).then((_) => _fetchGames());
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isRefreshing = true);
+
+    try {
+      final result = await SteamService.instance.syncWithDatabase(
+        apiKey: apiKey,
+        steamId: steamId,
+      );
+
+      await _fetchGames();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface(context),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppColors.border(context)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded,
+                    color: Color(0xFF10B981), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'Sincronización con Steam',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Resultado del escaneo en Steam:',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildSyncRow('🎮 Juegos detectados:', '${result.totalFound}'),
+                _buildSyncRow('🔄 Horas actualizadas:', '${result.updatedCount}'),
+                _buildSyncRow('✨ Títulos nuevos añadidos:', '${result.createdCount}'),
+                if (result.familySharingCount > 0)
+                  _buildSyncRow('👨‍👩‍👧‍👦 Family Sharing detectados:', '${result.familySharingCount}'),
+                if (result.autoCulminatedCount > 0)
+                  _buildSyncRow('🏆 Auto-culminados por HLTB:', '${result.autoCulminatedCount}'),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sincronizando con Steam: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  Widget _buildSyncRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: 12, color: AppColors.textSecondary(context))),
+          Text(value,
+              style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(context))),
+        ],
+      ),
+    );
   }
 
   void _applyFilters() {
@@ -377,11 +466,29 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _quickAddHours(Game game, num deltaHours) async {
     final newHours = (game.hoursPlayed ?? 0) + deltaHours;
 
+    // Auto-culminación si horas >= HLTB
+    String finalStatus = game.status;
+    DateTime? finalCompleted = game.completedDate;
+    if (game.hltbMain != null &&
+        game.hltbMain! > 0 &&
+        newHours >= game.hltbMain! &&
+        game.status != 'Jugado') {
+      finalStatus = 'Jugado';
+      finalCompleted ??= DateTime.now();
+    }
+
+    final updated = game.copyWith(
+      hoursPlayed: newHours,
+      status: finalStatus,
+      completedDate: finalCompleted,
+      updatedAt: DateTime.now(),
+    );
+
     // Optimistic UI update
     setState(() {
-      final idx = _games.indexWhere((g) => g.notionPageId == game.notionPageId);
+      final idx = _games.indexWhere((g) => g.id == game.id);
       if (idx != -1) {
-        _games[idx] = _games[idx].copyWith(hoursPlayed: newHours);
+        _games[idx] = updated;
         _applyFilters();
       }
     });
@@ -396,12 +503,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
 
     try {
-      await _notion.updatePage(
-        game.notionPageId,
-        {'Horas Jugadas': NotionParser.buildNumber(newHours)},
-      );
+      await DatabaseService.instance.updateGame(updated);
     } catch (e) {
-      debugPrint('Error updating hours in Notion: $e');
+      debugPrint('Error updating hours in SQLite: $e');
     }
   }
 
@@ -412,26 +516,22 @@ class _DashboardScreenState extends State<DashboardScreen>
       completedDate = DateTime.now();
     }
 
+    final updated = game.copyWith(
+      status: newStatus,
+      completedDate: completedDate,
+      updatedAt: DateTime.now(),
+    );
+
     setState(() {
-      final idx = _games.indexWhere((g) => g.notionPageId == game.notionPageId);
+      final idx = _games.indexWhere((g) => g.id == game.id);
       if (idx != -1) {
-        _games[idx] = _games[idx].copyWith(
-          status: newStatus,
-          completedDate: completedDate,
-        );
+        _games[idx] = updated;
         _applyFilters();
       }
     });
 
     try {
-      final props = <String, dynamic>{
-        'Estado': NotionParser.buildStatus(newStatus),
-      };
-      if (completedDate != null) {
-        props['Fecha de Culminación (primera campaña)'] =
-            NotionParser.buildDate(completedDate);
-      }
-      await _notion.updatePage(game.notionPageId, props);
+      await DatabaseService.instance.updateGame(updated);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -444,7 +544,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       }
     } catch (e) {
-      debugPrint('Error updating status in Notion: $e');
+      debugPrint('Error updating status in SQLite: $e');
     }
   }
 
@@ -470,20 +570,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: game.coverUrl != null && game.coverUrl!.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: game.coverUrl!,
-                              width: 44,
-                              height: 56,
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              width: 44,
-                              height: 56,
-                              color: const Color(0xFF18181B),
-                              child: const Icon(Icons.sports_esports_rounded,
-                                  color: Color(0xFF71717A)),
-                            ),
+                      child: AppCoverImage(
+                        coverUrl: game.coverUrl,
+                        width: 44,
+                        height: 56,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -783,6 +875,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 onSelected: (val) async {
                   if (val == 'theme') {
                     ThemeManager.instance.toggleTheme();
+                  } else if (val == 'steam_sync') {
+                    _syncWithSteam();
                   } else if (val == 'refresh') {
                     setState(() => _isRefreshing = true);
                     _fetchGames(forceRefresh: true, userInitiated: true);
@@ -822,6 +916,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                   ),
                   PopupMenuItem(
+                    value: 'steam_sync',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sync_rounded,
+                            size: 18, color: Color(0xFFDC2626)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Sincronizar Steam',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
                     value: 'refresh',
                     child: Row(
                       children: [
@@ -829,7 +940,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             size: 18, color: Color(0xFFA1A1AA)),
                         const SizedBox(width: 10),
                         Text(
-                          'Sincronizar Notion',
+                          'Recargar Local',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             color: AppColors.textPrimary(context),
@@ -880,15 +991,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Color(0xFFDC2626)),
                       )
-                    : const Icon(Icons.refresh_rounded,
-                        color: Color(0xFFA1A1AA)),
-                tooltip: 'Refrescar de Notion',
-                onPressed: _isRefreshing
-                    ? null
-                    : () {
-                        setState(() => _isRefreshing = true);
-                        _fetchGames(forceRefresh: true, userInitiated: true);
-                      },
+                    : const Icon(Icons.sync_rounded,
+                        color: Color(0xFFDC2626)),
+                tooltip: 'Sincronizar con Steam',
+                onPressed: _isRefreshing ? null : _syncWithSteam,
               ),
               IconButton(
                 icon: const Icon(Icons.bar_chart_rounded,
@@ -1234,7 +1340,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   final game = _paginatedGames[index];
                                   return TweenAnimationBuilder<double>(
                                     key: ValueKey(
-                                        'stagger_${game.notionPageId}_$index'),
+                                        'stagger_${game.id}_$index'),
                                     tween: Tween<double>(begin: 0.0, end: 1.0),
                                     duration: Duration(
                                         milliseconds:
@@ -1345,8 +1451,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             Positioned.fill(
               child: Opacity(
                 opacity: isDark ? 0.15 : 0.07,
-                child: CachedNetworkImage(
-                  imageUrl: game.coverUrl!,
+                child: AppCoverImage(
+                  coverUrl: game.coverUrl,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -1359,20 +1465,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // Cover
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: game.coverUrl != null && game.coverUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: game.coverUrl!,
-                          width: 60,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          width: 60,
-                          height: 80,
-                          color: AppColors.surfaceSubtle(context),
-                          child: Icon(Icons.sports_esports_rounded,
-                              color: AppColors.textSecondary(context)),
-                        ),
+                  child: AppCoverImage(
+                    coverUrl: game.coverUrl,
+                    width: 60,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 // Details & Progress
@@ -2050,7 +2148,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       itemBuilder: (context, index) {
         final game = games[index];
         return TweenAnimationBuilder<double>(
-          key: ValueKey('list_stagger_${game.notionPageId}_$index'),
+          key: ValueKey('list_stagger_${game.id}_$index'),
           tween: Tween<double>(begin: 0.0, end: 1.0),
           duration: Duration(milliseconds: 250 + ((index % 10) * 25)),
           curve: Curves.easeOutQuart,
@@ -2160,37 +2258,15 @@ class _GameListRowState extends State<_GameListRow> {
             children: [
               // Thumbnail cover with Hero
               Hero(
-                tag: 'game-cover-${game.notionPageId}',
+                tag: 'game-cover-${game.id}',
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: game.coverUrl != null && game.coverUrl!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: game.coverUrl!,
-                          width: 36,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            width: 36,
-                            height: 48,
-                            color: AppColors.border(context),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            width: 36,
-                            height: 48,
-                            color: AppColors.border(context),
-                            child: Icon(Icons.gamepad_rounded,
-                                size: 16,
-                                color: AppColors.textSecondary(context)),
-                          ),
-                        )
-                      : Container(
-                          width: 36,
-                          height: 48,
-                          color: AppColors.border(context),
-                          child: Icon(Icons.gamepad_rounded,
-                              size: 16,
-                              color: AppColors.textSecondary(context)),
-                        ),
+                  child: AppCoverImage(
+                    coverUrl: game.coverUrl,
+                    width: 36,
+                    height: 48,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2416,7 +2492,7 @@ class _GameCardState extends State<_GameCard> {
                     fit: StackFit.expand,
                     children: [
                       Hero(
-                        tag: 'game-cover-${game.notionPageId}',
+                        tag: 'game-cover-${game.id}',
                         child: ClipRRect(
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(13)),
@@ -2424,34 +2500,10 @@ class _GameCardState extends State<_GameCard> {
                             scale: _isHovered ? 1.05 : 1.0,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOutCubic,
-                            child: game.coverUrl != null &&
-                                    game.coverUrl!.isNotEmpty
-                                ? CachedNetworkImage(
-                                    imageUrl: game.coverUrl!,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
-                                      color: const Color(0xFF18181B),
-                                      child: const Center(
-                                        child: Icon(Icons.gamepad_rounded,
-                                            color: Color(0xFF71717A), size: 32),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        Container(
-                                      color: const Color(0xFF18181B),
-                                      child: const Center(
-                                        child: Icon(Icons.gamepad_rounded,
-                                            color: Color(0xFF71717A), size: 32),
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    color: const Color(0xFF18181B),
-                                    child: const Center(
-                                      child: Icon(Icons.gamepad_rounded,
-                                          color: Color(0xFF71717A), size: 32),
-                                    ),
-                                  ),
+                            child: AppCoverImage(
+                              coverUrl: game.coverUrl,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),

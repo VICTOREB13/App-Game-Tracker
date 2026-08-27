@@ -3,13 +3,16 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/game.dart';
-import '../services/notion_service.dart';
+import '../services/database_service.dart';
 import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
+import '../widgets/app_cover_image.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final Game game;
@@ -20,7 +23,6 @@ class GameDetailScreen extends StatefulWidget {
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
-  final _notion = NotionService.instance;
   final GlobalKey _socialCardKey = GlobalKey();
   bool _isExporting = false;
   late TextEditingController _titleController;
@@ -114,9 +116,79 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     _completedDate = widget.game.completedDate;
   }
 
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _hoursController.dispose();
+    _hltbMainController.dispose();
+    _hltbCompController.dispose();
+    _coverUrlController.dispose();
+    _summaryController.dispose();
+    _linkController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickLocalImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final pickedFilePath = result.files.single.path!;
+        final pickedFile = File(pickedFilePath);
+
+        // Directorio interno persistente de portadas
+        final appDir = await getApplicationDocumentsDirectory();
+        final coversDir = Directory(p.join(appDir.path, 'covers'));
+        if (!await coversDir.exists()) {
+          await coversDir.create(recursive: true);
+        }
+
+        final ext = p.extension(pickedFilePath).toLowerCase();
+        final destName = 'cover_${widget.game.id}_${DateTime.now().millisecondsSinceEpoch}$ext';
+        final destPath = p.join(coversDir.path, destName);
+
+        await pickedFile.copy(destPath);
+
+        setState(() {
+          _coverUrlController.text = destPath;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('Imagen de portada seleccionada'),
+                ],
+              ),
+              backgroundColor: Color(0xFF10B981),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _addQuickHours(double delta) {
     final current = double.tryParse(_hoursController.text) ?? 0.0;
-    final updated = current + delta;
+    final updated = (current + delta).clamp(0.0, 99999.0);
     setState(() {
       _hoursController.text =
           updated % 1 == 0 ? updated.toInt().toString() : updated.toStringAsFixed(1);
@@ -124,8 +196,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('+${delta % 1 == 0 ? delta.toInt() : delta}h añadidas al contador'),
-        backgroundColor: const Color(0xFF00F0FF),
+        backgroundColor: const Color(0xFFDC2626),
         duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -140,7 +213,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF00F0FF),
+            primary: Color(0xFFDC2626),
             surface: Color(0xFF141927),
           ),
         ),
@@ -162,19 +235,31 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     setState(() => _isSaving = true);
     try {
       final newCover = _coverUrlController.text.trim();
-      final originalCover = (widget.game.coverUrl ?? '').trim();
-      final bool coverChanged = newCover != originalCover;
+      final hours = double.tryParse(_hoursController.text) ?? 0.0;
+      final hltbMain = double.tryParse(_hltbMainController.text);
+      final hltbComp = double.tryParse(_hltbCompController.text);
 
-      final updatedGame = Game(
-        notionPageId: widget.game.notionPageId,
+      String finalStatus = _selectedStatus;
+      DateTime? finalCompleted = _completedDate;
+
+      // Auto-culminación si horas superan HLTB
+      if (hltbMain != null &&
+          hltbMain > 0 &&
+          hours >= hltbMain &&
+          _selectedStatus != 'Jugado') {
+        finalStatus = 'Jugado';
+        finalCompleted ??= DateTime.now();
+      }
+
+      final updatedGame = widget.game.copyWith(
         title: _titleController.text.trim(),
-        status: _selectedStatus,
+        status: finalStatus,
         platform: _selectedPlatform,
-        hoursPlayed: double.tryParse(_hoursController.text),
+        hoursPlayed: hours,
         genres: _selectedGenres,
         rating: _selectedRating,
-        hltbMain: double.tryParse(_hltbMainController.text),
-        hltbCompletionist: double.tryParse(_hltbCompController.text),
+        hltbMain: hltbMain,
+        hltbCompletionist: hltbComp,
         coverUrl: newCover.isNotEmpty ? newCover : null,
         summary: _summaryController.text.trim().isNotEmpty
             ? _summaryController.text.trim()
@@ -183,39 +268,31 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             ? _linkController.text.trim()
             : null,
         startDate: _startDate,
-        completedDate: _completedDate,
+        completedDate: finalCompleted,
+        updatedAt: DateTime.now(),
       );
 
-      // Si la portada no fue modificada, no enviamos 'Portada' en el PATCH
-      // para preservar cualquier imagen existente de Notion (S3) y evitar error 400.
-      final props = updatedGame.toNotionProperties(
-        includeCover: coverChanged,
-      );
-
-      await _notion.updatePage(
-        widget.game.notionPageId,
-        props,
-      );
+      await DatabaseService.instance.updateGame(updatedGame);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Cambios guardados en Notion',
+            content: Text('Cambios guardados en la biblioteca local',
                 style: GoogleFonts.inter(color: Colors.white)),
             backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        final errorMsg =
-            e is NotionApiException ? e.detailedMessage : e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar: $errorMsg'),
-            backgroundColor: const Color(0xFFFF2D78),
+            content: Text('Error al guardar: $e'),
+            backgroundColor: const Color(0xFFDC2626),
             duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -228,27 +305,33 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final bool confirm = await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF141927),
+            backgroundColor: AppColors.surface(context),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppColors.border(context)),
+            ),
             title: Text('¿Eliminar juego?',
-                style: GoogleFonts.spaceGrotesk(
-                    color: const Color(0xFFF0F2F5))),
+                style: GoogleFonts.outfit(
+                    color: AppColors.textPrimary(context),
+                    fontWeight: FontWeight.bold)),
             content: Text(
-              'Se moverá a la papelera de Notion.',
-              style:
-                  GoogleFonts.inter(color: const Color(0xFF6B7394)),
+              'Este videojuego será eliminado de tu base de datos local.',
+              style: GoogleFonts.inter(color: AppColors.textSecondary(context)),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: Text('Cancelar',
                     style: GoogleFonts.inter(
-                        color: const Color(0xFF6B7394))),
+                        color: AppColors.textSecondary(context))),
               ),
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Eliminar',
-                    style: GoogleFonts.inter(
-                        color: const Color(0xFFFF2D78))),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Eliminar'),
               ),
             ],
           ),
@@ -257,14 +340,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     if (!confirm) return;
     try {
-      await _notion.deletePage(widget.game.notionPageId);
+      await DatabaseService.instance.deleteGame(widget.game.id);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al borrar: $e'),
-            backgroundColor: const Color(0xFFFF2D78),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -325,8 +409,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              CachedNetworkImage(
-                                imageUrl: _coverUrlController.text,
+                              AppCoverImage(
+                                coverUrl: _coverUrlController.text,
                                 fit: BoxFit.cover,
                               ),
                               Container(
@@ -349,7 +433,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
                     // Centered Main Cover Card with Hero animation
                     Hero(
-                      tag: 'game-cover-${widget.game.notionPageId}',
+                      tag: 'game-cover-${widget.game.id}',
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 16),
                         decoration: BoxDecoration(
@@ -364,31 +448,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: _coverUrlController.text.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: _coverUrlController.text,
-                                  height: 220,
-                                  width: 160,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(
-                                      height: 220,
-                                      width: 160,
-                                      color: AppColors.surfaceSubtle(context)),
-                                  errorWidget: (_, __, ___) => Container(
-                                    height: 220,
-                                    width: 160,
-                                    color: AppColors.surfaceSubtle(context),
-                                    child: const Icon(Icons.sports_esports_rounded,
-                                        size: 50, color: Color(0xFF71717A)),
-                                  ),
-                                )
-                              : Container(
-                                  height: 220,
-                                  width: 160,
-                                  color: AppColors.surfaceSubtle(context),
-                                  child: const Icon(Icons.sports_esports_rounded,
-                                      size: 50, color: Color(0xFF71717A)),
-                                ),
+                          child: AppCoverImage(
+                            coverUrl: _coverUrlController.text,
+                            height: 220,
+                            width: 160,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
@@ -785,6 +850,107 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                // Cover Image Customizer
+                _buildSectionHeader('Portada del Videojuego'),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface(context),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border(context)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          AppCoverImage(
+                            coverUrl: _coverUrlController.text,
+                            width: 50,
+                            height: 68,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Personalizar carátula',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Ingresa una URL web o sube un archivo directamente desde tu galería.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  onPressed: _pickLocalImage,
+                                  icon: const Icon(Icons.photo_library_rounded,
+                                      size: 16, color: Color(0xFFDC2626)),
+                                  label: Text(
+                                    'Elegir de mi Galería / Disco',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    side: BorderSide(
+                                        color: AppColors.border(context)),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _coverUrlController,
+                        onChanged: (_) => setState(() {}),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppColors.textPrimary(context),
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'URL web de portada (o ruta local)',
+                          hintText: 'https://ejemplo.com/portada.jpg',
+                          prefixIcon: const Icon(Icons.image_outlined,
+                              size: 18, color: Color(0xFFDC2626)),
+                          suffixIcon: _coverUrlController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded,
+                                      size: 18),
+                                  onPressed: () {
+                                    _coverUrlController.clear();
+                                    setState(() {});
+                                  },
+                                )
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
                 // Link
                 TextField(
                   controller: _linkController,
@@ -848,7 +1014,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : Text('Guardar Todo en Notion',
+                        : Text('Guardar Cambios',
                             style: GoogleFonts.outfit(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
                   ),

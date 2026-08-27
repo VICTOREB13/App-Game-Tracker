@@ -26,7 +26,7 @@ jobs:
       - name: 🔄 Procesar, Renombrar y Copiar Artefactos
         run: |
           # 1. Define el nombre base de tu proyecto
-          PROYECTO="App_Rastreador_de_Entretenimiento_Personal" # <-- Cambia esto por tu proyecto (ej: Homepage, Pasantias)
+          PROYECTO="App_Game_Tracker" # <-- Cambia esto por tu proyecto (ej: Homepage, Pasantias)
           
           # 2. Configura las variables de rutas y prefijos
           PREFIJO="PRJ_${PROYECTO}_"

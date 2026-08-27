@@ -1,0 +1,30 @@
+name: Actualizador de Juegos
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Se ejecuta cada 6 horas
+  workflow_dispatch:      # Permite ejecutarlo manual con un botón
+
+jobs:
+  update-games:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v3
+
+      - name: Instalar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Correr Script
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DB_ID_GAMES: ${{ secrets.DB_ID_GAMES }}
+          RAWG_KEY: ${{ secrets.RAWG_KEY }}
+          STEAM_KEY: ${{ secrets.STEAM_KEY }} 
+          STEAM_USER_ID: ${{ secrets.STEAM_USER_ID }}
+        run: python games.py

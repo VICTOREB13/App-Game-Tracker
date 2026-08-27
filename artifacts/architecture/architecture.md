@@ -1,28 +1,29 @@
 ---
 tipo: architecture
-proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.4
-estado: activo
+proyecto: App_Game_Tracker
+version: v3.0.0-planning
+estado: en_transicion
 fecha: 2026-08-27
-tags: [arquitectura, flutter, notion-api, rawg-api, theme-architecture, offline-cache, pagination, gamification, smart-sync, backup-service, mobile-responsive, permanent-signing, victor-engineer]
+tags: [arquitectura, flutter, sqlite-local, steam-api, rawg-api, theme-architecture, offline-first, pagination, gamification, backup-service, mobile-responsive, permanent-signing, victor-engineer, open-source]
 ---
 
-# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v2.8.4)
+# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v3.0.0)
 
-Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer**.
+Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer** ([victorengineer.fyi](https://victorengineer.fyi)).
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 🛠️ Stack Tecnológico (v3.0.0 Local-First)
 
 - **Frontend & Core:** Flutter 3.22+ / Dart SDK (`>= 3.2.0 < 4.0.0`).
 - **Plataformas Soportadas:** Windows Desktop (x64 nativo) y Android (APK Fat / AAB).
-- **Base de Datos Principal:** Notion API v1 (`2022-06-28`) consumida directamente vía HTTPS.
-- **Servicio de Enriquecimiento:** RAWG Video Games Database API (búsqueda, carátulas HD y metadatos).
-- **Capa de Red & Concurrencia:** `http: ^1.2.0` con cola FIFO de peticiones y rate limiter estricto (máximo 3 req/s).
-- **Capa de Persistencia Local:** `shared_preferences: ^2.2.2` para credenciales, configuración de temas, metas anuales y caché offline persistente.
+- **Base de Datos Principal:** **SQLite 3 Local** (`sqflite: ^2.3.2` en Android y `sqflite_common_ffi: ^2.3.2+1` en Windows Desktop). Cero latencia (0 ms), sin límites de llamadas ni dependencia de servidores en la nube.
+- **Sincronización de Tiempo Real:** **Steam Web API** (`IPlayerService`, `ISteamUser`) para sincronizar biblioteca oficial y horas de juego.
+- **Servicio de Enriquecimiento:** **RAWG Video Games Database API** (búsqueda, carátulas HD y metadatos de más de 500k juegos).
+- **Capa de Persistencia & Configuración:** SQLite para entidades de juego y `shared_preferences` para preferencias de usuario (claves de API, tema, metas anuales).
 - **Capa de Respaldos:** `BackupService` con serialización/deserialización JSON de biblioteca completa y metadatos de configuración.
 - **Seguridad & Firma Android:** `release.keystore` permanente (RSA 2048 / SHA-256) con validez hasta 2054 y versionado dinámico inyectado en CI/CD.
+- **Licencia & Distribución:** Open Source bajo licencia MIT con releases automáticos en GitHub Actions.
 - **Diseño & Identidad de Marca:** Sistema oficial **Victor Engineer**:
   - **Acento Primario:** Rojo Carmesí `#DC2626`.
   - **Tipografía:** Google Fonts `Outfit` (titulares, marcas, métricas) + `Inter` (cuerpo de texto, datos y tablas).

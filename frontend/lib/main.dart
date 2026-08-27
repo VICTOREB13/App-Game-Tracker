@@ -1,24 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import 'services/notion_service.dart';
+import 'services/database_service.dart';
 import 'services/theme_manager.dart';
 import 'screens/dashboard.dart';
-import 'screens/setup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load saved Notion credentials
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('notion_token') ?? '';
-  final gamesDbId = prefs.getString('notion_games_db_id') ?? '';
+  // Inicializar base de datos local SQLite (0 ms cold start)
+  await DatabaseService.instance.init();
 
-  if (token.isNotEmpty && gamesDbId.isNotEmpty) {
-    NotionService.instance.configure(token: token, gamesDbId: gamesDbId);
-  }
-
-  // Load theme preference
+  // Cargar preferencia de tema (Oscuro / Claro / Sistema)
   await ThemeManager.instance.loadTheme();
 
   runApp(const TrackerApp());
@@ -29,8 +21,6 @@ class TrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isConfigured = NotionService.instance.isConfigured;
-
     return AnimatedBuilder(
       animation: ThemeManager.instance,
       builder: (context, _) {
@@ -40,7 +30,7 @@ class TrackerApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeManager.instance.themeMode,
-          home: isConfigured ? const DashboardScreen() : const SetupScreen(),
+          home: const DashboardScreen(),
         );
       },
     );

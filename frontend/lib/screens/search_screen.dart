@@ -6,8 +6,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-import '../services/notion_service.dart';
-import '../services/notion_parser.dart';
+import '../models/game.dart';
+import '../services/database_service.dart';
 import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
 
@@ -646,7 +646,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ),
                           icon: const Icon(Icons.add_rounded, size: 18),
                           label: Text(
-                            'Añadir a Notion',
+                            'Añadir a mi Biblioteca',
                             style: GoogleFonts.outfit(
                               fontWeight: FontWeight.bold,
                             ),
@@ -664,7 +664,7 @@ class _SearchScreenState extends State<SearchScreen> {
     );
 
     if (shouldSave == true) {
-      await _addGameToNotion(
+      await _addGameToLibrary(
         rawgGame: rawgGame,
         status: selectedStatus,
         platform: selectedPlatform,
@@ -675,7 +675,7 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Future<void> _addGameToNotion({
+  Future<void> _addGameToLibrary({
     required Map<String, dynamic> rawgGame,
     required String status,
     required String platform,
@@ -692,49 +692,44 @@ class _SearchScreenState extends State<SearchScreen> {
     );
 
     try {
-      final notion = NotionService.instance;
+      final title = rawgGame['name']?.toString() ?? 'Sin nombre';
+      final coverUrl = rawgGame['background_image']?.toString();
+      final playtime = (rawgGame['playtime'] as num?)?.toDouble();
 
-      // Build properties
-      final properties = <String, dynamic>{
-        'Título': NotionParser.buildTitle(rawgGame['name'] ?? 'Sin nombre'),
-        'Estado': NotionParser.buildStatus(status),
-        'Plataforma': NotionParser.buildSelect(platform),
-        'Horas Jugadas': NotionParser.buildNumber(hoursPlayed),
-      };
-
-      if (startDate != null) {
-        properties['Fecha de Inicio'] = NotionParser.buildDate(startDate);
+      DateTime? completedDate;
+      String finalStatus = status;
+      if (playtime != null && playtime > 0 && hoursPlayed >= playtime && status != 'Jugado') {
+        finalStatus = 'Jugado';
+        completedDate = DateTime.now();
       }
 
-      if (genres.isNotEmpty) {
-        properties['Géneros'] = NotionParser.buildMultiSelect(genres);
-      }
+      final newGame = Game(
+        title: title,
+        coverUrl: coverUrl,
+        status: finalStatus,
+        platform: platform,
+        hoursPlayed: hoursPlayed,
+        genres: genres,
+        hltbMain: playtime,
+        startDate: startDate,
+        completedDate: completedDate,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
 
-      // Add cover if available
-      final coverUrl = rawgGame['background_image'];
-      if (coverUrl != null && coverUrl.toString().isNotEmpty) {
-        properties['Portada'] =
-            NotionParser.buildExternalFile(coverUrl.toString());
-      }
-
-      // Add HLTB from RAWG's playtime
-      if (rawgGame['playtime'] != null && rawgGame['playtime'] > 0) {
-        properties['HLTB Principal'] =
-            NotionParser.buildNumber(rawgGame['playtime']);
-      }
-
-      await notion.createPage(notion.gamesDbId, properties);
+      await DatabaseService.instance.insertGame(newGame);
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '¡"${rawgGame['name']}" añadido a Notion con éxito!',
+              '¡"${newGame.title}" añadido a tu biblioteca!',
               style: GoogleFonts.inter(color: Colors.white),
             ),
             backgroundColor: const Color(0xFF10B981),
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.pop(context, true); // Return to dashboard and refresh
@@ -744,8 +739,9 @@ class _SearchScreenState extends State<SearchScreen> {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al guardar en Notion: $e'),
+            content: Text('Error al guardar en la biblioteca: $e'),
             backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

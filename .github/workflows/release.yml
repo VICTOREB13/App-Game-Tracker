@@ -1,0 +1,163 @@
+name: Publicar Release Oficial
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build_windows:
+    name: Compilar Ejecutable Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Entorno Visual Studio C++ (MSVC)
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Habilitar Soporte de Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Generar Archivos de Plataforma Windows
+        working-directory: ./frontend
+        run: flutter create --platforms windows .
+
+      - name: Configurar Icono Oficial Victor Engineer (Windows)
+        working-directory: ./frontend
+        shell: pwsh
+        run: |
+          if (Test-Path "assets/images/app_icon.ico") {
+            Copy-Item -Path "assets/images/app_icon.ico" -Destination "windows/runner/resources/app_icon.ico" -Force
+            Write-Host "✅ Icono app_icon.ico instalado"
+          }
+
+      - name: Restaurar Dependencias
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Compilar Aplicación para Windows
+        working-directory: ./frontend
+        run: flutter build windows --release
+
+      - name: Empaquetar Binario en Archivo ZIP
+        working-directory: ./frontend
+        shell: pwsh
+        run: |
+          $releasePath = if (Test-Path "build\windows\x64\runner\Release") { 
+              "build\windows\x64\runner\Release" 
+          } elseif (Test-Path "build\windows\runner\Release") { 
+              "build\windows\runner\Release" 
+          } else { 
+              Get-ChildItem -Path "build\windows" -Recurse -Filter "*.exe" | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+          }
+          Write-Host "Comprimiendo release desde: $releasePath"
+          Compress-Archive -Path "$releasePath\*" -DestinationPath "build\windows\App-Game-Tracker-Windows-x64.zip" -Force
+
+      - name: Subir Artifact Temporal de Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-Game-Tracker-Windows-x64
+          path: frontend/build/windows/App-Game-Tracker-Windows-x64.zip
+
+  build_android:
+    name: Compilar APK Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+
+      - name: Generar Archivos de Plataforma Android
+        working-directory: ./frontend
+        run: flutter create --platforms android .
+
+      - name: Configurar Nombre y Permisos
+        working-directory: ./frontend
+        run: |
+          sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+
+      - name: Configurar Iconos Oficiales Victor Engineer
+        working-directory: ./frontend
+        run: |
+          if [ -d "assets/launcher_icons/android" ]; then
+            cp -r assets/launcher_icons/android/* android/app/src/main/res/
+          fi
+
+      - name: Configurar Firma Criptográfica Permanente (Keystore)
+        run: |
+          mkdir -p ~/.android
+          if [ -f "frontend/assets/keystore/release.keystore" ]; then
+            cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+          fi
+
+      - name: Restaurar Dependencias
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Compilar APK (Fat APK)
+        working-directory: ./frontend
+        run: flutter build apk --release
+
+      - name: Renombrar APK para Release
+        run: |
+          cp frontend/build/app/outputs/flutter-apk/app-release.apk frontend/build/app/outputs/flutter-apk/App-Game-Tracker-Android.apk
+
+      - name: Subir Artifact Temporal de Android
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-Game-Tracker-Android-APK
+          path: frontend/build/app/outputs/flutter-apk/App-Game-Tracker-Android.apk
+
+  publish_release:
+    name: Publicar GitHub Release
+    needs: [build_windows, build_android]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Descargar Artifacts Compilados
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: ./dist
+
+      - name: Crear Release Oficial en GitHub
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: App Game Tracker ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/App-Game-Tracker-Windows-x64.zip
+            dist/App-Game-Tracker-Android.apk

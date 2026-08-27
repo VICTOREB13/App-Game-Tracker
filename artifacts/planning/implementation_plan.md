@@ -1,119 +1,62 @@
 ---
 tipo: plan
-proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.4
-estado: completado
+proyecto: App_Game_Tracker
+version: v3.0.0
+estado: en_planificacion
 fecha: 2026-08-27
-tags: [plan, v2.8.4, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, smart-sync, backup-service, mobile-responsive, permanent-signing, fix-400, victor-engineer]
+agent: Project-Planner
+tags: [plan, v3.0.0, sqlite-local, offline-first, steam-api, games-py, cover-picker, rawg-api, open-source, github-releases, backup-json, victor-engineer]
 ---
 
-# 📋 Plan de Implementación Consolidado (v2.8.4)
+# 📋 Plan de Implementación Maestro v3.0.0: Portabilidad 100% de `games.py` a SQLite Local, Steam Web API, Portadas Híbridas & Open Source
 
-Plan integral de evolución técnica orquestado por el rol **Project-Planner** y ejecutado en conjunto por **Backend-Architect**, **Frontend-UI**, **Systems-Auditor** y **DevOps-Engineer**, consolidando la arquitectura final del **Rastreador de Entretenimiento Personal**.
-
----
-
-## 🎯 Objetivos de la Versión
-
-1. **Rendimiento & Disponibilidad Inmediata:** Carga en **0 ms** sin pantallas de espera inicial mediante caché local persistente con patrón *Stale-While-Revalidate*.
-2. **Visualización y Ergonomía Visual:** Soporte nativo dual de **Modo Oscuro (Obsidian Zinc)** y **Modo Claro (Crisp Zinc)** con alternancia en tiempo real y persistencia.
-3. **Control de Biblioteca:** Selector de vista dual (Grid de carátulas cinematográficas vs. Lista de alta densidad) y paginador dinámico con tamaños de 10, 25, 50, 100 o Todos los juegos.
-4. **Gamificación Dinámica sin Obsolescencia:** Sistema de metas y balances multi-año interactivo (`< [Año] >`) para consultar el pasado o planificar años venideros (2025, 2026, 2027...).
-5. **Viralidad y Logros Compartibles:** Exportación directa a PNG de tarjetas sociales con calificación y reseña en alta resolución.
-6. **Ergonomía Móvil Integral:** Adaptación de filtros en doble fila, layout 2x2 en estadísticas y selector de metas anuales sin desbordes.
-7. **Identidad Nativa & Distribución:** Branding oficial Victor Engineer en iconos ejecutables y firma criptográfica persistente para actualizaciones continuas de Android en 1 toque.
-8. **Resiliencia ante la API de Notion:** Blindaje frente a errores de validación 400 por archivos S3 y deserialización de mensajes de error transparentes.
+Documento maestro orquestado por el rol **Project-Planner** que establece la migración arquitectónica para transformar el proyecto en una aplicación **100% Local-First** con **SQLite**, replicando al 100% la lógica de sincronización, normalización, matching difuso, auto-culminación HLTB y enriquecimiento de metadatos de [`games.py`](file:///c:/Users/vmesp/Documents/Cositas/App-Game-Tracker/games.py) directamente en Flutter/Dart, con selector híbrido de portadas (URL web o archivos de galería local), preparando el repositorio para distribución pública Open Source bajo la marca personal **Victor Engineer** ([victorengineer.fyi](https://victorengineer.fyi)).
 
 ---
 
-## 🔍 Desglose por Fases de Construcción
+## 🎯 Directrices Clave de la Versión v3.0.0
 
-### Fase 1: ⚡ Caché Persistente Offline & Carga Instantánea (0 ms)
-- **Rol Responsable:** `Backend-Architect` & `Frontend-UI`
-- **Implementación:**
-  - Implementación de `saveLocalCache()` y `getLocalCache()` en `NotionService` utilizando `SharedPreferences` con clave `'notion_persistent_games_cache_v1'`.
-  - Carga inmediata de la biblioteca en `DashboardScreen` al inicializar el estado antes de cualquier llamada HTTP.
-  - Sincronización en segundo plano con Notion y actualización de la UI si se detectan cambios (*Stale-While-Revalidate*).
-  - Manejo de contingencias sin conexión (*Offline Mode*) con indicador sutil en pantalla.
+1. **Preservación Visual Total:** **Cero modificaciones visuales o de diseño.** Toda la interfaz actual (Grid cinematográfico, Lista compacta, filtros, tema Obsidian Zinc y Crisp Zinc, tarjetas de analíticas, métricas y tipografías) se conserva en su estado actual. Solo se sustituye el motor interno de datos (Notion $\rightarrow$ SQLite local).
+2. **Dominio Oficial:** Enlace canónico a **`https://victorengineer.fyi`**.
+3. **Gestión Dual de Portadas (URL Web + Galería / Archivo Local):**
+   - **Opción A (URL de Internet):** Pegar cualquier enlace web directo de imagen sin restricciones de AWS S3 ni errores HTTP 400.
+   - **Opción B (Galería Local):** Botón para seleccionar una imagen desde la galería en Android o explorador de Windows (`file_picker`), con copia persistente en `app_documents/covers/{id}.png`.
+   - **Renderizado Híbrido:** `CachedNetworkImage` si es HTTP/HTTPS; `Image.file` si es ruta local.
+4. **Lógica de `games.py` Preservada al 100%:**
+   - Detección dual de Steam (`GetOwnedGames` + `GetRecentlyPlayedGames` para **Family Sharing**).
+   - Filtro de umbral de 30 minutos (`playtimeHours >= 0.5`).
+   - Normalizador de títulos con purga de caracteres `['™', '®', '©', ':', '.', ',', '!', '?', '-', '_', '(', ')']`.
+   - Matching difuso (fuzzy ratio > 0.90) y matching exacto por Steam ID o nombre limpio.
+   - Auto-culminación automática a "Jugado" con fecha al alcanzar las horas de HowLongToBeat.
+   - Enriquecimiento con RAWG API y Wikipedia API.
+5. **CI/CD de Releases Exclusivo para Tags:** El pipeline `.github/workflows/release.yml` solo se ejecutará cuando se cree un tag (`v*`), nunca en push a la rama `main`.
+6. **Dataset de Prueba JSON:** Archivo [`sample_games_library.json`](file:///c:/Users/vmesp/Documents/Cositas/App-Game-Tracker/sample_games_library.json) disponible en la raíz con 12 títulos de prueba listos para importar.
 
-### Fase 2: 🎛️ Vista Dual & Sistema de Paginación Inteligente
-- **Rol Responsable:** `Frontend-UI`
-- **Implementación:**
-  - Toggle `[ ⊞ Grid | ☰ Lista ]` en la barra de herramientas del Dashboard con persistencia en `'preferred_library_view_mode'`.
-  - Creación del componente `_GameListRow`: fila de 54px con miniatura 36x48, badges de plataforma mapeados por `PlatformHelper`, estado, barra HLTB y acción rápida `+1h`.
-  - Selector de tamaño de página: 10, 25, 50, 100 o Todos los juegos, persistido en `'preferred_page_size'`.
-  - Barra de navegación con botones `< Anterior`, indicador `Página X de Y` y `Siguiente >`.
-  - Reseteo automático a página 1 al aplicar filtros o términos de búsqueda.
+---
 
-### Fase 3: 🎯 Gamificación y Metas Anuales Dinámicas Multi-Año
-- **Rol Responsable:** `Frontend-UI` & `Backend-Architect`
-- **Implementación:**
-  - Stepper temporal interactivo `< [Año] >` en `AnalyticsScreen` con año en curso por defecto.
-  - Almacenamiento independiente de metas por año (`annual_game_goal_${year}`) en `SharedPreferences`.
-  - Tarjeta de meta anual con barra de progreso circular en acento rojo Victor Engineer `#DC2626`.
-  - Salón de la Fama con récords personales: *El Titán* (más horas), *Obra Maestra* (5 estrellas y máxima dedicación) y *Aventura Ágil* (completado más rápido).
-  - Medidor de salud del backlog y tasa porcentual de finalización.
+## 🏗️ Desglose de Tareas por Agentes
 
-### Fase 4: 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG)
-- **Rol Responsable:** `Frontend-UI`
-- **Implementación:**
-  - Botón de exportación en la pantalla de detalle (`GameDetailScreen`).
-  - Modal con tarjeta gráfica en formato 16:9 con isotipo squircle `VE`, carátula, estrellas, horas y cita personal.
-  - Captura en alta resolución (pixel ratio 2.5x) mediante `RepaintBoundary`.
-  - Guardado directo del archivo PNG en `%USERPROFILE%\Downloads` en Windows.
-
-### Fase 5: ☀️ Modo Claro "Crisp Zinc" & Arquitectura de Temas
-- **Rol Responsable:** `Frontend-UI`
-- **Implementación:**
-  - Creación de `ThemeManager` (`ChangeNotifier`) y helper de colores semánticos `AppColors`.
-  - Definición de `AppTheme.darkTheme` (Obsidian Zinc `#09090B`) y `AppTheme.lightTheme` (Crisp Zinc `#FAFAFA`).
-  - Enlace reactivo en `main.dart` con `AnimatedBuilder` sobre `ThemeManager.instance`.
-  - Toggle directo de 1 clic en la barra superior del Dashboard (`Icons.light_mode_rounded` / `Icons.dark_mode_rounded`).
-  - Selector de 3 opciones en `SettingsScreen`: *Oscuro*, *Claro* y *Sistema*.
-
-### Fase 6: 🛡️ Estabilización de Compilación & CI/CD Release v2.7.1
-- **Rol Responsable:** `Systems-Auditor` & `DevOps-Engineer`
-- **Implementación:**
-  - Corrección del error de compilación `createGame` en `search_screen.dart` restaurando `await notion.createPage(notion.gamesDbId, properties)`.
-  - Implementación del helper de conveniencia `createGame()` en `NotionService`.
-
-### Fase 7: 💎 Pulido de Modo Claro, Smart Sync & Despeje de FAB (v2.7.2)
-- **Rol Responsable:** `Frontend-UI`, `Backend-Architect` & `Systems-Auditor`
-- **Implementación:**
-  - Rediseño de contraste en modo claro para chips de estado y menús desplegables.
-  - Paginador centrado con zona de seguridad de 100px para eliminar colisiones con el botón flotante `+ Añadir`.
-  - Smart Sync mediante comprobación previa de 1 registro (`last_edited_time`) con timeout de 15 segundos.
-
-### Fase 8: 💾 Modal Bottom Sheet QoL, Normalización & Respaldo JSON (v2.8.0)
-- **Rol Responsable:** `Frontend-UI` & `Backend-Architect`
-- **Implementación:**
-  - Creación de `BackupService` para exportar e importar la biblioteca en JSON estructurado.
-  - Modal sheet táctil con esquinas redondeadas para filtros en pantallas reducidas.
-  - Normalización de géneros redundantes en catálogo.
-
-### Fase 9: 📱 Ergonomía Móvil & Barra de Filtros Dual (v2.8.1)
-- **Rol Responsable:** `Frontend-UI`
-- **Implementación:**
-  - Barra de filtros en dos hileras compactas para dispositivos móviles.
-  - AppBar móvil protegida con `FittedBox` y menú popup `⋮` para acciones secundarias.
-  - Cuadrícula 2x2 para tarjetas de métricas y selector anual de dos filas en `AnalyticsScreen`.
-
-### Fase 10: 🛡️ Branding Nativo Victor Engineer & Firma Persistente Android (v2.8.2)
-- **Rol Responsable:** `Frontend-UI` & `DevOps-Engineer`
-- **Implementación:**
-  - Integración del icono de mando gamer 2D minimalista sobre rojo Victor Engineer (`#DC2626`) en `app_icon.png`, `app_icon.ico` y mipmaps Android.
-  - Preservación del vector original [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg) con el monograma VE.
-  - Generación de keystore permanente (`release.keystore`, validez 2054) y versionado dinámico en GitHub Actions para eliminar errores de actualización en Android.
-
-### Fase 11: 🧹 Purga de Assets Huérfanos & Optimización (v2.8.3)
-- **Rol Responsable:** `Systems-Auditor`
-- **Implementación:**
-  - Eliminación de 7 imágenes obsoletas y duplicadas, reduciendo el bundle en más de 361 KB.
-  - Desinstalación limpia de `dio` y `flutter_staggered_grid_view` en `pubspec.yaml`.
-
-### Fase 12: 🛠️ Corrección Error 400 Notion S3 & Parser Blindado (v2.8.4)
-- **Rol Responsable:** `Backend-Architect` & `Frontend-UI`
-- **Implementación:**
-  - Detección inteligente de portadas modificadas en `_saveChanges()` para no re-enviar archivos de S3 como `type: external`.
-  - Filtro de enlaces internos en `toNotionProperties()` y constructores robustos en `NotionParser`.
-  - Deserialización de mensajes JSON de error en `NotionApiException` para exhibir textos claros en la interfaz.
+- **`Project-Planner`**: Orquestación y gobernanza de artefactos Obsidian (`project_overview.md`, `architecture.md`, `api_spec.md`, `task.md`, `changelog_v1.md`).
+- **`Backend-Architect`**:
+  - `pubspec.yaml`: Dependencias SQLite (`sqflite`, `sqflite_common_ffi`, `path_provider`, `path`) y `file_picker: ^8.0.0`.
+  - `string_normalizer.dart`: Purga de símbolos y cálculo de similitud difusa > 0.90.
+  - `database_service.dart`: Singleton SQLite DDL, tabla `games`, índices B-Tree y operaciones CRUD.
+  - `steam_service.dart`: Motor de sincronización dual (propios + Family Sharing), filtro 30 min, matching tri-fase y auto-culminación HLTB.
+  - `metadata_service.dart`: Consultas a RAWG API y Wikipedia API (`es`/`en`).
+  - `game.dart` y `backup_service.dart`: Desacoplamiento de Notion, métodos SQLite y compatibilidad con JSON legacy.
+- **`Frontend-UI`**:
+  - Preservación visual 100% intacta.
+  - Conexión de `DashboardScreen` con `DatabaseService` y botón de sincronización Steam en el AppBar.
+  - Actualización de `GameDetailScreen` con selector dual de portadas (pegar URL o elegir foto de galería).
+  - Renderizado híbrido de imágenes (`FileImage` o `CachedNetworkImage`).
+  - Actualización de `SearchScreen` para guardar en SQLite local tras consultar RAWG.
+  - Actualización de `SettingsScreen` con paneles de Steam, SQLite, RAWG y enlace canónico a `https://victorengineer.fyi`.
+- **`DevOps-Engineer`**:
+  - Redacción de `README.md` maestro bilingüe con marca personal Victor Engineer ([victorengineer.fyi](https://victorengineer.fyi)), badges y tutoriales de API Keys.
+  - Creación de archivo `LICENSE` (MIT).
+  - Creación de `.github/workflows/release.yml` con activación exclusiva en tags (`v*`) para compilar Windows x64 ZIP y APK Android firmado.
+  - Archivar `games.yml`.
+- **`Systems-Auditor`**:
+  - Validación de análisis estático (`flutter analyze`).
+  - Pruebas de rendimiento en SQLite (< 5 ms por consulta).
+  - Verificación de precisión del emparejamiento difuso, selección de archivos locales y reporte formal `audit_report.md`.

@@ -1,16 +1,61 @@
 ---
 tipo: changelog
-proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.4
+proyecto: App_Game_Tracker
+version: v3.0.1
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v2.8.4, notion-api, fix-400, optimization, mobile-responsive, permanent-signing, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.1, optimization, memory-limits, purge-notion-id, sqlite, local-first, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [3.0.1] - 2026-08-27 (Purge Legacy Notion Page ID & Defensive Memory Limits)
+
+### Refactored & Optimized
+- **Purga Definitiva de `notionPageId`:**
+  - Eliminado el getter heredado `notionPageId => id` en `Game`.
+  - Refactorizadas todas las referencias en animaciones Stagger (`ValueKey`), claves de listas y etiquetas Hero en `DashboardScreen` y `GameDetailScreen` hacia la propiedad canónica `game.id`.
+- **Límites Defensivos de Variables para Optimización de Memoria:**
+  - Implementada sanitización automática y transparente en el constructor de `Game` y en todas sus factorías de serialización (`fromSqliteMap`, `fromJson`, `fromLegacyNotion`):
+    - `title`: acotado a un máximo de **255 caracteres** (estándar óptimo para índices B-Tree).
+    - `platform`: acotado a **100 caracteres**.
+    - `status`: acotado a **50 caracteres**.
+    - `coverUrl` y `link`: acotados a **2048 caracteres**.
+    - `summary`: acotado a **2000 caracteres** (previene que resúmenes masivos de Wikipedia saturen la memoria RAM o filas de SQLite).
+    - `genres`: máximo **20 géneros**, cada uno truncado a **50 caracteres**.
+    - `rating`: acotado a **20 caracteres**.
+    - `hoursPlayed`, `hltbMain`, `hltbCompletionist`: clamped numérico estricto entre **0.0** y **99,999.0** horas (redondeado a 2 decimales, previniendo valores negativos, NaN o infinitos).
+  - El usuario nunca experimenta bloqueos ni ve advertencias de límites, pero la memoria de la app, el tamaño de la base de datos y la velocidad de consultas operan con máxima eficiencia.
+- **Suite de Pruebas Unitarias Ampliada:**
+  - Nuevos tests en `game_model_test.dart` verificando la aplicación transparente de todos los límites y la ausencia de dependencias de Notion.
+
+## [3.0.0] - 2026-08-27 (Local-First SQLite Architecture, Steam API Sync & Open Source Release)
+
+### Added & Changed
+- **Migración a Arquitectura 100% Local-First con SQLite:**
+  - Sustitución completa de la base de datos remota de Notion por base de datos local SQLite (`sqflite` y `sqflite_common_ffi` para Windows Desktop).
+  - Consultas y persistencia instantáneas (< 2 ms) con total soberanía y funcionamiento sin conexión a internet ni dependencias externas.
+  - Tabla relacional `games` con índices B-Tree en `estado`, `plataforma`, `steam_id` y `título`.
+- **Portabilidad Fiel de la Lógica de `games.py` a Dart (`SteamService`):**
+  - Consulta dual a Steam Web API: `GetOwnedGames` (juegos propios) y `GetRecentlyPlayedGames` (detección de títulos en préstamo **Family Sharing**).
+  - Filtro estricto anti-ruido de 30 minutos (`playtimeHours >= 0.5`).
+  - Algoritmo de emparejamiento tri-fase: AppID indexado $\rightarrow$ Nombre limpio $\rightarrow$ Similitud difusa Sørensen-Dice / Levenshtein (> 0.90) con `StringNormalizer`.
+  - Auto-culminación inteligente por HowLongToBeat: si `horas >= hltb_main`, el juego se marca automáticamente como *Jugado* con fecha de finalización.
+  - Resolución automática de Vanity URLs para SteamID64 (`ISteamUser/ResolveVanityURL`).
+- **Gestión Híbrida de Carátulas (Web + Galería Local):**
+  - Widget universal `AppCoverImage` para renderizar indistintamente enlaces HTTP(S) y rutas locales de disco.
+  - Selector nativo de archivos y galería (`file_picker`) que guarda de forma segura las imágenes locales en `app_documents/covers/cover_{id}_{timestamp}.png`.
+- **Preservación Visual Absoluta del Frontend:**
+  - Se mantuvo intacto el diseño visual prémium Zinc & Crimson Red (`#DC2626`), tipografías Outfit/Inter, Spotlight Hero, vistas Grid/List y filtros dinámicos.
+- **Portabilidad de Datos & Respaldo JSON:**
+  - Exportador e importador directo en `BackupService` para respaldar la biblioteca completa en Descargas y restaurar copias de v3 o versiones anteriores de Notion.
+  - Dataset de prueba ficticio listo para usar: `sample_games_library.json`.
+- **Publicación Open Source & DevOps:**
+  - `README.md` maestro con branding oficial Victor Engineer ([https://victorengineer.fyi](https://victorengineer.fyi)).
+  - Licencia de código abierto MIT (`LICENSE`).
+  - Pipeline de CI/CD automatizado (`.github/workflows/release.yml`) con ejecución **exclusiva ante tags (`v*`)** para compilar instaladores de Windows x64 ZIP y Android APK.
 
 ## [2.8.4] - 2026-08-27 (Fix Notion API Error 400 on Game Edit & Update)
 

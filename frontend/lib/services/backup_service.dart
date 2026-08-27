@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:intl/intl.dart';
 
-import 'notion_service.dart';
+import '../models/game.dart';
+import 'database_service.dart';
 
 class BackupService {
-  /// Obtiene el directorio de Descargas adecuado según la plataforma
+  /// Obtiene el directorio de Descargas adecuado según el sistema operativo
   static Directory _getDownloadsDirectory() {
     if (Platform.isWindows) {
       final userProfile = Platform.environment['USERPROFILE'] ?? '';
@@ -20,18 +21,13 @@ class BackupService {
     return Directory.current;
   }
 
-  /// Exporta la biblioteca completa de juegos a un archivo JSON en Descargas
+  /// Exporta la biblioteca completa de SQLite a un archivo JSON en Descargas
   static Future<String> exportBackup() async {
-    final notion = NotionService.instance;
-    List<Map<String, dynamic>>? records = await notion.getLocalCache();
+    final db = DatabaseService.instance;
+    final games = await db.getAllGames();
 
-    // Si la caché local está vacía, intentar obtener los juegos
-    if (records == null || records.isEmpty) {
-      records = await notion.getGames(useCache: true);
-    }
-
-    if (records.isEmpty) {
-      throw Exception('No hay juegos en la biblioteca para exportar.');
+    if (games.isEmpty) {
+      throw Exception('No hay videojuegos en la biblioteca para exportar.');
     }
 
     final now = DateTime.now();
@@ -42,11 +38,11 @@ class BackupService {
     final filePath = '${downloadsDir.path}${Platform.pathSeparator}$fileName';
 
     final payload = {
-      'app': 'Victor Engineer Entertainment Tracker',
-      'version': '2.8.0',
+      'app': 'Victor Engineer - Game Tracker',
+      'version': '3.0.0',
       'exported_at': now.toIso8601String(),
-      'total_records': records.length,
-      'records': records,
+      'total_records': games.length,
+      'games': games.map((g) => g.toJson()).toList(),
     };
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(payload);
@@ -67,32 +63,50 @@ class BackupService {
   }
 
   /// Importa y restaura una biblioteca desde una cadena de texto JSON
+  /// Soporta tanto el formato canónico v3.0 ('games') como el formato heredado de Notion v2.x ('records').
   static Future<int> importBackupFromJsonString(String content) async {
     final decoded = json.decode(content);
-    List<dynamic>? rawList;
+    final List<Game> gamesToRestore = [];
 
-    if (decoded is Map<String, dynamic> && decoded.containsKey('records')) {
-      rawList = decoded['records'] as List<dynamic>?;
-    } else if (decoded is List<dynamic>) {
-      rawList = decoded;
+    if (decoded is Map<String, dynamic>) {
+      // 1. Formato Canónico v3.0 (SQLite)
+      if (decoded.containsKey('games') && decoded['games'] is List) {
+        final list = decoded['games'] as List;
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            gamesToRestore.add(Game.fromJson(item));
+          }
+        }
+      }
+      // 2. Formato Heredado v2.x (Notion API Cache)
+      else if (decoded.containsKey('records') && decoded['records'] is List) {
+        final list = decoded['records'] as List;
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            gamesToRestore.add(Game.fromLegacyNotion(item));
+          }
+        }
+      }
+    } else if (decoded is List) {
+      for (final item in decoded) {
+        if (item is Map<String, dynamic>) {
+          if (item.containsKey('properties')) {
+            gamesToRestore.add(Game.fromLegacyNotion(item));
+          } else {
+            gamesToRestore.add(Game.fromJson(item));
+          }
+        }
+      }
     }
 
-    if (rawList == null || rawList.isEmpty) {
-      throw Exception('El archivo no contiene registros válidos de la biblioteca.');
+    if (gamesToRestore.isEmpty) {
+      throw Exception('El archivo no contiene registros de videojuegos válidos.');
     }
 
-    final records = rawList
-        .whereType<Map<String, dynamic>>()
-        .toList();
+    // Persistir todos los juegos en SQLite en una sola transacción ultrarrápida
+    await DatabaseService.instance.batchUpsertGames(gamesToRestore);
 
-    if (records.isEmpty) {
-      throw Exception('No se pudieron procesar los registros del archivo.');
-    }
-
-    // Guardar en la caché local persistente
-    await NotionService.instance.saveLocalCache(records);
-
-    return records.length;
+    return gamesToRestore.length;
   }
 
   /// Lista los respaldos existentes disponibles en el directorio de Descargas
@@ -106,11 +120,11 @@ class BackupService {
           .whereType<File>()
           .where((f) {
             final name = f.path.split(Platform.pathSeparator).last.toLowerCase();
-            return name.startsWith('tracker_backup_') && name.endsWith('.json');
+            return (name.startsWith('tracker_backup_') || name.startsWith('sample_games_')) &&
+                name.endsWith('.json');
           })
           .toList();
 
-      // Ordenar del más reciente al más antiguo
       files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
       return files;
     } catch (_) {
