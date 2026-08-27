@@ -134,7 +134,7 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 ---
 
 ## 🎨 13. Identidad Visual & Iconografía Nativa Victor Engineer (v2.8.2)
-- [x] `(Frontend-UI)` Diseñar el nuevo icono oficial: Mando gamer vectorial 2D en blanco sobre fondo rojo sólido Victor Engineer (`#DC2626`) con esquinas redondeadas para máxima universalidad.
+- [x] `(Frontend-UI)` Mantener y perfeccionar el icono oficial de Victor Engineer: Logotipo distintivo VE en blanco sobre fondo rojo sólido (`#DC2626`) con esquinas redondeadas.
 - [x] `(Frontend-UI)` Compilar `app_icon.png` (1024x1024), `app_icon.ico` (multi-resolución para Windows) y suite de Android (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
 - [x] `(DevOps-Engineer)` Actualizar pipeline `build_windows.yml` para inyectar `app_icon.ico` en `windows/runner/resources/app_icon.ico` antes de compilar el binario release.
 - [x] `(DevOps-Engineer)` Actualizar pipeline `build_apk.yml` para copiar los iconos mipmap en `android/app/src/main/res/` antes de compilar el APK.
