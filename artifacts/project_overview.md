@@ -1,33 +1,35 @@
 ---
 tipo: overview
-proyecto: App_Rastreador_de_Entretenimiento
+proyecto: App_Rastreador_de_Entretenimiento_Personal
 estado: activo
-version: v2.7.1
+version: v2.7.2
 fecha: 2026-08-26
-tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, victor-engineer, light-mode, dark-mode, multi-year, offline-cache]
+tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, victor-engineer, light-mode, dark-mode, multi-year, offline-cache, smart-sync, v2.7.2]
 ---
 
-# 🚀 Visión General del Proyecto: Rastreador de Entretenimiento
+# 🚀 Visión General del Proyecto: Rastreador de Entretenimiento Personal
 
 Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android) desarrollada en **Flutter 3.22+**, conectada directamente a la **API de Notion** como base de datos en la nube sin intermediarios, enriquecida con metadatos de **RAWG API** y diseñada bajo la identidad visual de marca personal **Victor Engineer** (acento Rojo `#DC2626`, tipografías Google Fonts `Outfit` + `Inter`, y soporte nativo dual de **Modo Oscuro Obsidian Zinc** y **Modo Claro Crisp Zinc**).
 
 ---
 
-## 📖 Capacidades y Funcionalidades Principales (v2.7.1)
+## 📖 Capacidades y Funcionalidades Principales (v2.7.2)
 
 ### 1. 🗄️ Gestión Integral y Bidireccional de Biblioteca (Notion API)
 - Conexión directa mediante *Internal Integration Token* de Notion sin intermediarios (Supabase eliminado).
 - Control exhaustivo de campos: Título, Estado (*Por jugar*, *Jugando*, *Jugado*), Plataforma, Horas Jugadas, Fechas de Inicio y Culminación, Calificación en estrellas (1-5), Tiempos HowLongToBeat (Principal, Extra, 100%), Géneros, Portada y Reseña/Notas personales.
 - Sincronización transparente con actualización optimista en la interfaz para cambios instantáneos.
 
-### 2. ⚡ Rendimiento Extremo y Caché Persistente Offline (0 ms Cold-Start)
+### 2. ⚡ Rendimiento Extremo, Caché Offline (0 ms) & Smart Sync
 - Almacenamiento local en disco con `SharedPreferences` que retiene la última instantánea serializada de la biblioteca.
 - Patrón **Stale-While-Revalidate**: La aplicación inicia en **0 ms** mostrando inmediatamente todos los títulos y actualiza en segundo plano cualquier cambio de Notion.
-- Modo de contingencia sin conexión (*Offline Mode*) con indicador sutil en pantalla si la red no está disponible o Notion tiene latencia.
+- **Smart Sync:** Antes de descargar la base de datos completa, consulta de forma ultrarrápida (1 registro) si la fecha `last_edited_time` en Notion difiere de la caché local. Si no hay cambios, finaliza al instante sin transferencias redundantes.
+- Timeout HTTP estricto (15 segundos) y garantía de desactivación del spinner en la barra de herramientas.
 
 ### 3. 🎨 Arquitectura de Temas Dinámicos & Sistema de Diseño Victor Engineer
 - **Modo Oscuro (Obsidian Zinc):** Fondo ultra profundo `#09090B`, tarjetas `#121215`, bordes `#27272A` y acento rojo carmesí `#DC2626`.
 - **Modo Claro (Crisp Zinc):** Fondo limpio `#FAFAFA`, tarjetas blancas `#FFFFFF`, bordes sutiles `#E4E4E7`, texto `#09090B` y acento rojo `#DC2626`.
+- **Filtros Adaptativos de Alto Contraste:** Chips de estado y menús desplegables (`Plataforma`, `Género`, `Orden`) que se adaptan con fondo blanco puro y bordes zinc definidos en modo claro, eliminando bloques oscuros huérfanos.
 - **Alternancia Instantánea (`ThemeManager`):** Toggle de 1 clic en la barra superior (`Icons.light_mode_rounded` / `Icons.dark_mode_rounded`) y selector de 3 opciones en Configuración (`Oscuro`, `Claro`, `Sistema`).
 
 ### 4. 🎛️ Selector de Vista Dual (Grid Cinematográfico vs. Lista Compacta)
@@ -35,10 +37,10 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 - **Lista Compacta (`_GameListRow`):** Fila de alta densidad (54px) con miniatura de carátula (36x48), título en `Outfit`, insignias oficiales de plataforma, pill de estado, estrellas y botón rápido `+1h`.
 - Preferencia persistida en disco para recordar la vista favorita del usuario.
 
-### 5. 📄 Sistema de Paginación Inteligente
+### 5. 📄 Sistema de Paginación Inteligente con Despeje de FAB
 - Selector de densidad: **10**, **25**, **50**, **100** o **Todos** los registros.
-- Controles inferiores con botones estilizados `< Anterior`, indicador de `Página X de Y` y `Siguiente >`.
-- Reseteo automático a la primera página al filtrar o realizar búsquedas en tiempo real.
+- Controles de navegación `< X / Y >` **centrados** en la barra inferior, con margen de seguridad dedicado de 100px a la derecha para que el botón flotante `+ Añadir` nunca colisione con las flechas de paginación.
+- Barra inferior estilizada con `AppColors.surface` y borde sutil adaptativo.
 
 ### 6. 🎯 Gamificación y Metas Anuales Dinámicas Multi-Año
 - Stepper de año `< [Año] >` que permite auditar balances pasados (2024, 2025, 2026) y planificar metas en años futuros (2027 y más allá) sin obsolescencia.
@@ -63,9 +65,9 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 
 ## 🗺️ Índice de Artefactos del Proyecto
 
-- **Arquitectura del Sistema:** [[PRJ_App_Rastreador_de_Entretenimiento_architecture|Arquitectura del Sistema v2.7.1]]
-- **Contrato de Datos y API:** [[PRJ_App_Rastreador_de_Entretenimiento_api_spec|Especificación de API Notion y RAWG]]
-- **Plan de Implementación:** [[PRJ_App_Rastreador_de_Entretenimiento_implementation_plan|Plan de Implementación v2.7.1]]
-- **Lista de Tareas:** [[PRJ_App_Rastreador_de_Entretenimiento_task|Checklist de Tareas]]
-- **Historial de Versiones:** [[PRJ_App_Rastreador_de_Entretenimiento_changelog_v1|Changelog v1]]
-- **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Rastreador_de_Entretenimiento_audit_report|Reporte de Auditoría]]
+- **Arquitectura del Sistema:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_architecture|Arquitectura del Sistema v2.7.2]]
+- **Contrato de Datos y API:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_api_spec|Especificación de API Notion y RAWG]]
+- **Plan de Implementación:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_implementation_plan|Plan de Implementación v2.7.2]]
+- **Lista de Tareas:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_task|Checklist de Tareas]]
+- **Historial de Versiones:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_changelog_v1|Changelog v1]]
+- **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_audit_report|Reporte de Auditoría]]

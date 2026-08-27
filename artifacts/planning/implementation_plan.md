@@ -1,13 +1,13 @@
 ---
 tipo: plan
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 estado: completado
 fecha: 2026-08-26
-tags: [plan, v2.7.1, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, victor-engineer]
+tags: [plan, v2.7.2, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, smart-sync, victor-engineer]
 ---
 
-# 📋 Plan de Implementación Consolidado (v2.7.1)
+# 📋 Plan de Implementación Consolidado (v2.7.2)
 
 Plan integral de evolución técnica orquestado por el rol **Project-Planner** y ejecutado en conjunto por **Backend-Architect**, **Frontend-UI**, **Systems-Auditor** y **DevOps-Engineer**, consolidando la arquitectura final del **Rastreador de Entretenimiento Personal**.
 
@@ -77,3 +77,10 @@ Plan integral de evolución técnica orquestado por el rol **Project-Planner** y
   - Implementación del helper de conveniencia `createGame()` en `NotionService` para interoperabilidad completa.
   - Sincronización de versión a `2.7.1+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
   - Ejecución de auditoría de calidad con veredicto `Status: PASS`.
+
+### Fase 7: 💎 Pulido de Modo Claro, Smart Sync con Notion & Despeje de FAB (v2.7.2)
+- **Rol Responsable:** `Frontend-UI`, `Backend-Architect` & `Systems-Auditor`
+- **Implementación:**
+  - **Rediseño de Contraste en Modo Claro:** Adaptación de chips de estado (`Todos`, `Jugando`, `Por jugar`, `Jugado`) a fondos blancos y bordes grises nítidos; migración de dropdowns (`Plataforma`, `Género`, `Orden`) a tokens semánticos `AppColors`; corrección del color de texto en el buscador para garantizar contraste óptimo.
+  - **Paginación Centrada & Despeje de FAB:** Reorganización de la barra inferior con controles `< X / Y >` centrados mediante espaciadores elásticos y margen de 100px a la derecha, evitando que el botón `+ Añadir` tape los controles de página.
+  - **Smart Sync con Notion:** Chequeo ultrarrápido (1 registro remoto por `last_edited_time`) antes de descargas masivas; adición de timeout HTTP de 15 segundos; bloque `finally` para asegurar que el indicador de carga se detenga siempre con SnackBar de feedback.

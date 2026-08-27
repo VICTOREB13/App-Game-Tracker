@@ -153,9 +153,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Future<void> _fetchGames({bool forceRefresh = false}) async {
+  Future<void> _fetchGames({
+    bool forceRefresh = false,
+    bool userInitiated = false,
+  }) async {
+    final hadGamesBefore = _games.isNotEmpty;
     try {
-      final pages = await _notion.getGames(useCache: !forceRefresh);
+      final pages = await _notion.getGames(
+        useCache: !forceRefresh,
+        forceFullSync: false,
+      );
       final loadedGames =
           pages.map((page) => Game.fromNotionPage(page)).toList();
 
@@ -164,26 +171,66 @@ class _DashboardScreenState extends State<DashboardScreen>
           _games = loadedGames;
           _applyFilters();
           _isLoading = false;
-          _isRefreshing = false;
           _isOffline = false;
         });
+
+        if (userInitiated) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Sincronizado con Notion (${loadedGames.length} juegos)',
+                    style: GoogleFonts.inter(
+                        color: Colors.white, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF10B981),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
-          _isRefreshing = false;
           _isOffline = true;
         });
-        if (_games.isEmpty) {
+        if (userInitiated || !hadGamesBefore) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Sin conexión o error al consultar Notion: $e',
-                  style: GoogleFonts.inter(color: Colors.white)),
+              content: Row(
+                children: [
+                  const Icon(Icons.wifi_off_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No se pudo conectar con Notion. Mostrando datos locales en caché.',
+                      style: GoogleFonts.inter(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+          _isLoading = false;
+        });
       }
     }
   }
@@ -549,10 +596,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 controller: _searchController,
                 autofocus: true,
                 style: GoogleFonts.inter(
-                    fontSize: 15, color: const Color(0xFFFAFAFA)),
+                    fontSize: 15, color: AppColors.textPrimary(context)),
                 decoration: InputDecoration(
                   hintText: 'Buscar en tu biblioteca...',
-                  hintStyle: GoogleFonts.inter(color: const Color(0xFF71717A)),
+                  hintStyle: GoogleFonts.inter(
+                      color: AppColors.textSecondary(context)),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -561,8 +609,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       color: Color(0xFFDC2626), size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded,
-                              color: Color(0xFFA1A1AA), size: 20),
+                          icon: Icon(Icons.close_rounded,
+                              color: AppColors.textSecondary(context),
+                              size: 20),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -683,7 +732,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ? null
                   : () {
                       setState(() => _isRefreshing = true);
-                      _fetchGames(forceRefresh: true);
+                      _fetchGames(forceRefresh: true, userInitiated: true);
                     },
             ),
             IconButton(
@@ -727,7 +776,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Container(
                     width: 1,
                     height: 24,
-                    color: const Color(0xFF1C2237),
+                    color: AppColors.border(context),
                   ),
                   const SizedBox(width: 8),
                   _buildPlatformDropdown(),
@@ -827,9 +876,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     // Dual View Mode Toggle Button
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121215),
+                        color: AppColors.surface(context),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF27272A)),
+                        border: Border.all(color: AppColors.border(context)),
                       ),
                       padding: const EdgeInsets.all(2),
                       child: Row(
@@ -855,7 +904,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     size: 13,
                                     color: _isGridView
                                         ? Colors.white
-                                        : const Color(0xFFA1A1AA),
+                                        : AppColors.textSecondary(context),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -865,7 +914,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       fontWeight: FontWeight.w600,
                                       color: _isGridView
                                           ? Colors.white
-                                          : const Color(0xFFA1A1AA),
+                                          : AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -892,7 +941,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     size: 14,
                                     color: !_isGridView
                                         ? Colors.white
-                                        : const Color(0xFFA1A1AA),
+                                        : AppColors.textSecondary(context),
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
@@ -902,7 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       fontWeight: FontWeight.w600,
                                       color: !_isGridView
                                           ? Colors.white
-                                          : const Color(0xFFA1A1AA),
+                                          : AppColors.textSecondary(context),
                                     ),
                                   ),
                                 ],
@@ -924,7 +973,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ? _buildSkeletonGrid()
                 : RefreshIndicator(
                     color: const Color(0xFFDC2626),
-                    backgroundColor: const Color(0xFF18181B),
+                    backgroundColor: AppColors.surface(context),
                     onRefresh: () => _fetchGames(forceRefresh: true),
                     child: _filteredGames.isEmpty
                         ? Center(
@@ -1054,16 +1103,22 @@ class _DashboardScreenState extends State<DashboardScreen>
     final hltb = game.hltbMain ?? 0;
     final progress = hltb > 0 ? (hours / hltb).clamp(0.0, 1.0) : 0.0;
     final percentText = (progress * 100).toStringAsFixed(0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF121215),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.35)),
+        border: Border.all(
+          color: const Color(0xFFDC2626).withOpacity(isDark ? 0.35 : 0.22),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFDC2626).withOpacity(0.08),
+            color: isDark
+                ? const Color(0xFFDC2626).withOpacity(0.08)
+                : Colors.black.withOpacity(0.04),
             blurRadius: 16,
             spreadRadius: 1,
           ),
@@ -1076,7 +1131,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           if (game.coverUrl != null && game.coverUrl!.isNotEmpty)
             Positioned.fill(
               child: Opacity(
-                opacity: 0.15,
+                opacity: isDark ? 0.15 : 0.07,
                 child: CachedNetworkImage(
                   imageUrl: game.coverUrl!,
                   fit: BoxFit.cover,
@@ -1101,9 +1156,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       : Container(
                           width: 60,
                           height: 80,
-                          color: const Color(0xFF27272A),
-                          child: const Icon(Icons.sports_esports_rounded,
-                              color: Color(0xFF71717A)),
+                          color: AppColors.surfaceSubtle(context),
+                          child: Icon(Icons.sports_esports_rounded,
+                              color: AppColors.textSecondary(context)),
                         ),
                 ),
                 const SizedBox(width: 14),
@@ -1172,7 +1227,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         style: GoogleFonts.outfit(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFAFAFA),
+                          color: AppColors.textPrimary(context),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1188,7 +1243,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 : '${hours % 1 == 0 ? hours.toInt() : hours}h jugadas',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFFA1A1AA),
+                              color: AppColors.textSecondary(context),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1214,7 +1269,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             return LinearProgressIndicator(
                               value: animProgress,
                               minHeight: 4,
-                              backgroundColor: const Color(0xFF27272A),
+                              backgroundColor: AppColors.border(context),
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                   Color(0xFFDC2626)),
                             );
@@ -1261,6 +1316,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildFilterChip(String label) {
     final isSelected = _selectedStatusFilter == label;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     Color chipColor;
     switch (label) {
       case 'Jugando':
@@ -1273,7 +1329,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         chipColor = const Color(0xFF10B981);
         break;
       default:
-        chipColor = const Color(0xFFA1A1AA);
+        chipColor = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF52525B);
     }
 
     return Padding(
@@ -1283,8 +1339,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           label,
           style: GoogleFonts.inter(
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? Colors.white : chipColor,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isDark
+                    ? chipColor
+                    : (label == 'Todos'
+                        ? AppColors.textPrimary(context)
+                        : chipColor)),
           ),
         ),
         selected: isSelected,
@@ -1295,14 +1357,20 @@ class _DashboardScreenState extends State<DashboardScreen>
           });
         },
         selectedColor: chipColor,
-        backgroundColor: chipColor.withOpacity(0.1),
+        backgroundColor: isDark
+            ? chipColor.withOpacity(0.12)
+            : (isSelected ? chipColor : Colors.white),
         side: BorderSide(
-          color: isSelected ? Colors.transparent : chipColor.withOpacity(0.3),
+          color: isSelected
+              ? Colors.transparent
+              : (isDark
+                  ? chipColor.withOpacity(0.35)
+                  : AppColors.border(context)),
           width: 1,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         showCheckmark: false,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       ),
     );
   }
@@ -1310,39 +1378,52 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildPlatformDropdown() {
     final platforms = _availablePlatformsInLibrary;
     final isFiltered = _selectedPlatformFilter != 'Todas';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: isFiltered
-            ? const Color(0xFFDC2626).withOpacity(0.15)
-            : const Color(0xFF121215),
+            ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+            : AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFiltered
               ? const Color(0xFFDC2626)
-              : const Color(0xFF27272A),
+              : AppColors.border(context),
+          width: 1,
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: platforms.contains(_selectedPlatformFilter)
               ? _selectedPlatformFilter
               : 'Todas',
-          dropdownColor: const Color(0xFF18181B),
+          dropdownColor: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
-              fontSize: 12,
-              color: isFiltered
-                  ? const Color(0xFFDC2626)
-                  : const Color(0xFFFAFAFA)),
+            fontSize: 12,
+            color: isFiltered
+                ? const Color(0xFFDC2626)
+                : AppColors.textPrimary(context),
+          ),
           icon: Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Icon(Icons.arrow_drop_down_rounded,
-                size: 20,
-                color: isFiltered
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFFA1A1AA)),
+            child: Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 20,
+              color: isFiltered
+                  ? const Color(0xFFDC2626)
+                  : AppColors.textSecondary(context),
+            ),
           ),
           items: platforms
               .map((p) => DropdownMenuItem(
@@ -1354,8 +1435,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           PlatformHelper.getIcon(p, size: 14),
                           const SizedBox(width: 8),
                         ] else ...[
-                          const Icon(Icons.videogame_asset_outlined,
-                              size: 14, color: Color(0xFF71717A)),
+                          Icon(Icons.videogame_asset_outlined,
+                              size: 14,
+                              color: AppColors.textSecondary(context)),
                           const SizedBox(width: 8),
                         ],
                         Text(
@@ -1367,7 +1449,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 : FontWeight.normal,
                             color: p == _selectedPlatformFilter
                                 ? const Color(0xFFDC2626)
-                                : const Color(0xFFFAFAFA),
+                                : AppColors.textPrimary(context),
                           ),
                         ),
                       ],
@@ -1390,39 +1472,52 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildGenreDropdown() {
     final genres = _availableGenresInLibrary;
     final isFiltered = _selectedGenreFilter != 'Todos';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
         color: isFiltered
-            ? const Color(0xFFDC2626).withOpacity(0.15)
-            : const Color(0xFF121215),
+            ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+            : AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isFiltered
               ? const Color(0xFFDC2626)
-              : const Color(0xFF27272A),
+              : AppColors.border(context),
+          width: 1,
         ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: genres.contains(_selectedGenreFilter)
               ? _selectedGenreFilter
               : 'Todos',
-          dropdownColor: const Color(0xFF18181B),
+          dropdownColor: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
-              fontSize: 12,
-              color: isFiltered
-                  ? const Color(0xFFDC2626)
-                  : const Color(0xFFFAFAFA)),
+            fontSize: 12,
+            color: isFiltered
+                ? const Color(0xFFDC2626)
+                : AppColors.textPrimary(context),
+          ),
           icon: Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Icon(Icons.arrow_drop_down_rounded,
-                size: 20,
-                color: isFiltered
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFFA1A1AA)),
+            child: Icon(
+              Icons.arrow_drop_down_rounded,
+              size: 20,
+              color: isFiltered
+                  ? const Color(0xFFDC2626)
+                  : AppColors.textSecondary(context),
+            ),
           ),
           items: genres
               .map((s) => DropdownMenuItem(
@@ -1430,8 +1525,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.category_outlined,
-                            size: 14, color: Color(0xFF71717A)),
+                        Icon(Icons.category_outlined,
+                            size: 14,
+                            color: AppColors.textSecondary(context)),
                         const SizedBox(width: 8),
                         Text(
                           s == 'Todos' ? 'Género: Todos' : s,
@@ -1442,7 +1538,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 : FontWeight.normal,
                             color: s == _selectedGenreFilter
                                 ? const Color(0xFFDC2626)
-                                : const Color(0xFFFAFAFA),
+                                : AppColors.textPrimary(context),
                           ),
                         ),
                       ],
@@ -1463,29 +1559,46 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildSortDropdown() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF121215),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF27272A)),
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedSort,
-          dropdownColor: const Color(0xFF18181B),
+          dropdownColor: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
           style: GoogleFonts.inter(
-              fontSize: 12, color: const Color(0xFFFAFAFA)),
-          icon: const Padding(
-            padding: EdgeInsets.only(left: 4),
-            child: Icon(Icons.sort_rounded,
-                size: 16, color: Color(0xFFA1A1AA)),
+            fontSize: 12,
+            color: AppColors.textPrimary(context),
+          ),
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(
+              Icons.sort_rounded,
+              size: 16,
+              color: AppColors.textSecondary(context),
+            ),
           ),
           items: ['Recientes', 'A-Z']
               .map((s) => DropdownMenuItem(
                     value: s,
-                    child: Text(s, style: GoogleFonts.inter(fontSize: 12)),
+                    child: Text(s,
+                        style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: AppColors.textPrimary(context))),
                   ))
               .toList(),
           onChanged: (val) {
@@ -1502,13 +1615,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildClearFiltersButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: _clearAllFilters,
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFDC2626).withOpacity(0.12),
+          color: const Color(0xFFDC2626).withOpacity(isDark ? 0.12 : 0.08),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: const Color(0xFFDC2626).withOpacity(0.4),
@@ -1600,16 +1714,23 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0D0D10),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
         border: Border(
-          top: BorderSide(color: Color(0xFF27272A), width: 0.8),
+          top: BorderSide(color: AppColors.border(context), width: 0.8),
         ),
+        boxShadow: [
+          if (Theme.of(context).brightness == Brightness.light)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Items per page dropdown
+          // Items per page dropdown (Left side)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1617,7 +1738,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 'Por pág:',
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  color: const Color(0xFFA1A1AA),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1625,7 +1746,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 28,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.surface(context),
+                  color: AppColors.surfaceSubtle(context),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.border(context)),
                 ),
@@ -1656,7 +1777,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
 
-          // Navigation controls
+          // Center Spacer
+          const Spacer(),
+
+          // Navigation controls (Centered)
           if (_pageSize > 0 && _totalPages > 1)
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -1711,9 +1835,15 @@ class _DashboardScreenState extends State<DashboardScreen>
               '${_filteredGames.length} juegos en total',
               style: GoogleFonts.inter(
                 fontSize: 11,
-                color: const Color(0xFF71717A),
+                color: AppColors.textSecondary(context),
               ),
             ),
+
+          // Right Spacer to keep navigation centered
+          const Spacer(),
+
+          // Dedicated safety zone: ensures FloatingActionButton NEVER overlaps pagination controls!
+          const SizedBox(width: 100),
         ],
       ),
     );

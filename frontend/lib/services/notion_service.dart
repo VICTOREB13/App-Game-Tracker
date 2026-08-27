@@ -161,8 +161,64 @@ class NotionService {
     return null;
   }
 
-  /// Get all games from the configured database with automatic persistent caching
-  Future<List<Map<String, dynamic>>> getGames({bool useCache = true}) async {
+  /// Get all games from the configured database with automatic persistent caching and smart sync
+  Future<List<Map<String, dynamic>>> getGames({
+    bool useCache = true,
+    bool forceFullSync = false,
+  }) async {
+    // 1. If in-memory cache is valid and not forcing a refresh, return it
+    if (useCache) {
+      final cached = _cache['games_$_gamesDbId'];
+      if (cached != null && !cached.isExpired) {
+        return List<Map<String, dynamic>>.from(cached.data);
+      }
+    }
+
+    // 2. Read local disk cache to compare timestamps
+    final local = await getLocalCache();
+
+    // 3. Ultra-fast Smart Sync check: 1 single page query to check if Notion has new/edited records
+    if (local != null && local.isNotEmpty && !forceFullSync) {
+      try {
+        final headResponse = await _makeRequest(
+          'POST',
+          '/databases/$_gamesDbId/query',
+          body: {
+            'page_size': 1,
+            'sorts': [
+              {
+                'timestamp': 'last_edited_time',
+                'direction': 'descending',
+              }
+            ],
+          },
+        );
+
+        if (headResponse.statusCode == 200) {
+          final headData = json.decode(headResponse.body);
+          final remoteResults = headData['results'] as List?;
+          if (remoteResults != null && remoteResults.isNotEmpty) {
+            final latestRemoteTime =
+                remoteResults.first['last_edited_time'] as String?;
+            final latestCachedTime =
+                local.first['last_edited_time'] as String?;
+
+            // If the latest edit time in Notion matches our latest cached edit time,
+            // no records were created or modified in Notion! Return local cache instantly!
+            if (latestRemoteTime != null &&
+                latestCachedTime != null &&
+                latestRemoteTime == latestCachedTime) {
+              _cache['games_$_gamesDbId'] = _CachedResponse(local);
+              return local;
+            }
+          }
+        }
+      } catch (e) {
+        // If head check fails, proceed to regular fetch below
+      }
+    }
+
+    // 4. Full query if changes detected or cache is empty
     try {
       final results = await queryDatabase(
         _gamesDbId,
@@ -172,14 +228,14 @@ class NotionService {
             'direction': 'descending',
           }
         ],
-        useCache: useCache,
+        useCache: false,
       );
-      // Asynchronously update disk cache
+
+      _cache['games_$_gamesDbId'] = _CachedResponse(results);
       unawaited(saveLocalCache(results));
       return results;
     } catch (e) {
       // Fallback to local cache if network/API fails
-      final local = await getLocalCache();
       if (local != null && local.isNotEmpty) {
         return local;
       }
@@ -280,20 +336,31 @@ class NotionService {
     final uri = Uri.parse('$_baseUrl$endpoint');
     http.Response response;
 
+    // Timeout of 15 seconds per request to prevent hanging
+    const timeoutDuration = Duration(seconds: 15);
+
     // Retry with exponential backoff
     for (int attempt = 0; attempt < 3; attempt++) {
       try {
         switch (method) {
           case 'GET':
-            response = await http.get(uri, headers: _headers);
+            response = await http
+                .get(uri, headers: _headers)
+                .timeout(timeoutDuration);
             break;
           case 'POST':
-            response = await http.post(uri,
-                headers: _headers, body: body != null ? json.encode(body) : null);
+            response = await http
+                .post(uri,
+                    headers: _headers,
+                    body: body != null ? json.encode(body) : null)
+                .timeout(timeoutDuration);
             break;
           case 'PATCH':
-            response = await http.patch(uri,
-                headers: _headers, body: body != null ? json.encode(body) : null);
+            response = await http
+                .patch(uri,
+                    headers: _headers,
+                    body: body != null ? json.encode(body) : null)
+                .timeout(timeoutDuration);
             break;
           default:
             throw Exception('Unsupported HTTP method: $method');

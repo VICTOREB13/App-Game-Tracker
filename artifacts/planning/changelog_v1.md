@@ -1,16 +1,34 @@
 ---
 tipo: changelog
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 estado: activo
 fecha: 2026-08-26
-tags: [proyecto, changelog, versiones, hotfix, notion-service, build-fix, victor-engineer]
+tags: [proyecto, changelog, versiones, light-mode, smart-sync, pagination-fix, notion-timeout, victor-engineer]
 ---
 
-# Registro de Cambios (Changelog) - Rastreador de Entretenimiento
+# Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.7.2] - 2026-08-26 (Light Mode Contrast Polish, Smart Sync & FAB Clearance)
+
+### Fixed & Enhanced
+- **Contraste y Legibilidad en Modo Claro (Anti-Slop):**
+  - **Filtros y Chips:** Rediseñados los chips de estado (`Todos`, `Jugando`, `Por jugar`, `Jugado`) con fondo blanco `#FFFFFF`, borde sutil `#E4E4E7` y tipografía de alto contraste cuando no están seleccionados, eliminando cajas oscuras huérfanas en modo claro.
+  - **Menús Desplegables (`Plataforma`, `Género`, `Orden`):** Migrados a tokens semánticos `AppColors`, mostrando fondos de superficie reactivos, bordes elegantes y texto oscuro (`#09090B`) con acento rojo `#DC2626` cuando están activos.
+  - **Buscador en Biblioteca:** Corregido el color de texto del campo de búsqueda en el AppBar para mostrar texto oscuro sobre fondo claro en vez de blanco invisible.
+  - **Hero Spotlight:** Contenedor superior adaptado con superficies suaves y bordes de acento para integrarse con naturalidad en temas claro y oscuro.
+- **Paginación Centrada y Despeje de FAB (+ Añadir):**
+  - **Resolución de Colisión:** Centrados los controles de navegación `< X / Y >` en la barra inferior mediante espaciadores elásticos (`Spacer`), incorporando una zona de seguridad lateral de 100px a la derecha. El botón flotante `+ Añadir` ya no colisiona ni oculta la flecha de página siguiente.
+  - **Fondo de Barra Inferior:** Sustituido el fondo oscuro estático `#0D0D10` por `AppColors.surface(context)` con borde superior semántico.
+- **Smart Sync & Optimización de Sincronización con Notion:**
+  - **Chequeo Ultrarrápido (Head Check):** Antes de descargar todos los registros, la app consulta únicamente 1 registro remoto ordenado por `last_edited_time`. Si coincide con la marca de tiempo de la caché local, retorna de inmediato sin transferir cientos de registros innecesarios.
+  - **Timeout HTTP de Seguridad:** Incorporado un límite estricto de 15 segundos en todas las llamadas de red (`http.get`, `http.post`, `http.patch`) para evitar que la app quede congelada o esperando indefinidamente.
+  - **Garantía de Desactivación del Spinner:** Añadido bloque `finally` en `_fetchGames` para asegurar que el indicador de carga del AppBar se detenga siempre, junto a un SnackBar de confirmación de sincronización.
+
+---
 
 ## [2.7.1] - 2026-08-26 (Hotfix: Notion Page Creation & Build Stability)
 

@@ -1,13 +1,13 @@
 ---
 tipo: task
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 estado: completado
 fecha: 2026-08-26
-tags: [tareas, checklist, v2.7.1, offline-cache, dual-view, pagination, multi-year, gamification, social-card, light-mode, hotfix, project-planner]
+tags: [tareas, checklist, v2.7.2, offline-cache, dual-view, pagination, multi-year, gamification, social-card, light-mode, smart-sync, project-planner]
 ---
 
-# ✅ Checklist de Tareas Técnicas (v2.7.1)
+# ✅ Checklist de Tareas Técnicas (v2.7.2)
 
 Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados.
 
@@ -69,3 +69,15 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Systems-Auditor)` Validar ausencia de consultas N+1 y límites estrictos de árbol de widgets (DOM virtualization).
 - [x] `(Systems-Auditor)` Redactar reporte formal de auditoría en `artifacts/audit_reports/audit_report.md` con veredicto `PASS`.
 - [x] `(Project-Planner)` Actualizar `project_overview.md`, `architecture.md`, `api_spec.md`, `implementation_plan.md` y `task.md` con enlaces wikilink `[[PRJ_...]]` y frontmatter completo.
+
+---
+
+## 💎 8. Pulido de Modo Claro, Smart Sync & Paginación (v2.7.2)
+- [x] `(Frontend-UI)` Rediseñar chips de estado (`Todos`, `Jugando`, `Por jugar`, `Jugado`) con fondo blanco puro `#FFFFFF` y bordes grises nítidos en modo claro.
+- [x] `(Frontend-UI)` Migrar menús desplegables (`Plataforma`, `Género`, `Orden`) a tokens semánticos `AppColors` con tipografía de alto contraste.
+- [x] `(Frontend-UI)` Corregir color de texto en el buscador de la biblioteca para garantizar legibilidad óptima en modo claro.
+- [x] `(Frontend-UI)` Centrar controles de paginación `< X / Y >` en la barra inferior y añadir margen de seguridad de 100px para despejar el botón flotante `+ Añadir`.
+- [x] `(Backend-Architect)` Implementar Smart Sync en `NotionService` con consulta ligera de 1 registro para comparar `last_edited_time` antes de descargas completas.
+- [x] `(Backend-Architect)` Añadir timeout HTTP de 15 segundos a todas las peticiones a Notion para evitar bloqueos indefinidos.
+- [x] `(Frontend-UI)` Garantizar la detención del spinner de recarga en el AppBar mediante bloque `finally` con feedback mediante SnackBar.
+- [x] `(DevOps-Engineer)` Sincronizar número de versión a `2.7.2+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.

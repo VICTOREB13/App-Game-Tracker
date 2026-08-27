@@ -1,16 +1,16 @@
 ---
 tipo: audit_report
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 veredicto: PASS
 estado: activo
 fecha: 2026-08-26
-tags: [audit_report, systems-auditor, quality-gate, performance, security, build-verification, pass]
+tags: [audit_report, systems-auditor, quality-gate, performance, security, build-verification, pass, smart-sync, light-mode]
 ---
 
-# 🛡️ Reporte de Auditoría y Quality Gate (v2.7.1)
+# 🛡️ Reporte de Auditoría y Quality Gate (v2.7.2)
 
-Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. Evalúa rigurosamente la calidad de código, rendimiento de renderizado, consumo de red, seguridad y estabilidad de compilación para la versión **v2.7.1**.
+Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. Evalúa rigurosamente la calidad de código, rendimiento de renderizado, consumo de red, seguridad y estabilidad de compilación para la versión **v2.7.2**.
 
 ---
 
@@ -19,9 +19,10 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 | Prueba / Verificación | Entorno | Resultado | Detalle |
 | :--- | :--- | :--- | :--- |
 | **Compilación Release Windows** | Windows x64 / MSVC 18 | `PASS` | Solucionado error en `search_screen.dart` con `createPage`/`createGame`. Compilación exitosa (Exit code: 0). |
-| **Análisis de Tipos Dart** | Dart SDK >= 3.2.0 | `PASS` | Sin referencias no resueltas ni errores de invocación de métodos. |
-| **Limpieza de Código Muerto** | Linting estático | `PASS` | Eliminadas variables huérfanas (`_cacheSize`) y dependencias obsoletas. |
-| **Sincronización de Versión** | Configuración | `PASS` | `pubspec.yaml`, `SettingsScreen`, `changelog_v1.md` alineados en `v2.7.1`. |
+| **Smart Sync & Timeout HTTP** | Red & Concurrencia | `PASS` | Consulta de verificación con `page_size: 1` ($350$ ms). Timeout de 15s previene bloqueos de UI. |
+| **Despeje de FAB (+ Añadir)** | UI / Layout | `PASS` | Paginador centrado con zona libre de 100px; eliminada toda colisión con botones de página. |
+| **Contraste de Filtros Modo Claro** | UX / Accesibilidad | `PASS` | Chips y dropdowns sobre fondo blanco `#FFFFFF` y bordes zinc `#E4E4E7`. Ratio > 18:1. |
+| **Sincronización de Versión** | Configuración | `PASS` | `pubspec.yaml`, `SettingsScreen`, `changelog_v1.md` alineados en `v2.7.2`. |
 
 ---
 

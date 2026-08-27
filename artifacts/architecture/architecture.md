@@ -1,13 +1,13 @@
 ---
 tipo: architecture
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 estado: activo
 fecha: 2026-08-26
-tags: [arquitectura, flutter, notion-api, rawg-api, theme-architecture, offline-cache, pagination, gamification, victor-engineer]
+tags: [arquitectura, flutter, notion-api, rawg-api, theme-architecture, offline-cache, pagination, gamification, smart-sync, victor-engineer]
 ---
 
-# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento (v2.7.1)
+# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v2.7.2)
 
 Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer**.
 
@@ -127,30 +127,34 @@ sequenceDiagram
 
 ---
 
-## ⚡ Patrón de Caché Persistente (*Stale-While-Revalidate*)
+## ⚡ Patrón de Caché Persistente & Smart Sync (*Stale-While-Revalidate*)
 
-Para lograr tiempos de carga imperceptibles y disponibilidad continua:
+Para lograr tiempos de carga imperceptibles y evitar transferencias redundantes de red:
 
 ```mermaid
 sequenceDiagram
-    participant App as Inicio de App
+    participant App as Inicio / Refrescar
     participant NotionSvc as NotionService
     participant Disk as SharedPreferences (Disco Local)
-    participant UI as Dashboard UI
     participant Cloud as Notion Cloud API
 
-    App->>NotionSvc: getGames()
-    NotionSvc->>Disk: getLocalCache()
-    Disk-->>UI: 0 ms -> Muestra lista de juegos en caché de inmediato
-    NotionSvc->>Cloud: queryDatabase() (En background con Rate Limiter)
-    Cloud-->>NotionSvc: Datos frescos de Notion
-    NotionSvc->>Disk: saveLocalCache()
-    NotionSvc-->>UI: Actualización silenciosa si hubo cambios
+    App->>Disk: getLocalCache() (0 ms cold-start)
+    App->>NotionSvc: getGames(useCache, forceFullSync: false)
+    NotionSvc->>Cloud: Head Query (1 registro ordenado por last_edited_time)
+    alt Fecha remota == Fecha local en caché
+        Cloud-->>NotionSvc: Coincidencia detectada (350 ms)
+        NotionSvc-->>App: Retorna caché local de inmediato (sin transferir 100+ juegos)
+    else Hay cambios remotos o caché vacía
+        NotionSvc->>Cloud: queryDatabase() completa con timeout de 15s
+        Cloud-->>NotionSvc: Lista actualizada de juegos
+        NotionSvc->>Disk: saveLocalCache()
+        NotionSvc-->>App: Actualización de biblioteca en pantalla
+    end
 ```
 
 ---
 
-## 🧩 Componentes Modulares de la Versión v2.7.1
+## 🧩 Componentes Modulares de la Versión v2.7.2
 
 1. **`_GameCard` (Grid Cinematográfico):**
    - Miniatura a escala completa con `Hero` animation.
@@ -162,9 +166,10 @@ sequenceDiagram
    - Miniatura de portada de 36x48px con bordes redondeados.
    - Insignia de plataforma oficial mapeada por `PlatformHelper`.
    - Botón de incremento directo `+1h` con actualización optimista.
-3. **Paginador Inteligente:**
+3. **Paginador Inteligente con Despeje de FAB:**
    - Control dinámico de segmentación por página (10, 25, 50, 100 o Todos).
-   - Prevención de desbordamiento de DOM o árbol de widgets masivo en bibliotecas extensas.
+   - Botones de navegación `< X / Y >` **centrados** con `Spacer` elásticos y franja de seguridad de 100px a la derecha para eliminar colisiones con el FloatingActionButton `+ Añadir`.
+   - Superficie adaptativa en `AppColors.surface` con borde semántico superior.
 4. **Selector Multi-Año en Analíticas:**
    - Stepper temporal interactivo `< [Año] >` que recalcula retrospectivamente los logros o permite configurar metas anticipadas para años venideros (`annual_game_goal_${year}`).
    - Salón de la Fama con récords (*El Titán*, *Obra Maestra*, *Aventura Ágil*) y medidor de salud del backlog.

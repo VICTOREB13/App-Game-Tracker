@@ -1,13 +1,13 @@
 ---
 tipo: api_spec
-proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.1
+proyecto: App_Rastreador_de_Entretenimiento_Personal
+version: v2.7.2
 estado: activo
 fecha: 2026-08-26
-tags: [api_spec, backend-architect, notion-api, rawg-api, data-contracts, rate-limiting, serialization]
+tags: [api_spec, backend-architect, notion-api, rawg-api, data-contracts, rate-limiting, serialization, smart-sync]
 ---
 
-# 📡 Especificación de API y Contrato de Datos (v2.7.1)
+# 📡 Especificación de API y Contrato de Datos (v2.7.2)
 
 Documento técnico elaborado por el rol **Backend-Architect** que formaliza los contratos de datos, modelos de entidad, esquemas de propiedades en Notion, endpoints REST consumidos y mecanismos de rate limiting y persistencia local.
 
@@ -125,10 +125,12 @@ sequenceDiagram
 Para garantizar un cold-start instantáneo (**0 ms**) y resiliencia total frente a caídas de red:
 - **Key Local (`SharedPreferences`):** `notion_persistent_games_cache_v1`
 - **Contenido:** JSON serializado con la lista de objetos `Page` de Notion.
-- **Estrategia (*Stale-While-Revalidate*):**
-  1. La UI lee inmediatamente el contenido de `getLocalCache()`.
-  2. En background se ejecuta `getGames()` hacia Notion.
-  3. Al recibir la respuesta fresca, se persiste en disco con `saveLocalCache()` y se actualiza la interfaz si se detectan diferencias.
+### ⚡ Optimización Smart Sync & Timeout de Red
+- **Head Check Ligero (1 solo registro):**
+  - Endpoint: `POST /databases/{database_id}/query` con `page_size: 1` ordenado por `last_edited_time` descendente.
+  - Lógica de Verificación: Se compara el `last_edited_time` del registro remoto con el primer elemento de la caché local persistida. Si coinciden, la biblioteca no sufrió alteraciones en la nube y se devuelven los datos locales en $\sim 0.35$ s, evitando descargar la base de datos completa.
+- **Límite de Tiempo (HTTP Timeout):**
+  - Todas las peticiones HTTP (`GET`, `POST`, `PATCH`) cuentan con un timeout estricto de **15 segundos**. En caso de agotarse el tiempo, la aplicación libera los recursos inmediatamente y utiliza la instantánea local sin bloquear la interfaz de usuario.
 
 ---
 
