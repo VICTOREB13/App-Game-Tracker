@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +20,8 @@ class GameDetailScreen extends StatefulWidget {
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
   final _notion = NotionService.instance;
+  final GlobalKey _socialCardKey = GlobalKey();
+  bool _isExporting = false;
   late TextEditingController _titleController;
   late TextEditingController _hoursController;
   late TextEditingController _hltbMainController;
@@ -262,6 +267,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         title: Text('Ficha del Juego',
             style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_rounded, color: Color(0xFFFAFAFA)),
+            tooltip: 'Exportar Ficha Social',
+            onPressed: _showSocialCardDialog,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
                 color: Color(0xFFDC2626)),
@@ -966,6 +976,453 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ),
       ),
     );
+  }
+
+  void _showSocialCardDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: const Color(0xFF09090B),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFF27272A), width: 1),
+            ),
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 580),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color:
+                                  const Color(0xFFDC2626).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.share_rounded,
+                                size: 16, color: Color(0xFFDC2626)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tarjeta Social de Reseña',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFFAFAFA),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded,
+                            size: 18, color: Color(0xFFA1A1AA)),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                            minWidth: 28, minHeight: 28),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // RepaintBoundary Card
+                  RepaintBoundary(
+                    key: _socialCardKey,
+                    child: _buildSocialCardPreview(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          'Cerrar',
+                          style: GoogleFonts.inter(
+                              color: const Color(0xFFA1A1AA)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: _isExporting
+                            ? null
+                            : () async {
+                                setDialogState(() => _isExporting = true);
+                                await _exportSocialCard();
+                                if (mounted) {
+                                  setDialogState(() => _isExporting = false);
+                                  Navigator.pop(ctx);
+                                }
+                              },
+                        icon: _isExporting
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.download_rounded, size: 16),
+                        label: Text(
+                          _isExporting
+                              ? 'Exportando...'
+                              : 'Guardar PNG (Descargas)',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSocialCardPreview() {
+    final title = _titleController.text.trim().isEmpty
+        ? widget.game.title
+        : _titleController.text.trim();
+    final hours = double.tryParse(_hoursController.text) ??
+        (widget.game.hoursPlayed ?? 0.0);
+    final rating = _selectedRating;
+    final summary = _summaryController.text.trim();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0D10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF27272A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFDC2626).withOpacity(0.12),
+            blurRadius: 24,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header: Brand & Rating
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Monogram & Title
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDC2626),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'VE',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Victor ',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFAFAFA),
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Engineer',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFDC2626),
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' • Game Tracker',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: const Color(0xFFA1A1AA),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Rating stars
+              if (rating.isNotEmpty && rating != '✰✰✰✰✰')
+                Text(
+                  rating,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFFF59E0B),
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Body: Cover thumbnail + details
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cover
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _coverUrlController.text.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: _coverUrlController.text,
+                        width: 76,
+                        height: 104,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => Container(
+                          width: 76,
+                          height: 104,
+                          color: const Color(0xFF18181B),
+                          child: const Icon(Icons.gamepad_rounded,
+                              size: 28, color: Color(0xFF71717A)),
+                        ),
+                      )
+                    : Container(
+                        width: 76,
+                        height: 104,
+                        color: const Color(0xFF18181B),
+                        child: const Icon(Icons.gamepad_rounded,
+                            size: 28, color: Color(0xFF71717A)),
+                      ),
+              ),
+              const SizedBox(width: 14),
+
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFFAFAFA),
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (_selectedPlatform.isNotEmpty) ...[
+                          PlatformHelper.getIcon(_selectedPlatform, size: 13),
+                          const SizedBox(width: 4),
+                          Text(
+                            _selectedPlatform,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: const Color(0xFFA1A1AA),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (_selectedStatus == 'Jugado'
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFDC2626))
+                                .withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: (_selectedStatus == 'Jugado'
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFDC2626))
+                                  .withOpacity(0.4),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            _selectedStatus,
+                            style: GoogleFonts.inter(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: _selectedStatus == 'Jugado'
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Playtime & completion
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined,
+                            size: 13, color: Color(0xFFDC2626)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${hours % 1 == 0 ? hours.toInt() : hours}h jugadas',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFAFAFA),
+                          ),
+                        ),
+                        if (_completedDate != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '•  ${DateFormat('dd MMM yyyy').format(_completedDate!)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: const Color(0xFFA1A1AA),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Review / Notes Quote if available
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF18181B),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF27272A)),
+              ),
+              child: Text(
+                '“$summary”',
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: const Color(0xFFA1A1AA),
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportSocialCard() async {
+    try {
+      final boundary = _socialCardKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 2.5);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final pngBytes = byteData.buffer.asUint8List();
+
+      String savePath = '';
+      if (Platform.isWindows) {
+        final userProfile = Platform.environment['USERPROFILE'] ?? '';
+        final downloadsDir = Directory('$userProfile\\Downloads');
+        final title = _titleController.text.trim().isEmpty
+            ? widget.game.title
+            : _titleController.text.trim();
+        final cleanTitle = title
+            .replaceAll(RegExp(r'[^\w\s-]'), '')
+            .replaceAll(' ', '_');
+        final filePath =
+            '${downloadsDir.path}\\Resena_VE_${cleanTitle}_${DateTime.now().millisecondsSinceEpoch}.png';
+        final file = File(filePath);
+        await file.writeAsBytes(pngBytes);
+        savePath = filePath;
+      } else {
+        final file =
+            File('Resena_VE_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(pngBytes);
+        savePath = file.path;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tarjeta exportada en Descargas: $savePath',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al exportar tarjeta: $e',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
   }
 
   @override

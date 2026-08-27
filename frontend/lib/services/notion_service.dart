@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:collection';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Cached response with TTL
 class _CachedResponse {
@@ -132,18 +133,58 @@ class NotionService {
     return allResults;
   }
 
-  /// Get all games from the configured database
+  static const String _persistentCacheKey = 'notion_persistent_games_cache_v1';
+
+  /// Save raw games query to disk via SharedPreferences
+  Future<void> saveLocalCache(List<Map<String, dynamic>> games) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = json.encode(games);
+      await prefs.setString(_persistentCacheKey, encoded);
+    } catch (e) {
+      // Ignore cache write errors
+    }
+  }
+
+  /// Read cached games from disk (0ms offline load)
+  Future<List<Map<String, dynamic>>?> getLocalCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_persistentCacheKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = json.decode(raw) as List;
+        return decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      // Ignore cache read errors
+    }
+    return null;
+  }
+
+  /// Get all games from the configured database with automatic persistent caching
   Future<List<Map<String, dynamic>>> getGames({bool useCache = true}) async {
-    return queryDatabase(
-      _gamesDbId,
-      sorts: [
-        {
-          'timestamp': 'last_edited_time',
-          'direction': 'descending',
-        }
-      ],
-      useCache: useCache,
-    );
+    try {
+      final results = await queryDatabase(
+        _gamesDbId,
+        sorts: [
+          {
+            'timestamp': 'last_edited_time',
+            'direction': 'descending',
+          }
+        ],
+        useCache: useCache,
+      );
+      // Asynchronously update disk cache
+      unawaited(saveLocalCache(results));
+      return results;
+    } catch (e) {
+      // Fallback to local cache if network/API fails
+      final local = await getLocalCache();
+      if (local != null && local.isNotEmpty) {
+        return local;
+      }
+      rethrow;
+    }
   }
 
   /// Create a new page in a database

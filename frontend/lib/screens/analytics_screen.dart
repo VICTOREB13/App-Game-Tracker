@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
@@ -19,10 +20,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Game> _games = [];
   bool _isLoading = true;
 
+  // Dynamic Multi-Year Goals
+  int _selectedYear = DateTime.now().year;
+  int _annualGoal = 12;
+
   @override
   void initState() {
     super.initState();
+    _loadYearGoal();
     _fetchData();
+  }
+
+  Future<void> _loadYearGoal() async {
+    final prefs = await SharedPreferences.getInstance();
+    final goal = prefs.getInt('annual_game_goal_$_selectedYear') ?? 12;
+    if (mounted) setState(() => _annualGoal = goal);
+  }
+
+  Future<void> _setYearGoal(int newGoal) async {
+    setState(() => _annualGoal = newGoal);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('annual_game_goal_$_selectedYear', newGoal);
   }
 
   Future<void> _fetchData() async {
@@ -84,8 +102,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   // Top rated games
   List<Game> _getTopRated() {
     final ratingOrder = ['★★★★★', '★★★★✰', '★★★✰✰', '★★✰✰✰', '★✰✰✰✰'];
-    final rated =
-        _games.where((g) => g.rating != null && ratingOrder.contains(g.rating)).toList();
+    final rated = _games
+        .where((g) => g.rating != null && ratingOrder.contains(g.rating))
+        .toList();
     rated.sort((a, b) {
       final ai = ratingOrder.indexOf(a.rating!);
       final bi = ratingOrder.indexOf(b.rating!);
@@ -94,10 +113,99 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return rated.take(5).toList();
   }
 
+  void _showEditGoalDialog() {
+    final controller = TextEditingController(text: _annualGoal.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF121215),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF27272A)),
+        ),
+        title: Text(
+          'Meta Anual $_selectedYear',
+          style: GoogleFonts.outfit(
+            color: const Color(0xFFFAFAFA),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Cuántos juegos te propones completar durante el año $_selectedYear?',
+              style: GoogleFonts.inter(
+                color: const Color(0xFFA1A1AA),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFFAFAFA),
+              ),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF18181B),
+                suffixText: 'juegos',
+                suffixStyle: GoogleFonts.inter(color: const Color(0xFFA1A1AA)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF27272A)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFDC2626)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(color: const Color(0xFFA1A1AA)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = int.tryParse(controller.text.trim());
+              if (val != null && val > 0) {
+                _setYearGoal(val);
+              }
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Guardar',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
+        backgroundColor: Color(0xFF09090B),
         body: Center(
           child: CircularProgressIndicator(color: Color(0xFFDC2626)),
         ),
@@ -113,52 +221,311 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     // Backlog Calculator stats
     final backlogGames = _games.where((g) => g.status == 'Por jugar').toList();
-    final totalBacklogHours = backlogGames.fold<num>(
-        0, (sum, g) => sum + (g.hltbMain ?? 0));
+    final totalBacklogHours =
+        backlogGames.fold<num>(0, (sum, g) => sum + (g.hltbMain ?? 0));
 
-    // Current Year Stats
-    final currentYear = DateTime.now().year;
-    final completedThisYear = _games.where((g) {
+    // Games completed in the selected year
+    final completedInSelectedYear = _games.where((g) {
       if (g.status != 'Jugado') return false;
       if (g.completedDate != null) {
-        return g.completedDate!.year == currentYear;
+        return g.completedDate!.year == _selectedYear;
       }
       return false;
     }).toList();
 
+    final yearProgress = _annualGoal > 0
+        ? (completedInSelectedYear.length / _annualGoal).clamp(0.0, 1.0)
+        : 0.0;
+
+    // Hall of Fame / Records
+    final completedGames =
+        _games.where((g) => g.status == 'Jugado').toList();
+
+    // Titan: most hours played among completed games
+    Game? titanGame;
+    if (completedGames.isNotEmpty) {
+      titanGame = completedGames.reduce((a, b) =>
+          (a.hoursPlayed ?? 0) >= (b.hoursPlayed ?? 0) ? a : b);
+    }
+
+    // Masterpiece: 5-star game with highest playtime
+    final fiveStarCompleted = completedGames
+        .where((g) => g.rating == '★★★★★')
+        .toList();
+    Game? masterpieceGame;
+    if (fiveStarCompleted.isNotEmpty) {
+      masterpieceGame = fiveStarCompleted.reduce((a, b) =>
+          (a.hoursPlayed ?? 0) >= (b.hoursPlayed ?? 0) ? a : b);
+    }
+
+    // Agile Adventure: shortest completion time with HLTB > 0
+    final gamesWithHltb = completedGames
+        .where((g) => (g.hltbMain ?? 0) > 0 && (g.hoursPlayed ?? 0) > 0)
+        .toList();
+    Game? agileGame;
+    if (gamesWithHltb.isNotEmpty) {
+      agileGame = gamesWithHltb.reduce((a, b) =>
+          (a.hoursPlayed ?? 9999) <= (b.hoursPlayed ?? 9999) ? a : b);
+    }
+
+    final completionRate = totalGames > 0
+        ? ((statusData['Jugado'] ?? 0) / totalGames * 100).toStringAsFixed(1)
+        : '0';
+
     return Scaffold(
+      backgroundColor: const Color(0xFF09090B),
       appBar: AppBar(
-        title: Text('Estadísticas & Analíticas',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF09090B),
+        elevation: 0,
+        title: Text(
+          'Estadísticas & Analíticas',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFFFAFAFA),
+          ),
+        ),
       ),
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
+          constraints: const BoxConstraints(maxWidth: 850),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               // Summary cards Row 1
               Row(
                 children: [
-                  _buildStatCard('Total Juegos', totalGames.toString(),
-                      const Color(0xFF00F0FF)),
+                  _buildStatCard(
+                    'Total Juegos',
+                    totalGames.toString(),
+                    const Color(0xFFDC2626),
+                  ),
                   const SizedBox(width: 10),
                   _buildStatCard(
-                      'Horas Jugadas',
-                      totalHours % 1 == 0
-                          ? totalHours.toInt().toString()
-                          : totalHours.toStringAsFixed(1),
-                      const Color(0xFFFF2D78)),
+                    'Horas Jugadas',
+                    totalHours % 1 == 0
+                        ? totalHours.toInt().toString()
+                        : totalHours.toStringAsFixed(1),
+                    const Color(0xFFEF4444),
+                  ),
                   const SizedBox(width: 10),
                   _buildStatCard(
-                      'Terminados',
-                      (statusData['Jugado'] ?? 0).toString(),
-                      const Color(0xFFFFBE0B)),
+                    'Terminados',
+                    (statusData['Jugado'] ?? 0).toString(),
+                    const Color(0xFF10B981),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildStatCard(
+                    'Tasa Éxito',
+                    '$completionRate%',
+                    const Color(0xFFF59E0B),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // Backlog Pulse & Year Review Highlights
+              // Multi-Year Goal & Annual Tracker
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121215),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFDC2626).withOpacity(0.35),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFDC2626).withOpacity(0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Year selector header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDC2626).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.emoji_events_rounded,
+                                  size: 16, color: Color(0xFFDC2626)),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Meta Anual de Juegos',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFAFAFA),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Year stepper
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left_rounded,
+                                  size: 20),
+                              color: const Color(0xFFA1A1AA),
+                              onPressed: () {
+                                setState(() => _selectedYear--);
+                                _loadYearGoal();
+                              },
+                              tooltip: 'Año anterior',
+                              constraints: const BoxConstraints(
+                                  minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF18181B),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                    color: const Color(0xFF27272A)),
+                              ),
+                              child: Text(
+                                '$_selectedYear',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFFFAFAFA),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right_rounded,
+                                  size: 20),
+                              color: const Color(0xFFA1A1AA),
+                              onPressed: () {
+                                setState(() => _selectedYear++);
+                                _loadYearGoal();
+                              },
+                              tooltip: 'Año siguiente',
+                              constraints: const BoxConstraints(
+                                  minWidth: 28, minHeight: 28),
+                              padding: EdgeInsets.zero,
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _showEditGoalDialog,
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDC2626).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: const Color(0xFFDC2626).withOpacity(0.3),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.edit_rounded,
+                                        size: 11, color: Color(0xFFDC2626)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Ajustar',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFFDC2626),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Progress info
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${completedInSelectedYear.length} de $_annualGoal juegos completados',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: const Color(0xFFFAFAFA),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${(yearProgress * 100).toInt()}%',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: yearProgress,
+                        minHeight: 8,
+                        backgroundColor: const Color(0xFF18181B),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFFDC2626)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          completedInSelectedYear.length >= _annualGoal
+                              ? '¡Meta superada en $_selectedYear! 🏆'
+                              : 'Faltan ${_annualGoal - completedInSelectedYear.length} juegos para la meta',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: completedInSelectedYear.length >= _annualGoal
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFA1A1AA),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (completedInSelectedYear.isNotEmpty)
+                          Text(
+                            'Último: ${completedInSelectedYear.last.title}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              color: const Color(0xFF71717A),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Backlog Calculator & Personal Records
               Row(
                 children: [
                   // Backlog Calculator
@@ -166,10 +533,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141927),
+                        color: const Color(0xFF121215),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: const Color(0xFFFFBE0B).withOpacity(0.3)),
+                            color: const Color(0xFFF59E0B).withOpacity(0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,14 +544,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           Row(
                             children: [
                               const Icon(Icons.hourglass_top_rounded,
-                                  size: 16, color: Color(0xFFFFBE0B)),
+                                  size: 16, color: Color(0xFFF59E0B)),
                               const SizedBox(width: 6),
                               Text(
-                                'Calculadora de Backlog',
-                                style: GoogleFonts.spaceGrotesk(
+                                'Horas en Backlog',
+                                style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFFBE0B),
+                                  color: const Color(0xFFF59E0B),
                                 ),
                               ),
                             ],
@@ -192,20 +559,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           const SizedBox(height: 8),
                           Text(
                             totalBacklogHours > 0
-                                ? '~${totalBacklogHours.toInt()} horas'
+                                ? '~${totalBacklogHours.toInt()}h estimadas'
                                 : '0 horas',
-                            style: GoogleFonts.spaceGrotesk(
+                            style: GoogleFonts.outfit(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFF0F2F5),
+                              color: const Color(0xFFFAFAFA),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${backlogGames.length} juegos pendientes por jugar',
+                            '${backlogGames.length} juegos por empezar',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFF6B7394),
+                              color: const Color(0xFFA1A1AA),
                             ),
                           ),
                         ],
@@ -213,51 +580,49 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Year in Review
+                  // Backlog Health Ratio
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141927),
+                        color: const Color(0xFF121215),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: const Color(0xFF00F0FF).withOpacity(0.3)),
+                            color: const Color(0xFF10B981).withOpacity(0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.emoji_events_rounded,
-                                  size: 16, color: Color(0xFF00F0FF)),
+                              const Icon(Icons.check_circle_outline_rounded,
+                                  size: 16, color: Color(0xFF10B981)),
                               const SizedBox(width: 6),
                               Text(
-                                'Completados $currentYear',
-                                style: GoogleFonts.spaceGrotesk(
+                                'Salud de Biblioteca',
+                                style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF00F0FF),
+                                  color: const Color(0xFF10B981),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${completedThisYear.length} juegos',
-                            style: GoogleFonts.spaceGrotesk(
+                            '$completionRate% finalizado',
+                            style: GoogleFonts.outfit(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFF0F2F5),
+                              color: const Color(0xFFFAFAFA),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            completedThisYear.isNotEmpty
-                                ? 'Victorias de este año'
-                                : 'Aún sin títulos en $currentYear',
+                            '${statusData['Jugado'] ?? 0} de $totalGames terminados',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFF6B7394),
+                              color: const Color(0xFFA1A1AA),
                             ),
                           ),
                         ],
@@ -266,20 +631,70 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 28),
+
+              // Hall of Fame (Salón de la Fama)
+              Text(
+                'Salón de la Fama & Récords',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFAFAFA),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _buildRecordCard(
+                    icon: Icons.shield_rounded,
+                    color: const Color(0xFFDC2626),
+                    badge: 'EL TITÁN',
+                    title: titanGame?.title ?? 'Sin títulos',
+                    stat: titanGame != null
+                        ? '${titanGame.hoursPlayed ?? 0}h dedicadas'
+                        : '0h',
+                  ),
+                  const SizedBox(width: 10),
+                  _buildRecordCard(
+                    icon: Icons.star_rounded,
+                    color: const Color(0xFFF59E0B),
+                    badge: 'OBRA MAESTRA',
+                    title: masterpieceGame?.title ?? 'Sin 5 estrellas',
+                    stat: masterpieceGame != null
+                        ? '5★ • ${masterpieceGame.hoursPlayed ?? 0}h'
+                        : 'Sin calificar',
+                  ),
+                  const SizedBox(width: 10),
+                  _buildRecordCard(
+                    icon: Icons.bolt_rounded,
+                    color: const Color(0xFF10B981),
+                    badge: 'AVENTURA ÁGIL',
+                    title: agileGame?.title ?? 'Sin títulos',
+                    stat: agileGame != null
+                        ? '${agileGame.hoursPlayed ?? 0}h'
+                        : '0h',
+                  ),
+                ],
+              ),
               const SizedBox(height: 32),
 
-              // Pie chart
-              Text('Distribución por Estado',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
+              // Pie chart: Status distribution
+              Text(
+                'Distribución por Estado',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFAFAFA),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 height: 200,
                 child: totalGames == 0
                     ? Center(
                         child: Text('Sin datos',
                             style: GoogleFonts.inter(
-                                color: const Color(0xFF6B7394))))
+                                color: const Color(0xFFA1A1AA))))
                     : PieChart(
                         PieChartData(
                           sectionsSpace: 3,
@@ -293,11 +708,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               color: _getStatusColor(e.key),
                               value: e.value.toDouble(),
                               title: '$pct%',
-                              radius: 50,
-                              titleStyle: GoogleFonts.spaceGrotesk(
-                                fontSize: 13,
+                              radius: 46,
+                              titleStyle: GoogleFonts.outfit(
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF0A0E1A),
+                                color: Colors.white,
                               ),
                             );
                           }).toList(),
@@ -326,26 +741,33 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Text(
                         '${e.key} (${e.value})',
                         style: GoogleFonts.inter(
-                            color: const Color(0xFF6B7394), fontSize: 12),
+                          color: const Color(0xFFA1A1AA),
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
 
               // Platform chart
-              Text('Plataformas en Biblioteca',
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
+              Text(
+                'Plataformas en Biblioteca',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFFAFAFA),
+                ),
+              ),
+              const SizedBox(height: 20),
               SizedBox(
-                height: 280,
+                height: 260,
                 child: platformData.isEmpty
                     ? Center(
                         child: Text('Sin datos',
                             style: GoogleFonts.inter(
-                                color: const Color(0xFF6B7394))))
+                                color: const Color(0xFFA1A1AA))))
                     : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: SizedBox(
@@ -377,8 +799,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         child: Text(
                                           keys[value.toInt()],
                                           style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
-                                              fontSize: 9),
+                                            color: const Color(0xFFA1A1AA),
+                                            fontSize: 9,
+                                          ),
                                         ),
                                       );
                                     },
@@ -402,7 +825,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 final int index = entry.key;
                                 final map = entry.value.value;
                                 double currentY = 0;
-                                final List<BarChartRodStackItem> stackItems = [];
+                                final List<BarChartRodStackItem> stackItems =
+                                    [];
 
                                 for (var status in [
                                   'Jugado',
@@ -437,22 +861,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 36),
 
               // Top rated
               if (topRated.isNotEmpty) ...[
-                Text('Tus Mejores Calificaciones',
-                    style: GoogleFonts.spaceGrotesk(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Tus Mejores Calificaciones',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFAFAFA),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 ...topRated.map((game) => Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF141927),
+                        color: const Color(0xFF121215),
                         borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: const Color(0xFF1C2237), width: 1),
+                        border: Border.all(
+                            color: const Color(0xFF27272A), width: 1),
                       ),
                       child: Row(
                         children: [
@@ -465,7 +894,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Text(
                               game.title,
                               style: GoogleFonts.inter(
-                                color: const Color(0xFFF0F2F5),
+                                color: const Color(0xFFFAFAFA),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -477,7 +906,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           Text(
                             game.rating ?? '',
                             style: GoogleFonts.inter(
-                                fontSize: 14, color: const Color(0xFFFFBE0B)),
+                              fontSize: 14,
+                              color: const Color(0xFFF59E0B),
+                            ),
                           ),
                         ],
                       ),
@@ -494,18 +925,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildStatCard(String label, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: const Color(0xFF121215),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2), width: 1),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
         child: Column(
           children: [
             Text(
               value,
               style: GoogleFonts.outfit(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -514,8 +945,70 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               label,
               style: GoogleFonts.inter(
-                  fontSize: 10, color: const Color(0xFFA1A1AA)),
+                fontSize: 10,
+                color: const Color(0xFFA1A1AA),
+              ),
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordCard({
+    required IconData icon,
+    required Color color,
+    required String badge,
+    required String title,
+    required String stat,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121215),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  badge,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFFFAFAFA),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              stat,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                color: const Color(0xFFA1A1AA),
+              ),
             ),
           ],
         ),

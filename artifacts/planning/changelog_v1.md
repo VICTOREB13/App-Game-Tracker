@@ -1,16 +1,45 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.5.0
+version: v2.6.0
 estado: activo
-fecha: 2026-08-25
-tags: [proyecto, changelog, versiones, animations, fluid-motion, microinteractions, hero-transitions, frontend-ui]
+fecha: 2026-08-26
+tags: [proyecto, changelog, versiones, offline-cache, dual-view, pagination, multi-year, gamification, social-card, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.6.0] - 2026-08-26 (Definitive Release: Offline Cache, Dual View, Pagination & Gamification)
+
+### Added
+- **Caché Persistente Offline (0 ms Cold-Start):**
+  - Implementación de almacenamiento serializado local mediante `SharedPreferences` en `NotionService`.
+  - Carga inmediata de la biblioteca al iniciar la aplicación sin pantallas de carga previas y sincronización en background (*Stale-While-Revalidate*).
+  - Indicador sutil de *"Modo Local"* en caso de falta de conexión a internet o latencia de Notion.
+- **Selector de Vista Dual (Grid Cinematográfico vs. Lista Compacta):**
+  - Toggle interactivo `[ ⊞ Grid | ☰ Lista ]` en la barra de herramientas del Dashboard con persistencia en disco.
+  - Componente de alta densidad `_GameListRow`: miniatura redondeada de carátula (36x48), título en `Outfit`, badge temático de plataforma, estado, barra HLTB, estrellas y botón rápido `+1h`.
+- **Sistema de Paginación Inteligente:**
+  - Selector de tamaño de página: **10**, **25**, **50**, **100** o **Todos** persistido en memoria local.
+  - Controles de navegación con botones estilizados `< Anterior`, indicador de página activa (`Página X de Y`) y `Siguiente >`.
+  - Reseteo automático a página 1 al aplicar nuevos filtros o realizar búsquedas en tiempo real.
+- **Gamificación Dinámica Multi-Año en Analíticas:**
+  - Selector interactivo de año `< [Año] >` que recalcula el balance histórico y permite proyectar metas en años futuros (2025, 2026, 2027...).
+  - Meta anual editable (`annual_game_goal_${year}`) con barra de progreso circular en `#DC2626` y badge de logro.
+  - **Salón de la Fama / Récords Personales:**
+    - 👑 *El Titán* (Juego completado con mayor tiempo acumulado).
+    - ⭐ *Obra Maestra* (Juego con 5 estrellas y mayor dedicación).
+    - ⚡ *Aventura Ágil* (Juego completado en menor tiempo).
+  - Medidor de salud y tasa porcentual de finalización de biblioteca (*Backlog Health*).
+- **Generador de Tarjeta Social / Reseña Exportable (PNG):**
+  - Botón de exportación en la pantalla de detalle (`GameDetailScreen`).
+  - Renderizado de tarjeta estilizada con squircle `VE`, título, plataforma, calificación en estrellas, horas jugadas, fecha de culminación y cita de reseña personal.
+  - Captura en alta resolución mediante `RepaintBoundary` (2.5x pixel ratio) y guardado directo en la carpeta `Descargas` del usuario en Windows.
+
+---
 
 ## [2.5.0] - 2026-08-25 (Fluid Motion & Microinteractions System)
 
@@ -67,11 +96,3 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Modal avanzado de adición con DatePicker, horas iniciales y selector desplegable de géneros.
 - Buscador en tiempo real en la biblioteca dentro del Dashboard.
 - Soporte y workflow de compilación para Windows PC (Desktop).
-
----
-
-## [2.0.0] - 2026-07-19
-### Added
-- Migración completa a Notion API directa con rate limiter y caché en memoria.
-- Eliminación de Supabase.
-- Rediseño visual "Arcade Noir".
