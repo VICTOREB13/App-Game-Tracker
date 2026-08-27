@@ -847,7 +847,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Sincronización HowLongToBeat Directa',
+                          'Sincronización HowLongToBeat',
                           style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -883,7 +883,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         label: Text(
                           _isSyncingHltb
                               ? 'Consultando HowLongToBeat...'
-                              : 'Buscar Metadatos HLTB en mi Biblioteca',
+                              : 'Buscar',
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1030,7 +1030,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v3.0.5 (Local-First)',
+                      'Gaming Tracker App • v3.0.6',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
