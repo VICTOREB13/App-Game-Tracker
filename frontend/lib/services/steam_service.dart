@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
 import 'database_service.dart';
 import 'string_normalizer.dart';
 import 'hltb_service.dart';
+import 'metadata_service.dart';
 
 /// Resumen estructurado del resultado de la sincronización con Steam
 class SteamSyncResult {
@@ -207,6 +209,9 @@ class SteamService {
     // Constante de estados finales que no se auto-degradan
     const estadosFinales = ['Jugado'];
 
+    final prefs = await SharedPreferences.getInstance();
+    final rawgKey = prefs.getString('rawg_api_key') ?? '';
+
     for (final entry in steamGames.entries) {
       final appid = entry.key;
       final g = entry.value;
@@ -313,6 +318,30 @@ class SteamService {
           details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $hltbMain h)');
         }
 
+        // 6. Wikipedia: si no tiene link, buscarlo
+        String? finalLink = matchedGame.link;
+        if (finalLink == null || finalLink.trim().isEmpty) {
+          try {
+            final wikiUrl = await MetadataService.instance.searchWikipedia(matchedGame.title);
+            if (wikiUrl != null && wikiUrl.isNotEmpty) {
+              finalLink = wikiUrl;
+              needsUpdate = true;
+            }
+          } catch (_) {}
+        }
+
+        // 7. Géneros RAWG: si no tiene géneros y hay clave de RAWG
+        List<String> finalGenres = List.from(matchedGame.genres);
+        if (finalGenres.isEmpty && rawgKey.isNotEmpty) {
+          try {
+            final rawgData = await MetadataService.instance.searchRawg(matchedGame.title, rawgKey);
+            if (rawgData != null && rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
+              finalGenres = List<String>.from(rawgData['genres']);
+              needsUpdate = true;
+            }
+          } catch (_) {}
+        }
+
         if (needsUpdate) {
           final updated = matchedGame.copyWith(
             hoursPlayed: finalHours,
@@ -322,6 +351,8 @@ class SteamService {
             status: finalStatus,
             hltbMain: finalHltbMain,
             hltbCompletionist: finalHltbComp,
+            link: finalLink,
+            genres: finalGenres,
             updatedAt: DateTime.now(),
           );
           await db.updateGame(updated);
@@ -349,6 +380,33 @@ class SteamService {
           debugPrint('Error buscando HLTB para juego nuevo $name: $e');
         }
 
+        // Consultar Wikipedia para enlace oficial
+        String? newLink;
+        try {
+          newLink = await MetadataService.instance.searchWikipedia(name);
+        } catch (e) {
+          debugPrint('Error buscando Wikipedia para juego nuevo $name: $e');
+        }
+
+        // Consultar RAWG para géneros y portada HD (si hay clave de RAWG configurada)
+        List<String> newGenres = [];
+        String finalCover = steamCoverUrl;
+        if (rawgKey.isNotEmpty) {
+          try {
+            final rawgData = await MetadataService.instance.searchRawg(name, rawgKey);
+            if (rawgData != null) {
+              if (rawgData['cover_url'] != null && (rawgData['cover_url'] as String).isNotEmpty) {
+                finalCover = rawgData['cover_url'];
+              }
+              if (rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
+                newGenres = List<String>.from(rawgData['genres']);
+              }
+            }
+          } catch (e) {
+            debugPrint('Error buscando RAWG para juego nuevo $name: $e');
+          }
+        }
+
         // Regla: si horas > 1h -> "Jugado", sino "Por Jugar"
         String status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
         DateTime? completedDate;
@@ -367,13 +425,15 @@ class SteamService {
 
         final newGame = Game(
           title: name,
-          coverUrl: steamCoverUrl,
+          coverUrl: finalCover,
           status: status,
           platform: 'PC',
           hoursPlayed: roundedNewHours,
           steamId: appid,
+          genres: newGenres,
           hltbMain: newHltbMain,
           hltbCompletionist: newHltbComp,
+          link: newLink,
           startDate: startDate,
           completedDate: completedDate,
           createdAt: DateTime.now(),

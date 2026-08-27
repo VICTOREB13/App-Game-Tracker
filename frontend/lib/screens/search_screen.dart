@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 import '../models/game.dart';
 import '../services/database_service.dart';
 import '../services/theme_manager.dart';
+import '../services/metadata_service.dart';
+import '../services/hltb_service.dart';
 import '../widgets/platform_helper.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -110,18 +112,17 @@ class _SearchScreenState extends State<SearchScreen> {
     final hoursController = TextEditingController(text: '0');
     bool isGenreAccordionExpanded = false;
 
-    // Extract genres from RAWG
+    // Extract genres from RAWG - ¡Sin restricciones, capturando TODOS los géneros devueltos!
     final List<String> selectedGenres = [];
     if (rawgGame['genres'] != null && rawgGame['genres'] is List) {
       for (var g in rawgGame['genres']) {
-        final name = g['name']?.toString();
+        final name = g['name']?.toString()?.trim();
         if (name != null && name.isNotEmpty) {
-          final match = _allAvailableGenres.firstWhere(
-            (gen) => gen.toLowerCase() == name.toLowerCase(),
-            orElse: () => '',
-          );
-          if (match.isNotEmpty && !selectedGenres.contains(match)) {
-            selectedGenres.add(match);
+          if (!selectedGenres.contains(name)) {
+            selectedGenres.add(name);
+          }
+          if (!_allAvailableGenres.contains(name)) {
+            _allAvailableGenres.add(name);
           }
         }
       }
@@ -696,9 +697,33 @@ class _SearchScreenState extends State<SearchScreen> {
       final coverUrl = rawgGame['background_image']?.toString();
       final playtime = (rawgGame['playtime'] as num?)?.toDouble();
 
+      // Consultar Wikipedia para el enlace oficial
+      String? wikiLink;
+      try {
+        wikiLink = await MetadataService.instance.searchWikipedia(title);
+      } catch (e) {
+        debugPrint('Error buscando Wikipedia para $title: $e');
+      }
+
+      // Consultar HowLongToBeat para duración exacta de Campaña y Completista
+      num? finalHltbMain = playtime;
+      num? finalHltbComp;
+      try {
+        final hltbData = await HltbService.instance.searchHltb(title);
+        if (hltbData != null) {
+          if (hltbData.mainStory != null) finalHltbMain = hltbData.mainStory;
+          if (hltbData.completionist != null) finalHltbComp = hltbData.completionist;
+        }
+      } catch (e) {
+        debugPrint('Error buscando HLTB para $title: $e');
+      }
+
       DateTime? completedDate;
       String finalStatus = status;
-      if (playtime != null && playtime > 0 && hoursPlayed >= playtime && status != 'Jugado') {
+      if (finalHltbMain != null &&
+          finalHltbMain > 0 &&
+          hoursPlayed >= finalHltbMain &&
+          status != 'Jugado') {
         finalStatus = 'Jugado';
         completedDate = DateTime.now();
       }
@@ -710,7 +735,9 @@ class _SearchScreenState extends State<SearchScreen> {
         platform: platform,
         hoursPlayed: hoursPlayed,
         genres: genres,
-        hltbMain: playtime,
+        hltbMain: finalHltbMain,
+        hltbCompletionist: finalHltbComp,
+        link: wikiLink,
         startDate: startDate,
         completedDate: completedDate,
         createdAt: DateTime.now(),

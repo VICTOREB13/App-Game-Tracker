@@ -9,6 +9,7 @@ import '../services/steam_service.dart';
 import '../services/theme_manager.dart';
 import '../services/backup_service.dart';
 import '../services/hltb_service.dart';
+import '../services/metadata_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -28,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isTestingSteam = false;
   bool _isSyncingSteam = false;
   bool _isSyncingHltb = false;
+  bool _isSyncingMetadata = false;
 
   @override
   void initState() {
@@ -357,6 +359,136 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _syncAllMetadata() async {
+    final db = DatabaseService.instance;
+    final allGames = await db.getAllGames();
+    final rawgKey = _rawgKeyController.text.trim();
+
+    final pending = allGames
+        .where((g) =>
+            g.genres.isEmpty ||
+            (g.link == null || g.link!.trim().isEmpty) ||
+            (g.coverUrl == null || g.coverUrl!.trim().isEmpty))
+        .toList();
+
+    if (pending.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Todos los juegos ya tienen géneros, portada y enlace de Wikipedia'),
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSyncingMetadata = true);
+
+    int genresUpdated = 0;
+    int wikiUpdated = 0;
+    int coversUpdated = 0;
+
+    for (int i = 0; i < pending.length; i++) {
+      final game = pending[i];
+      bool modified = false;
+      List<String> newGenres = List.from(game.genres);
+      String? newCover = game.coverUrl;
+      String? newLink = game.link;
+
+      // 1. Wikipedia: si no tiene link oficial
+      if (newLink == null || newLink.trim().isEmpty) {
+        try {
+          final wikiUrl =
+              await MetadataService.instance.searchWikipedia(game.title);
+          if (wikiUrl != null && wikiUrl.isNotEmpty) {
+            newLink = wikiUrl;
+            wikiUpdated++;
+            modified = true;
+          }
+        } catch (_) {}
+      }
+
+      // 2. RAWG: géneros y portada si hay clave configurada
+      if (rawgKey.isNotEmpty &&
+          (newGenres.isEmpty || (newCover == null || newCover.isEmpty))) {
+        try {
+          final rawgData =
+              await MetadataService.instance.searchRawg(game.title, rawgKey);
+          if (rawgData != null) {
+            if (newGenres.isEmpty &&
+                rawgData['genres'] != null &&
+                (rawgData['genres'] as List).isNotEmpty) {
+              newGenres = List<String>.from(rawgData['genres']);
+              genresUpdated++;
+              modified = true;
+            }
+            if ((newCover == null || newCover.isEmpty) &&
+                rawgData['cover_url'] != null) {
+              newCover = rawgData['cover_url'];
+              coversUpdated++;
+              modified = true;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (modified) {
+        final updated = game.copyWith(
+          genres: newGenres,
+          coverUrl: newCover,
+          link: newLink,
+          updatedAt: DateTime.now(),
+        );
+        await db.updateGame(updated);
+      }
+
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+
+    await _loadSettings();
+
+    if (mounted) {
+      setState(() => _isSyncingMetadata = false);
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface(context),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.auto_awesome_rounded, color: Color(0xFFDC2626)),
+              const SizedBox(width: 10),
+              Text('Metadatos Sincronizados',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          content: Text(
+            'Se completaron los siguientes metadatos en tu biblioteca:\n\n'
+            '• 🏷️ Géneros RAWG asignados: $genresUpdated juegos\n'
+            '• 🌐 Enlaces de Wikipedia: $wikiUpdated juegos\n'
+            '• 🖼️ Portadas HD asignadas: $coversUpdated juegos',
+            style: GoogleFonts.inter(fontSize: 13, height: 1.5),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> _optimizeDatabase() async {
     await DatabaseService.instance.vacuum();
     await _loadSettings();
@@ -646,10 +778,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Permite autocompletar carátulas, géneros y plataformas. Obtén una gratis en rawg.io/apidocs',
+                'Permite autocompletar carátulas, géneros y enlaces enciclopédicos de Wikipedia. Obtén una gratis en rawg.io/apidocs',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: AppColors.textSecondary(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isSyncingMetadata ? null : _syncAllMetadata,
+                  icon: _isSyncingMetadata
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFDC2626),
+                          ),
+                        )
+                      : const Icon(Icons.auto_awesome_rounded,
+                          size: 18, color: Color(0xFFDC2626)),
+                  label: Text(
+                    _isSyncingMetadata
+                        ? 'Sincronizando Metadatos...'
+                        : 'Sincronizar Géneros, Portadas y Wikipedia',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFDC2626),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFDC2626), width: 1),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
@@ -863,7 +1030,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v3.0.2 (Local-First)',
+                      'Rastreador de Entretenimiento Personal • v3.0.3 (Local-First)',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),

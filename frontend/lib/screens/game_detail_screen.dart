@@ -12,6 +12,7 @@ import '../models/game.dart';
 import '../services/database_service.dart';
 import '../services/theme_manager.dart';
 import '../services/hltb_service.dart';
+import '../services/metadata_service.dart';
 import '../widgets/platform_helper.dart';
 import '../widgets/app_cover_image.dart';
 
@@ -27,6 +28,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   final GlobalKey _socialCardKey = GlobalKey();
   bool _isExporting = false;
   bool _isFetchingHltb = false;
+  bool _isSearchingWiki = false;
   late TextEditingController _titleController;
   late TextEditingController _hoursController;
   late TextEditingController _hltbMainController;
@@ -185,6 +187,51 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       if (mounted) {
         setState(() => _isFetchingHltb = false);
       }
+    }
+  }
+
+  Future<void> _fetchWikipediaLink() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() => _isSearchingWiki = true);
+    try {
+      final url = await MetadataService.instance.searchWikipedia(title);
+      if (!mounted) return;
+      if (url != null && url.isNotEmpty) {
+        setState(() {
+          _linkController.text = url;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Enlace de Wikipedia asignado: $url',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No se encontró página de Wikipedia para "$title"',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: const Color(0xFFF59E0B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error consultando Wikipedia: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSearchingWiki = false);
     }
   }
 
@@ -1011,13 +1058,36 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Link
+                // Link / Wikipedia
                 TextField(
                   controller: _linkController,
-                  decoration: const InputDecoration(
-                    labelText: 'Link / Sitio web',
-                    prefixIcon: Icon(Icons.link_rounded,
-                        size: 18, color: Color(0xFF6B7394)),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppColors.textPrimary(context),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Enlace Enciclopédico (Wikipedia)',
+                    hintText: 'https://es.wikipedia.org/wiki/...',
+                    prefixIcon: const Icon(Icons.public_rounded,
+                        size: 18, color: Color(0xFFDC2626)),
+                    suffixIcon: _isSearchingWiki
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
+                          )
+                        : IconButton(
+                            tooltip: 'Buscar enlace en Wikipedia',
+                            icon: const Icon(Icons.travel_explore_rounded,
+                                color: Color(0xFFDC2626), size: 20),
+                            onPressed: _fetchWikipediaLink,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 24),

@@ -20,22 +20,43 @@ class MetadataService {
 
   /// Busca el enlace enciclopédico oficial en Wikipedia (probando español e inglés)
   Future<String?> searchWikipedia(String gameTitle) async {
+    final cleanTitle = gameTitle
+        .replaceAll(RegExp(r'[™®©]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (cleanTitle.isEmpty) return null;
+
     final searches = [
-      {'lang': 'es', 'query': '$gameTitle videojuego'},
-      {'lang': 'en', 'query': '$gameTitle video game'},
+      {'lang': 'es', 'query': '$cleanTitle videojuego'},
+      {'lang': 'en', 'query': '$cleanTitle video game'},
+      {'lang': 'es', 'query': cleanTitle},
+      {'lang': 'en', 'query': cleanTitle},
     ];
 
     for (final item in searches) {
       try {
         final lang = item['lang']!;
-        final q = Uri.encodeComponent(item['query']!);
-        final url = Uri.parse(
-          'https://$lang.wikipedia.org/w/api.php?action=query&list=search&srsearch=$q&format=json&srlimit=1',
+        final query = item['query']!;
+        final url = Uri.https(
+          '$lang.wikipedia.org',
+          '/w/api.php',
+          {
+            'action': 'query',
+            'list': 'search',
+            'srsearch': query,
+            'format': 'json',
+            'srlimit': '1',
+          },
         );
 
-        final res = await http
-            .get(url, headers: {'User-Agent': 'GameTracker/3.0'})
-            .timeout(const Duration(seconds: 4));
+        final res = await http.get(
+          url,
+          headers: {
+            'User-Agent':
+                'GameTracker/3.0 (victorengineer.fyi; contact@victorengineer.fyi)'
+          },
+        ).timeout(const Duration(seconds: 5));
 
         if (res.statusCode == 200) {
           final data = json.decode(res.body);
@@ -43,7 +64,8 @@ class MetadataService {
           if (searchResults != null && searchResults.isNotEmpty) {
             final title = searchResults[0]['title']?.toString() ?? '';
             if (title.isNotEmpty) {
-              return 'https://$lang.wikipedia.org/wiki/${title.replaceAll(' ', '_')}';
+              final formattedTitle = Uri.encodeComponent(title.replaceAll(' ', '_'));
+              return 'https://$lang.wikipedia.org/wiki/$formattedTitle';
             }
           }
         }
@@ -54,17 +76,30 @@ class MetadataService {
     return null;
   }
 
-  /// Busca metadatos en RAWG API (portada HD y géneros)
-  Future<Map<String, dynamic>?> searchRawg(String gameTitle, String rawgKey) async {
+  /// Busca metadatos en RAWG API (portada HD y todos los géneros sin límites)
+  Future<Map<String, dynamic>?> searchRawg(
+      String gameTitle, String rawgKey) async {
     if (rawgKey.trim().isEmpty) return null;
 
+    final cleanTitle = gameTitle
+        .replaceAll(RegExp(r'[™®©]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (cleanTitle.isEmpty) return null;
+
     try {
-      final encodedTitle = Uri.encodeComponent(gameTitle.trim());
-      final url = Uri.parse(
-        'https://api.rawg.io/api/games?key=${rawgKey.trim()}&search=$encodedTitle&page_size=1',
+      final url = Uri.https(
+        'api.rawg.io',
+        '/api/games',
+        {
+          'key': rawgKey.trim(),
+          'search': cleanTitle,
+          'page_size': '1',
+        },
       );
 
-      final res = await http.get(url).timeout(const Duration(seconds: 6));
+      final res = await http.get(url).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         final results = data['results'] as List?;
@@ -72,7 +107,7 @@ class MetadataService {
           final match = results[0];
           final rawGenres = match['genres'] as List? ?? [];
           final genres = rawGenres
-              .map((g) => g['name']?.toString() ?? '')
+              .map((g) => g['name']?.toString()?.trim() ?? '')
               .where((name) => name.isNotEmpty)
               .toList();
 
@@ -106,11 +141,13 @@ class MetadataService {
       try {
         final hltbData = await HltbService.instance.searchHltb(game.title);
         if (hltbData != null) {
-          if (hltbData.mainStory != null && (newHltbMain == null || newHltbMain == 0)) {
+          if (hltbData.mainStory != null &&
+              (newHltbMain == null || newHltbMain == 0)) {
             newHltbMain = hltbData.mainStory;
             modified = true;
           }
-          if (hltbData.completionist != null && (newHltbComp == null || newHltbComp == 0)) {
+          if (hltbData.completionist != null &&
+              (newHltbComp == null || newHltbComp == 0)) {
             newHltbComp = hltbData.completionist;
             modified = true;
           }
@@ -133,12 +170,14 @@ class MetadataService {
 
     // 2. RAWG: si falta portada o géneros
     if (rawgKey != null && rawgKey.trim().isNotEmpty) {
-      final needsRawg = (newCover == null || newCover.isEmpty) || newGenres.isEmpty;
+      final needsRawg =
+          (newCover == null || newCover.isEmpty) || newGenres.isEmpty;
 
       if (needsRawg) {
         final rawgData = await searchRawg(game.title, rawgKey);
         if (rawgData != null) {
-          if ((newCover == null || newCover.isEmpty) && rawgData['cover_url'] != null) {
+          if ((newCover == null || newCover.isEmpty) &&
+              rawgData['cover_url'] != null) {
             newCover = rawgData['cover_url'];
             modified = true;
           }
@@ -174,5 +213,6 @@ class MetadataService {
       return enriched;
     }
 
+    return game;
   }
 }

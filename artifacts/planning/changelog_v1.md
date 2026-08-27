@@ -1,15 +1,32 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.2
+version: v3.0.3
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.2, howlongtobeat, hltb-service, steam-sync, auto-culmination, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.3, rawg-genres-unlimited, wikipedia-links, metadata-enrichment, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.0.3] - 2026-08-27 (Unrestricted RAWG Genres & Automatic Wikipedia Links)
+
+### Fixed & Enhanced
+- **Asignación Ilimitada de Géneros RAWG:**
+  - Removido el filtro restrictivo en `SearchScreen` que descartaba géneros en inglés de RAWG que no coincidieran exactamente con la lista en español.
+  - Ahora se capturan y asignan **TODOS los géneros** devueltos por la API de RAWG sin ninguna limitación, guardándose directamente en SQLite y añadiéndose dinámicamente al catálogo de chips interactivos.
+- **Asignación Automática y Robusta de Enlaces de Wikipedia:**
+  - Corregido el motor de búsqueda en Wikipedia (`MetadataService.searchWikipedia`):
+    - Uso de `Uri.https` para codificación correcta de parámetros sin colisiones de sintaxis.
+    - Encabezado `User-Agent` compatible con la política de APIs de Wikimedia.
+    - Sanitización de títulos (eliminación de símbolos `™`, `®`, `©`) y búsqueda cruzada en español e inglés con fallbacks inteligentes.
+  - Al añadir un juego desde `SearchScreen`, se consulta y enlaza automáticamente su página oficial de Wikipedia en el campo de enlace.
+  - En la sincronización con Steam (`SteamService`), tanto los juegos existentes sin enlace como los nuevos juegos creados reciben su link de Wikipedia automáticamente.
+  - En `GameDetailScreen`, el campo de enlace enciclopédico incluye ahora un botón de acción rápida para buscar y asignar Wikipedia en 1 clic.
+- **Acción Masiva de Enriquecimiento en Configuración (`SettingsScreen`):**
+  - Nuevo botón **"Sincronizar Géneros, Portadas y Wikipedia"** que recorre toda la biblioteca de SQLite, rellenando portadas faltantes, asignando todos los géneros disponibles de RAWG y buscando los enlaces enciclopédicos de Wikipedia.
 
 ## [3.0.2] - 2026-08-27 (Native HowLongToBeat Service & Auto-Enrichment)
 
