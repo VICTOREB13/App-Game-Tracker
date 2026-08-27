@@ -293,36 +293,75 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Summary cards Row 1
-              Row(
-                children: [
-                  _buildStatCard(
-                    'Total Juegos',
-                    totalGames.toString(),
-                    const Color(0xFFDC2626),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatCard(
-                    'Horas Jugadas',
-                    totalHours % 1 == 0
-                        ? totalHours.toInt().toString()
-                        : totalHours.toStringAsFixed(1),
-                    const Color(0xFFEF4444),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatCard(
-                    'Terminados',
-                    (statusData['Jugado'] ?? 0).toString(),
-                    const Color(0xFF10B981),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildStatCard(
-                    'Tasa Éxito',
-                    '$completionRate%',
-                    const Color(0xFFF59E0B),
-                  ),
-                ],
-              ),
+              // Summary cards (2x2 Grid for Mobile, 1x4 Row for Desktop)
+              if (MediaQuery.of(context).size.width < 600)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        _buildStatCard(
+                          'Total Juegos',
+                          totalGames.toString(),
+                          const Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildStatCard(
+                          'Horas Jugadas',
+                          totalHours % 1 == 0
+                              ? totalHours.toInt().toString()
+                              : totalHours.toStringAsFixed(1),
+                          const Color(0xFFEF4444),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _buildStatCard(
+                          'Terminados',
+                          (statusData['Jugado'] ?? 0).toString(),
+                          const Color(0xFF10B981),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildStatCard(
+                          'Tasa Éxito',
+                          '$completionRate%',
+                          const Color(0xFFF59E0B),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    _buildStatCard(
+                      'Total Juegos',
+                      totalGames.toString(),
+                      const Color(0xFFDC2626),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildStatCard(
+                      'Horas Jugadas',
+                      totalHours % 1 == 0
+                          ? totalHours.toInt().toString()
+                          : totalHours.toStringAsFixed(1),
+                      const Color(0xFFEF4444),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildStatCard(
+                      'Terminados',
+                      (statusData['Jugado'] ?? 0).toString(),
+                      const Color(0xFF10B981),
+                    ),
+                    const SizedBox(width: 10),
+                    _buildStatCard(
+                      'Tasa Éxito',
+                      '$completionRate%',
+                      const Color(0xFFF59E0B),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 20),
 
               // Multi-Year Goal & Annual Tracker
@@ -645,39 +684,92 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  _buildRecordCard(
-                    icon: Icons.shield_rounded,
-                    color: const Color(0xFFDC2626),
-                    badge: 'EL TITÁN',
-                    title: titanGame?.title ?? 'Sin títulos',
-                    stat: titanGame != null
-                        ? '${titanGame.hoursPlayed ?? 0}h dedicadas'
-                        : '0h',
+              if (MediaQuery.of(context).size.width < 600)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 175,
+                        child: _buildRecordCard(
+                          icon: Icons.shield_rounded,
+                          color: const Color(0xFFDC2626),
+                          badge: 'EL TITÁN',
+                          title: titanGame?.title ?? 'Sin títulos',
+                          stat: titanGame != null
+                              ? '${titanGame.hoursPlayed ?? 0}h dedicadas'
+                              : '0h',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 175,
+                        child: _buildRecordCard(
+                          icon: Icons.star_rounded,
+                          color: const Color(0xFFF59E0B),
+                          badge: 'OBRA MAESTRA',
+                          title: masterpieceGame?.title ?? 'Sin 5 estrellas',
+                          stat: masterpieceGame != null
+                              ? '5★ • ${masterpieceGame.hoursPlayed ?? 0}h'
+                              : 'Sin calificar',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 175,
+                        child: _buildRecordCard(
+                          icon: Icons.bolt_rounded,
+                          color: const Color(0xFF10B981),
+                          badge: 'AVENTURA ÁGIL',
+                          title: agileGame?.title ?? 'Sin títulos',
+                          stat: agileGame != null
+                              ? '${agileGame.hoursPlayed ?? 0}h'
+                              : '0h',
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  _buildRecordCard(
-                    icon: Icons.star_rounded,
-                    color: const Color(0xFFF59E0B),
-                    badge: 'OBRA MAESTRA',
-                    title: masterpieceGame?.title ?? 'Sin 5 estrellas',
-                    stat: masterpieceGame != null
-                        ? '5★ • ${masterpieceGame.hoursPlayed ?? 0}h'
-                        : 'Sin calificar',
-                  ),
-                  const SizedBox(width: 10),
-                  _buildRecordCard(
-                    icon: Icons.bolt_rounded,
-                    color: const Color(0xFF10B981),
-                    badge: 'AVENTURA ÁGIL',
-                    title: agileGame?.title ?? 'Sin títulos',
-                    stat: agileGame != null
-                        ? '${agileGame.hoursPlayed ?? 0}h'
-                        : '0h',
-                  ),
-                ],
-              ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildRecordCard(
+                        icon: Icons.shield_rounded,
+                        color: const Color(0xFFDC2626),
+                        badge: 'EL TITÁN',
+                        title: titanGame?.title ?? 'Sin títulos',
+                        stat: titanGame != null
+                            ? '${titanGame.hoursPlayed ?? 0}h dedicadas'
+                            : '0h',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildRecordCard(
+                        icon: Icons.star_rounded,
+                        color: const Color(0xFFF59E0B),
+                        badge: 'OBRA MAESTRA',
+                        title: masterpieceGame?.title ?? 'Sin 5 estrellas',
+                        stat: masterpieceGame != null
+                            ? '5★ • ${masterpieceGame.hoursPlayed ?? 0}h'
+                            : 'Sin calificar',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildRecordCard(
+                        icon: Icons.bolt_rounded,
+                        color: const Color(0xFF10B981),
+                        badge: 'AVENTURA ÁGIL',
+                        title: agileGame?.title ?? 'Sin títulos',
+                        stat: agileGame != null
+                            ? '${agileGame.hoursPlayed ?? 0}h'
+                            : '0h',
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 32),
 
               // Pie chart: Status distribution
@@ -942,23 +1034,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         decoration: BoxDecoration(
           color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withOpacity(0.35), width: 1),
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: color,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 10,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
@@ -978,53 +1074,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     required String title,
     required String stat,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 14, color: color),
-                const SizedBox(width: 4),
-                Text(
-                  badge,
-                  style: GoogleFonts.outfit(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    letterSpacing: 0.5,
-                  ),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                badge,
+                style: GoogleFonts.outfit(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  letterSpacing: 0.5,
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary(context),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary(context),
             ),
-            const SizedBox(height: 2),
-            Text(
-              stat,
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                color: AppColors.textSecondary(context),
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            stat,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              color: AppColors.textSecondary(context),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

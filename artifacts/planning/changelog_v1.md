@@ -1,16 +1,34 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.0
+version: v2.8.1
 estado: activo
-fecha: 2026-08-26
-tags: [proyecto, changelog, versiones, v2.8.0, filter-modal-sheet, genre-helper, json-backup, touch-filters, victor-engineer]
+fecha: 2026-08-27
+tags: [proyecto, changelog, versiones, v2.8.1, mobile-responsive, dual-row-filters, appbar-collision-fix, fitted-box, mobile-polish]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.8.1] - 2026-08-27 (Mobile Ergonomics, Dual-Row Filter Architecture & Visual Collision Fixes)
+
+### Added & Enhanced
+- **Barra de Filtros en Dos Hileras en Móvil (`DashboardScreen`):**
+  - **Fila 1 (Estados Principales):** `[Todos]`, `[Jugando]`, `[Por jugar]`, `[Jugado]` en una fila horizontal dedicada.
+  - **Fila 2 (Selectores de Catálogo & Orden):** `[Plataforma: Todas v]`, `[Género: Todos v]`, `[Orden v]` y `[Limpiar (X)]` en una segunda hilera independiente inmediatamente visible en pantallas estrechas (< 600px).
+  - En pantallas anchas (>= 600px), se preserva la hilera única unificada con divisor vertical.
+- **Resolución de Colisión en AppBar en Móvil:**
+  - En móvil (< 500px), el logo y texto `Victor Engineer` ahora se escalan automáticamente con `FittedBox` y `Flexible`, evitando cualquier solapamiento.
+  - Las 5 acciones directas que desbordaban la pantalla se agruparon en móvil: acceso directo a Búsqueda y Estadísticas, y un elegante menú desplegable `⋮` (`PopupMenuButton`) para Cambio de Tema, Sincronización Notion y Ajustes. En PC se conservan los 5 botones individuales.
+- **Rediseño Cuadrícula 2x2 para Métricas Superiores (`AnalyticsScreen`):**
+  - En móviles (< 600px), las 4 tarjetas de estadísticas (`Total Juegos`, `Horas Jugadas`, `Terminados`, `Tasa Éxito`) pasan de 1 sola fila apretada de 70px a una cómoda cuadrícula 2x2 con el doble de anchura.
+  - **Cero Saltos de Línea en Números (`FittedBox`):** Valores como `2176.3` y porcentajes como `65.8%` ya no se dividen en dos renglones bajo ninguna configuración de escala o fuente.
+- **Salón de la Fama Adaptativo (`AnalyticsScreen`):**
+  - En móvil, las tarjetas de récords (`El Titán`, `Obra Maestra`, `Aventura Ágil`) se despliegan en un carrusel deslizable horizontal de 175px por tarjeta, permitiendo leer títulos como *"Zenless Zone Zero"* y detalles sin truncamiento.
+- **Ergonomía de Paginación y Botón Añadir (FAB):**
+  - El FAB en móvil se adapta a botón circular compacto de 56px con icono `+`, reduciendo la zona de seguridad a 64px y compactando `'Por pág:'` a `'Ver:'`, manteniendo los controles `< 1 / 12 >` perfectamente centrados y cómodos de pulsar.
 
 ## [2.8.0] - 2026-08-26 (QoL & Filter Reorganization, Virtual Normalization & Dual JSON Backup)
 

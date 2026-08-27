@@ -120,6 +120,17 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Aplicar bordes redondeados completos (`BorderRadius.circular(24)`) y margen inferior flotante en `FilterModalSheet` tanto para Géneros como Plataformas.
 - [x] `(Frontend-UI)` Adaptar botones rápidos de horas (+30m, +1h, +2h) y track de progreso HLTB a modo claro (`#FEF2F2` y `#E4E4E7`) en `GameDetailScreen`.
 
+---
+
+## 📱 12. Optimización Móvil & Arquitectura Responsiva (v2.8.1)
+- [x] `(Frontend-UI)` Resolver colisión de AppBar en móvil envolviendo el título en `Flexible` + `FittedBox` y compactando acciones secundarias en menú desplegable `⋮`.
+- [x] `(Frontend-UI)` Implementar barra de filtros en dos hileras en móvil (Fila 1: Estados, Fila 2: Plataforma, Género, Orden y Limpiar), preservando hilera única en escritorio.
+- [x] `(Frontend-UI)` Adaptar FAB a formato circular compacto (56px) en móvil y optimizar la barra de paginación inferior para centrar `< 1 / 12 >` sin colisiones.
+- [x] `(Frontend-UI)` Rediseñar métricas analíticas a cuadrícula 2x2 en móvil con `FittedBox` para evitar saltos de línea de números (`2176.3` y `65.8%`).
+- [x] `(Frontend-UI)` Adaptar Salón de la Fama a carrusel horizontal con tarjetas amplias (175px) en móvil para evitar truncamiento de títulos y medallas.
+- [x] `(Systems-Auditor)` Verificar ausencia de desbordamientos visuales y consistencia temática claro/oscuro.
+
+
 
 
 

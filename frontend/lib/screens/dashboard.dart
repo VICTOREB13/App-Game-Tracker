@@ -636,9 +636,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final playingGames = _currentlyPlayingGames;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 500;
+    final isMobileFilter = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: isMobile ? 12 : null,
         title: _isSearchActive
             ? TextField(
                 controller: _searchController,
@@ -677,57 +681,62 @@ class _DashboardScreenState extends State<DashboardScreen>
                   });
                 },
               )
-            : Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDC2626),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFDC2626).withOpacity(0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFDC2626).withOpacity(0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'VE',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'VE',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Victor ',
-                          style: GoogleFonts.outfit(
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary(context),
+                    const SizedBox(width: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Victor ',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary(context),
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text: 'Engineer',
-                          style: GoogleFonts.outfit(
-                            fontSize: 19,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFFDC2626),
+                          TextSpan(
+                            text: 'Engineer',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFDC2626),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
         actions: [
           IconButton(
@@ -752,56 +761,157 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
           ),
           if (!_isSearchActive) ...[
-            IconButton(
-              icon: Icon(
-                Theme.of(context).brightness == Brightness.dark
-                    ? Icons.light_mode_rounded
-                    : Icons.dark_mode_rounded,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFFF59E0B)
-                    : const Color(0xFF71717A),
-              ),
-              tooltip: Theme.of(context).brightness == Brightness.dark
-                  ? 'Cambiar a Modo Claro'
-                  : 'Cambiar a Modo Oscuro',
-              onPressed: () => ThemeManager.instance.toggleTheme(),
-            ),
-            IconButton(
-              icon: _isRefreshing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFFDC2626)),
-                    )
-                  : const Icon(Icons.refresh_rounded, color: Color(0xFFA1A1AA)),
-              tooltip: 'Refrescar de Notion',
-              onPressed: _isRefreshing
-                  ? null
-                  : () {
-                      setState(() => _isRefreshing = true);
-                      _fetchGames(forceRefresh: true, userInitiated: true);
-                    },
-            ),
-            IconButton(
-              icon: const Icon(Icons.bar_chart_rounded, color: Color(0xFFDC2626)),
-              tooltip: 'Estadísticas',
-              onPressed: () => Navigator.push(
-                context,
-                _buildFluidPageRoute(const AnalyticsScreen()),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_rounded, color: Color(0xFF71717A)),
-              tooltip: 'Configuración',
-              onPressed: () async {
-                final result = await Navigator.push(
+            if (isMobile) ...[
+              IconButton(
+                icon: const Icon(Icons.bar_chart_rounded,
+                    color: Color(0xFFDC2626)),
+                tooltip: 'Estadísticas',
+                onPressed: () => Navigator.push(
                   context,
-                  _buildFluidPageRoute(const SettingsScreen()),
-                );
-                if (result == true) _fetchGames(forceRefresh: true);
-              },
-            ),
+                  _buildFluidPageRoute(const AnalyticsScreen()),
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded,
+                    color: AppColors.textPrimary(context)),
+                tooltip: 'Más opciones',
+                color: AppColors.surface(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: AppColors.border(context)),
+                ),
+                onSelected: (val) async {
+                  if (val == 'theme') {
+                    ThemeManager.instance.toggleTheme();
+                  } else if (val == 'refresh') {
+                    setState(() => _isRefreshing = true);
+                    _fetchGames(forceRefresh: true, userInitiated: true);
+                  } else if (val == 'settings') {
+                    final result = await Navigator.push(
+                      context,
+                      _buildFluidPageRoute(const SettingsScreen()),
+                    );
+                    if (result == true) _fetchGames(forceRefresh: true);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(
+                    value: 'theme',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          size: 18,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFF71717A),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'Modo Claro'
+                              : 'Modo Oscuro',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'refresh',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.refresh_rounded,
+                            size: 18, color: Color(0xFFA1A1AA)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Sincronizar Notion',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'settings',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.settings_rounded,
+                            size: 18, color: Color(0xFF71717A)),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Configuración',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: AppColors.textPrimary(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              IconButton(
+                icon: Icon(
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFF71717A),
+                ),
+                tooltip: Theme.of(context).brightness == Brightness.dark
+                    ? 'Cambiar a Modo Claro'
+                    : 'Cambiar a Modo Oscuro',
+                onPressed: () => ThemeManager.instance.toggleTheme(),
+              ),
+              IconButton(
+                icon: _isRefreshing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFFDC2626)),
+                      )
+                    : const Icon(Icons.refresh_rounded,
+                        color: Color(0xFFA1A1AA)),
+                tooltip: 'Refrescar de Notion',
+                onPressed: _isRefreshing
+                    ? null
+                    : () {
+                        setState(() => _isRefreshing = true);
+                        _fetchGames(forceRefresh: true, userInitiated: true);
+                      },
+              ),
+              IconButton(
+                icon: const Icon(Icons.bar_chart_rounded,
+                    color: Color(0xFFDC2626)),
+                tooltip: 'Estadísticas',
+                onPressed: () => Navigator.push(
+                  context,
+                  _buildFluidPageRoute(const AnalyticsScreen()),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_rounded,
+                    color: Color(0xFF71717A)),
+                tooltip: 'Configuración',
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    _buildFluidPageRoute(const SettingsScreen()),
+                  );
+                  if (result == true) _fetchGames(forceRefresh: true);
+                },
+              ),
+            ],
           ],
         ],
       ),
@@ -811,35 +921,76 @@ class _DashboardScreenState extends State<DashboardScreen>
           if (!_isSearchActive && playingGames.isNotEmpty && !_isLoading)
             _buildHeroSpotlight(playingGames.first),
 
-          // Unified Filter Toolbar (Single Row: Statuses | Platform | Genre | Sort | Clear)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
+          // Filter Toolbar (Responsive: 2 Rows on Mobile, 1 Row on Desktop)
+          if (isMobileFilter)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ..._statusFilters.map(_buildFilterChip),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 1,
-                    height: 24,
-                    color: AppColors.border(context),
+                  // Fila 1: Estados Principales
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        ..._statusFilters.map(_buildFilterChip),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildPlatformFilterButton(),
-                  const SizedBox(width: 8),
-                  _buildGenreFilterButton(),
-                  const SizedBox(width: 8),
-                  _buildSortDropdown(),
-                  if (_isAnyFilterActive) ...[
-                    const SizedBox(width: 8),
-                    _buildClearFiltersButton(),
-                  ],
+                  const SizedBox(height: 6),
+                  // Fila 2: Selectores de Catálogo & Orden
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        _buildPlatformFilterButton(),
+                        const SizedBox(width: 8),
+                        _buildGenreFilterButton(),
+                        const SizedBox(width: 8),
+                        _buildSortDropdown(),
+                        if (_isAnyFilterActive) ...[
+                          const SizedBox(width: 8),
+                          _buildClearFiltersButton(),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
+            )
+          else
+            // Unified Filter Toolbar for Desktop (Single Row)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    ..._statusFilters.map(_buildFilterChip),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 1,
+                      height: 24,
+                      color: AppColors.border(context),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPlatformFilterButton(),
+                    const SizedBox(width: 8),
+                    _buildGenreFilterButton(),
+                    const SizedBox(width: 8),
+                    _buildSortDropdown(),
+                    if (_isAnyFilterActive) ...[
+                      const SizedBox(width: 8),
+                      _buildClearFiltersButton(),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
 
           // Search indicator & Game count & View Switcher
           Padding(
@@ -1126,22 +1277,36 @@ class _DashboardScreenState extends State<DashboardScreen>
           _buildPaginationBar(),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final res = await Navigator.push(
-            context,
-            _buildFluidPageRoute(const SearchScreen()),
-          );
-          if (res == true) _fetchGames(forceRefresh: true);
-        },
-        backgroundColor: const Color(0xFFDC2626),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(
-          'Añadir',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
-      ),
+      floatingActionButton: isMobileFilter
+          ? FloatingActionButton(
+              onPressed: () async {
+                final res = await Navigator.push(
+                  context,
+                  _buildFluidPageRoute(const SearchScreen()),
+                );
+                if (res == true) _fetchGames(forceRefresh: true);
+              },
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              tooltip: 'Añadir juego',
+              child: const Icon(Icons.add_rounded, size: 28),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                final res = await Navigator.push(
+                  context,
+                  _buildFluidPageRoute(const SearchScreen()),
+                );
+                if (res == true) _fetchGames(forceRefresh: true);
+              },
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: Text(
+                'Añadir',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+            ),
     );
   }
 
@@ -1738,6 +1903,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildPaginationBar() {
     if (_filteredGames.isEmpty) return const SizedBox.shrink();
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -1761,13 +1928,13 @@ class _DashboardScreenState extends State<DashboardScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Por pág:',
+                isMobile ? 'Ver:' : 'Por pág:',
                 style: GoogleFonts.inter(
                   fontSize: 11,
                   color: AppColors.textSecondary(context),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
                 height: 28,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1869,7 +2036,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           const Spacer(),
 
           // Dedicated safety zone: ensures FloatingActionButton NEVER overlaps pagination controls!
-          const SizedBox(width: 100),
+          SizedBox(width: isMobile ? 64 : 100),
         ],
       ),
     );
