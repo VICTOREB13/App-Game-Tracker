@@ -50,6 +50,50 @@ class _SearchScreenState extends State<SearchScreen> {
     'Jugado',
   ];
 
+  String _canonicalPlatform(String raw) {
+    final lower = raw.toLowerCase().trim();
+    if (lower == 'pc' || lower.contains('steam') || lower.contains('windows')) {
+      return 'PC';
+    }
+    if (lower.contains('playstation 5') || lower == 'ps5') return 'Playstation 5';
+    if (lower.contains('playstation 4') || lower == 'ps4') return 'Playstation 4';
+    if (lower.contains('playstation 3') || lower == 'ps3') return 'Playstation 3';
+    if (lower.contains('playstation 2') || lower == 'ps2') return 'Playstation 2';
+    if (lower.contains('playstation') || lower == 'ps1' || lower == 'psx') {
+      return 'Playstation 1';
+    }
+    if (lower.contains('xbox series') ||
+        lower.contains('xbox one') ||
+        lower.contains('xbox 360') ||
+        lower.contains('xbox')) {
+      return 'Xbox';
+    }
+    if (lower.contains('switch')) return 'Nintendo Switch';
+    if (lower.contains('wii u')) return 'Wii U';
+    if (lower.contains('wii')) return 'Wii U';
+    if (lower.contains('nintendo ds') ||
+        lower.contains('3ds') ||
+        lower.contains('ds')) {
+      return 'Nintendo DS';
+    }
+    if (lower.contains('nintendo 64') || lower.contains('n64')) {
+      return 'Nintendo 64';
+    }
+    if (lower.contains('mac') ||
+        lower.contains('apple') ||
+        lower.contains('macos')) {
+      return 'Mac';
+    }
+    if (lower.contains('ios') ||
+        lower.contains('android') ||
+        lower.contains('mobile')) {
+      return 'Mobile';
+    }
+    if (lower.contains('gog')) return 'GOG';
+    if (lower.contains('epic')) return 'Epic Games';
+    return raw;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -107,10 +151,28 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _promptGameDetails(Map<String, dynamic> rawgGame) async {
     String selectedStatus = 'Por jugar';
-    String selectedPlatform = 'PC';
     DateTime? selectedStartDate;
     final hoursController = TextEditingController(text: '0');
     bool isGenreAccordionExpanded = false;
+    bool showAllPlatforms = false;
+
+    // Extraer plataformas reales donde el juego existe según RAWG
+    final List<String> detectedPlatforms = [];
+    if (rawgGame['platforms'] != null && rawgGame['platforms'] is List) {
+      for (var item in rawgGame['platforms']) {
+        final pName = item['platform']?['name']?.toString()?.trim();
+        if (pName != null && pName.isNotEmpty) {
+          final canonical = _canonicalPlatform(pName);
+          if (!detectedPlatforms.contains(canonical)) {
+            detectedPlatforms.add(canonical);
+          }
+        }
+      }
+    }
+
+    String selectedPlatform = detectedPlatforms.contains('PC')
+        ? 'PC'
+        : (detectedPlatforms.isNotEmpty ? detectedPlatforms.first : 'PC');
 
     // Extract genres from RAWG - ¡Sin restricciones, capturando TODOS los géneros devueltos!
     final List<String> selectedGenres = [];
@@ -141,7 +203,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               child: Container(
                 constraints:
-                    const BoxConstraints(maxWidth: 550, maxHeight: 680),
+                    const BoxConstraints(maxWidth: 560, maxHeight: 720),
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -236,7 +298,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Estado & Plataforma
+                            // Estado & Horas Jugadas
                             Row(
                               children: [
                                 Expanded(
@@ -250,6 +312,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           color:
                                               AppColors.textSecondary(context),
                                           fontSize: 12,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -257,6 +320,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                         value: selectedStatus,
                                         dropdownColor:
                                             AppColors.surface(context),
+                                        menuMaxHeight: 220,
                                         style: GoogleFonts.inter(
                                           fontSize: 13,
                                           color:
@@ -301,156 +365,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Plataforma',
-                                        style: GoogleFonts.inter(
-                                          color:
-                                              AppColors.textSecondary(context),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      DropdownButtonFormField<String>(
-                                        value: selectedPlatform,
-                                        dropdownColor:
-                                            AppColors.surface(context),
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color:
-                                              AppColors.textPrimary(context),
-                                        ),
-                                        items: _availablePlatforms
-                                            .map((p) => DropdownMenuItem(
-                                                value: p,
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    PlatformHelper.getIcon(p,
-                                                        size: 14),
-                                                    const SizedBox(width: 6),
-                                                    Text(p,
-                                                        style:
-                                                            GoogleFonts.inter(
-                                                                fontSize: 12)),
-                                                  ],
-                                                )))
-                                            .toList(),
-                                        onChanged: (val) {
-                                          if (val != null) {
-                                            setDialogState(() =>
-                                                selectedPlatform = val);
-                                          }
-                                        },
-                                        decoration: InputDecoration(
-                                          filled: true,
-                                          fillColor: AppColors.surfaceSubtle(
-                                              context),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 12, vertical: 8),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            borderSide: BorderSide(
-                                                color: AppColors.border(
-                                                    context)),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Horas & Fecha de Inicio
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Fecha de Inicio',
-                                        style: GoogleFonts.inter(
-                                          color:
-                                              AppColors.textSecondary(context),
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      InkWell(
-                                        onTap: () async {
-                                          final picked = await showDatePicker(
-                                            context: context,
-                                            initialDate: DateTime.now(),
-                                            firstDate: DateTime(2000),
-                                            lastDate: DateTime(2100),
-                                          );
-                                          if (picked != null) {
-                                            setDialogState(() =>
-                                                selectedStartDate = picked);
-                                          }
-                                        },
-                                        borderRadius:
-                                            BorderRadius.circular(10),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 12),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.surfaceSubtle(
-                                                context),
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            border: Border.all(
-                                                color: AppColors.border(
-                                                    context)),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                  Icons.calendar_today_rounded,
-                                                  size: 14,
-                                                  color: Color(0xFFDC2626)),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                selectedStartDate == null
-                                                    ? 'Sin fecha'
-                                                    : DateFormat('dd/MM/yyyy')
-                                                        .format(
-                                                            selectedStartDate!),
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 12,
-                                                  color: selectedStartDate ==
-                                                          null
-                                                      ? AppColors
-                                                          .textSecondary(
-                                                              context)
-                                                      : AppColors.textPrimary(
-                                                          context),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
                                         'Horas Jugadas',
                                         style: GoogleFonts.inter(
                                           color:
                                               AppColors.textSecondary(context),
                                           fontSize: 12,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -477,6 +397,240 @@ class _SearchScreenState extends State<SearchScreen> {
                                     ],
                                   ),
                                 ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Fecha de Inicio
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Fecha de Inicio',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textSecondary(context),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                InkWell(
+                                  onTap: () async {
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: DateTime.now(),
+                                      firstDate: DateTime(2000),
+                                      lastDate: DateTime(2100),
+                                    );
+                                    if (picked != null) {
+                                      setDialogState(() =>
+                                          selectedStartDate = picked);
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surfaceSubtle(context),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: AppColors.border(context)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                            Icons.calendar_today_rounded,
+                                            size: 14,
+                                            color: Color(0xFFDC2626)),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          selectedStartDate == null
+                                              ? 'Sin fecha de inicio'
+                                              : DateFormat('dd/MM/yyyy')
+                                                  .format(selectedStartDate!),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: selectedStartDate == null
+                                                ? AppColors.textSecondary(
+                                                    context)
+                                                : AppColors.textPrimary(
+                                                    context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+
+                            // Plataforma (Selector Visual en Cuadrícula / Chips con Iconos Oficiales)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.sports_esports_rounded,
+                                            size: 16,
+                                            color: Color(0xFFDC2626)),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Plataforma',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                AppColors.textPrimary(context),
+                                          ),
+                                        ),
+                                        if (detectedPlatforms.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF10B981)
+                                                  .withOpacity(0.15),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFF10B981)
+                                                          .withOpacity(0.3),
+                                                  width: 0.5),
+                                            ),
+                                            child: Text(
+                                              '${detectedPlatforms.length} disponibles',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    const Color(0xFF10B981),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    if (detectedPlatforms.isNotEmpty)
+                                      TextButton(
+                                        onPressed: () {
+                                          setDialogState(() {
+                                            showAllPlatforms =
+                                                !showAllPlatforms;
+                                          });
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                        child: Text(
+                                          showAllPlatforms
+                                              ? 'Solo recomendadas'
+                                              : '+ Otras plataformas',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFFDC2626),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Builder(builder: (context) {
+                                  final availableList = showAllPlatforms ||
+                                          detectedPlatforms.isEmpty
+                                      ? _availablePlatforms
+                                      : detectedPlatforms;
+
+                                  final listToRender =
+                                      List<String>.from(availableList);
+                                  if (!listToRender
+                                      .contains(selectedPlatform)) {
+                                    listToRender.insert(0, selectedPlatform);
+                                  }
+
+                                  return Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: listToRender.map((p) {
+                                      final isSelected =
+                                          selectedPlatform == p;
+                                      final isDark =
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark;
+                                      return InkWell(
+                                        onTap: () {
+                                          setDialogState(() =>
+                                              selectedPlatform = p);
+                                        },
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        child: AnimatedContainer(
+                                          duration:
+                                              const Duration(milliseconds: 180),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? const Color(0xFFDC2626)
+                                                    .withOpacity(0.15)
+                                                : (isDark
+                                                    ? const Color(0xFF18181B)
+                                                    : const Color(0xFFF4F4F5)),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? const Color(0xFFDC2626)
+                                                  : (isDark
+                                                      ? const Color(0xFF27272A)
+                                                      : const Color(0xFFE4E4E7)),
+                                              width: isSelected ? 1.5 : 1.0,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              PlatformHelper.getIcon(p,
+                                                  size: 15,
+                                                  isColor: isSelected),
+                                              const SizedBox(width: 7),
+                                              Text(
+                                                p,
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.w500,
+                                                  color: isSelected
+                                                      ? const Color(0xFFDC2626)
+                                                      : AppColors.textPrimary(
+                                                          context),
+                                                ),
+                                              ),
+                                              if (isSelected) ...[
+                                                const SizedBox(width: 6),
+                                                const Icon(
+                                                    Icons.check_circle_rounded,
+                                                    size: 13,
+                                                    color: Color(0xFFDC2626)),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                }),
                               ],
                             ),
                             const SizedBox(height: 16),

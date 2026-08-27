@@ -1030,7 +1030,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v3.0.3 (Local-First)',
+                      'Rastreador de Entretenimiento Personal • v3.0.4 (Local-First)',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),

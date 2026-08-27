@@ -1,15 +1,27 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.3
+version: v3.0.4
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.3, rawg-genres-unlimited, wikipedia-links, metadata-enrichment, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.4, visual-platform-chips, rawg-platforms-detection, ui-ux-polish, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.0.4] - 2026-08-27 (Modern Visual Platform Selector & RAWG Platform Detection)
+
+### Fixed & Enhanced
+- **Rediseño Completo del Selector de Plataformas (`SearchScreen`):**
+  - **Eliminación del Dropdown Desbordante:** Se reemplazó el menú desplegable vertical que se salía de la pantalla por un selector visual integrado basado en **Chips interactivos con logos oficiales** (`PlatformHelper`).
+  - **Detección Inteligente de Plataformas de RAWG:** Al abrir el diálogo para guardar un juego nuevo, el sistema extrae automáticamente las plataformas oficiales en las que fue lanzado dicho título (ej. Elden Ring muestra directamente `PC`, `Playstation 5`, `Playstation 4`, `Xbox`).
+  - **Selección Táctil Inmediata:** Cada chip incluye su logotipo a color, nombre de plataforma, feedback táctil animado y checkmark activo en rojo canónico (`#DC2626`).
+  - **Modo Expandible ("+ Otras plataformas"):** Si el usuario jugó el título en una plataforma no oficial o emulada, un botón superior permite alternar instantáneamente al catálogo completo de plataformas disponibles.
+- **Reorganización Ergonómica del Formulario:**
+  - El campo **Estado** ahora cuenta con altura máxima restringida (`menuMaxHeight: 220`) impidiendo desbordamientos.
+  - La fila superior agrupa de forma balanceada **Estado** y **Horas Jugadas**, seguida de la **Fecha de Inicio** y el nuevo bloque visual de **Plataformas**.
 
 ## [3.0.3] - 2026-08-27 (Unrestricted RAWG Genres & Automatic Wikipedia Links)
 
