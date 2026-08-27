@@ -1,15 +1,25 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.5
+version: v3.0.6
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.5, crud-null-deletion, sentinel-pattern, link-clear-button, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.6, ui-polish, settings-screen, hltb-sync-button, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.0.6] - 2026-08-27 (Settings UI Refinements & Compact Actions)
+
+### Changed & Polished
+- **Refinamiento de Textos y Acciones en `SettingsScreen`:**
+  - Compactación del botón de sincronización de HowLongToBeat de *"Buscar Metadatos HLTB en mi Biblioteca"* a *"Buscar"* para mayor sobriedad visual en pantallas estrechas y móviles.
+  - Simplificación del encabezado de la tarjeta a *"Sincronización HowLongToBeat"*.
+  - Actualización del pie de página oficial a *"Gaming Tracker App • v3.0.6"*.
+- **Resolución de Conflicto de Nombres en Git:**
+  - Erradicado el tag conflictivo homónimo `main` que colisionaba con la rama remota `refs/heads/main` y bloqueaba la publicación de cambios mediante `git push origin main`.
 
 ## [3.0.5] - 2026-08-27 (CRUD Complete Null Support & Link Clearing)
 

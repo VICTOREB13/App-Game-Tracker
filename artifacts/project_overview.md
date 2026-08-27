@@ -2,12 +2,12 @@
 tipo: overview
 proyecto: App_Game_Tracker
 estado: activo
-version: v3.0.5
+version: v3.0.6
 fecha: 2026-08-27
-tags: [proyecto, overview, sqlite, local-first, steam-api, howlongtobeat, rawg-api, wikipedia-api, flutter, entretenimiento, gaming, victor-engineer, open-source, v3.0.5]
+tags: [proyecto, overview, sqlite, local-first, steam-api, howlongtobeat, rawg-api, wikipedia-api, flutter, entretenimiento, gaming, victor-engineer, open-source, v3.0.6]
 ---
 
-# 🚀 Visión General del Proyecto: Rastreador de Entretenimiento Personal (v3.0.5)
+# 🚀 Visión General del Proyecto: Rastreador de Entretenimiento Personal (v3.0.6)
 
 Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android) desarrollada en **Flutter 3.22+**, impulsada por un motor de almacenamiento **100% Local-First** con **SQLite**, sincronización inteligente con la **Steam Web API**, servicio nativo de **HowLongToBeat**, enriquecida con metadatos de **RAWG API** y **Wikipedia**, empaquetada como software **Open Source** y diseñada bajo la identidad visual de marca personal **Victor Engineer** (acento Rojo Carmesí `#DC2626`, tipografías Google Fonts `Outfit` + `Inter`, y soporte nativo dual de **Modo Oscuro Obsidian Zinc** y **Modo Claro Crisp Zinc**). Enlace oficial: [victorengineer.fyi](https://victorengineer.fyi).
 
