@@ -33,6 +33,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - **Pulido Visual del Modal de Filtros (`FilterModalSheet`):**
   - **Eliminación de Barra Negra:** Erradicado el divisor huérfano entre el buscador y la lista que generaba una línea oscura discordante en modo claro.
   - **Bordes Redondeados Completos:** Aplicado radio de curvatura total (`BorderRadius.circular(24)`) y margen inferior flotante con `Clip.antiAlias` para que el modal termine con elegantes bordes redondeados tanto en la parte superior como inferior.
+- **Adaptación de Botones Rápidos de Horas en Modo Claro (`GameDetailScreen`):**
+  - **Botones de Tiempo (`+30m`, `+1h`, `+2h`):** Adaptados dinámicamente según el tema activo; en modo claro lucen un elegante fondo suave `#FEF2F2` con tipografía carmesí `#DC2626` y borde sutil, eliminando los bloques negros aislados.
+  - **Barra de Progreso HLTB:** El track de fondo de la barra de progreso de campaña ahora emplea un gris suave `#E4E4E7` en modo claro en lugar de la barra negra `#27272A`.
 
 ## [2.7.2] - 2026-08-26 (Light Mode Contrast Polish, Smart Sync & FAB Clearance)
 

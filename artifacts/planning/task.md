@@ -118,6 +118,8 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Systems-Auditor)` Ejecutar auditoría de calidad, validación de integridad JSON y accesibilidad táctil.
 - [x] `(Frontend-UI)` Eliminar línea divisoria oscura huérfana entre el buscador y la lista en `FilterModalSheet`.
 - [x] `(Frontend-UI)` Aplicar bordes redondeados completos (`BorderRadius.circular(24)`) y margen inferior flotante en `FilterModalSheet` tanto para Géneros como Plataformas.
+- [x] `(Frontend-UI)` Adaptar botones rápidos de horas (+30m, +1h, +2h) y track de progreso HLTB a modo claro (`#FEF2F2` y `#E4E4E7`) en `GameDetailScreen`.
+
 
 
 

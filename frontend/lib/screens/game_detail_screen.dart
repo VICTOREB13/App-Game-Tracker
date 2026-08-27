@@ -358,11 +358,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                   placeholder: (_, __) => Container(
                                       height: 220,
                                       width: 160,
-                                      color: const Color(0xFF18181B)),
+                                      color: AppColors.surfaceSubtle(context)),
                                   errorWidget: (_, __, ___) => Container(
                                     height: 220,
                                     width: 160,
-                                    color: const Color(0xFF18181B),
+                                    color: AppColors.surfaceSubtle(context),
                                     child: const Icon(Icons.sports_esports_rounded,
                                         size: 50, color: Color(0xFF71717A)),
                                   ),
@@ -370,7 +370,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               : Container(
                                   height: 220,
                                   width: 160,
-                                  color: const Color(0xFF18181B),
+                                  color: AppColors.surfaceSubtle(context),
                                   child: const Icon(Icons.sports_esports_rounded,
                                       size: 50, color: Color(0xFF71717A)),
                                 ),
@@ -535,10 +535,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             duration: const Duration(milliseconds: 600),
                             curve: Curves.easeOutCubic,
                             builder: (context, value, child) {
+                              final isDark =
+                                  Theme.of(context).brightness == Brightness.dark;
                               return LinearProgressIndicator(
                                 value: value,
                                 minHeight: 8,
-                                backgroundColor: const Color(0xFF27272A),
+                                backgroundColor: isDark
+                                    ? const Color(0xFF27272A)
+                                    : const Color(0xFFE4E4E7),
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                     Color(0xFFDC2626)),
                               );
@@ -553,14 +557,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                               'Historia: ${hltbMain.toInt()}h',
                               style: GoogleFonts.inter(
                                   fontSize: 11,
-                                  color: const Color(0xFFA1A1AA)),
+                                  color: AppColors.textSecondary(context)),
                             ),
                             if (hltbComp > 0)
                               Text(
                                 '100% Completista: ${hltbComp.toInt()}h',
                                 style: GoogleFonts.inter(
                                     fontSize: 11,
-                                    color: const Color(0xFFA1A1AA)),
+                                    color: AppColors.textSecondary(context)),
                               ),
                             Text(
                               hours >= hltbMain
@@ -844,14 +848,22 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildQuickHourButton(String label, double hoursToAdd) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ElevatedButton(
       onPressed: () => _addQuickHours(hoursToAdd),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        backgroundColor: const Color(0xFF121215),
+        backgroundColor: isDark
+            ? const Color(0xFF121215)
+            : const Color(0xFFFEF2F2),
         foregroundColor: const Color(0xFFDC2626),
         elevation: 0,
-        side: const BorderSide(color: Color(0xFFDC2626), width: 0.8),
+        side: BorderSide(
+          color: isDark
+              ? const Color(0xFFDC2626)
+              : const Color(0xFFDC2626).withOpacity(0.4),
+          width: 0.8,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: Text(
@@ -859,6 +871,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         style: GoogleFonts.outfit(
           fontSize: 12,
           fontWeight: FontWeight.bold,
+          color: const Color(0xFFDC2626),
         ),
       ),
     );
