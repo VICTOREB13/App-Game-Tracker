@@ -1,16 +1,25 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.7.0
+version: v2.7.1
 estado: activo
 fecha: 2026-08-26
-tags: [proyecto, changelog, versiones, light-mode, dark-mode, theme-manager, settings, anti-slop, victor-engineer]
+tags: [proyecto, changelog, versiones, hotfix, notion-service, build-fix, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.7.1] - 2026-08-26 (Hotfix: Notion Page Creation & Build Stability)
+
+### Fixed
+- **Corrección de Error de Compilación en `SearchScreen`:**
+  - Solucionado el error `The method 'createGame' isn't defined for the type 'NotionService'` en `search_screen.dart` restaurando la invocación canónica `await notion.createPage(notion.gamesDbId, properties)`.
+  - Se implementó además el método helper `createGame(properties)` en `NotionService` para garantizar interoperabilidad completa y prevenir regresiones futuras en compilaciones CI de Windows/Linux.
+
+---
 
 ## [2.7.0] - 2026-08-26 (Crisp Zinc Light Mode & Cross-App Theme Architecture)
 

@@ -212,6 +212,13 @@ class NotionService {
     return json.decode(response.body);
   }
 
+  /// Convenience method to create a game directly in the configured database
+  Future<Map<String, dynamic>> createGame(
+    Map<String, dynamic> properties,
+  ) async {
+    return createPage(_gamesDbId, properties);
+  }
+
   /// Update a page's properties
   Future<Map<String, dynamic>> updatePage(
     String pageId,

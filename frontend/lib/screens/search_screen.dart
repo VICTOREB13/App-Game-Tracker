@@ -723,7 +723,7 @@ class _SearchScreenState extends State<SearchScreen> {
             NotionParser.buildNumber(rawgGame['playtime']);
       }
 
-      await notion.createGame(properties);
+      await notion.createPage(notion.gamesDbId, properties);
 
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
