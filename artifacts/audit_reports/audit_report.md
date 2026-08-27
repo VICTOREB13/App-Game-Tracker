@@ -1,16 +1,16 @@
 ---
 tipo: audit_report
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.4
 veredicto: PASS
 estado: activo
-fecha: 2026-08-26
-tags: [audit_report, systems-auditor, quality-gate, performance, security, build-verification, pass, smart-sync, light-mode]
+fecha: 2026-08-27
+tags: [audit_report, systems-auditor, quality-gate, performance, security, build-verification, pass, smart-sync, light-mode, mobile-responsive, permanent-keystore, fix-400]
 ---
 
-# 🛡️ Reporte de Auditoría y Quality Gate (v2.7.2)
+# 🛡️ Reporte de Auditoría y Quality Gate (v2.8.4)
 
-Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. Evalúa rigurosamente la calidad de código, rendimiento de renderizado, consumo de red, seguridad y estabilidad de compilación para la versión **v2.7.2**.
+Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. Evalúa rigurosamente la calidad de código, rendimiento de renderizado, consumo de red, seguridad, optimización de assets y estabilidad de compilación para la versión **v2.8.4**.
 
 ---
 
@@ -18,12 +18,16 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 
 | Prueba / Verificación | Entorno | Resultado | Detalle |
 | :--- | :--- | :--- | :--- |
-| **Compilación Release Windows** | Windows x64 / MSVC 18 | `PASS` | Solucionado error en `search_screen.dart` con `createPage`/`createGame`. Compilación exitosa (Exit code: 0). |
-| **Smart Sync & Timeout HTTP** | Red & Concurrencia | `PASS` | Consulta de verificación con `page_size: 1` ($350$ ms). Timeout de 15s previene bloqueos de UI. |
+| **Prevención Error 400 Notion** | Backend & Notion API | `PASS` | Omitida `Portada` en PATCH cuando no cambia; filtradas URLs de S3 en `buildExternalFile`. |
+| **Firma Criptográfica Persistente** | Android CI / Keystore | `PASS` | `release.keystore` permanente (hasta 2054) + versionado dinámico resuelven error de conflicto de paquete. |
+| **Optimización de Assets y Código** | Repositorio & Assets | `PASS` | 7 imágenes huérfanas purgadas (-361 KB); dependencias no usadas (`dio`, `staggered_grid`) eliminadas. |
+| **Ergonomía y Responsividad Móvil** | Mobile UI (< 600px) | `PASS` | Filtros en 2 filas, AppBar con `FittedBox` y menú popup `⋮`, analíticas en 2x2 sin colisiones. |
+| **Compilación Release Windows** | Windows x64 / MSVC 18 | `PASS` | Compilación exitosa de `tracker_app.exe` con icono oficial de mando gamer rojo. |
+| **Smart Sync & Timeout HTTP** | Red & Concurrencia | `PASS` | Head Query con `page_size: 1` ($350$ ms). Timeout de 15s previene bloqueos de UI. |
 | **Despeje de FAB (+ Añadir)** | UI / Layout | `PASS` | Paginador centrado con zona libre de 100px; eliminada toda colisión con botones de página. |
 | **Contraste de Filtros Modo Claro** | UX / Accesibilidad | `PASS` | Chips y dropdowns sobre fondo blanco `#FFFFFF` y bordes zinc `#E4E4E7`. Ratio > 18:1. |
 | **Exportación Social Dual (Light/Dark)** | Render / PNG | `PASS` | `RepaintBoundary` hereda el tema activo y permite conmutar `[Claro / Oscuro]` antes de guardar. |
-| **Sincronización de Versión** | Configuración | `PASS` | `pubspec.yaml`, `SettingsScreen`, `changelog_v1.md` alineados en `v2.7.2`. |
+| **Sincronización de Versión** | Configuración | `PASS` | `pubspec.yaml`, `SettingsScreen`, `changelog_v1.md` alineados en `v2.8.4`. |
 
 ---
 
@@ -50,8 +54,8 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 - **Protección de Rate Limit (Notion API):**
   - **Resultado:** **Garantizado**.
   - **Evaluación:** Cola FIFO (`_requestQueue`) con espaciado de 333 ms entre peticiones que respeta rígidamente la política de máximo 3 req/s de Notion, evitando errores `429 Too Many Requests`.
-- **Caché con TTL:**
-  - **Resultado:** Caché en memoria de 60 segundos con invalidación automática al registrar o actualizar juegos (`createPage`, `updatePage`).
+- **Caché con TTL & Smart Sync:**
+  - **Resultado:** Caché en memoria de 60 segundos y Smart Sync que valida cambios mediante un query ligero de 1 registro antes de transferencias completas.
 
 ---
 
@@ -60,6 +64,8 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 - **Manejo de Credenciales:**
   - El token de integración interna de Notion y la clave de RAWG API se almacenan localmente en el dispositivo del usuario mediante almacenamiento seguro/privado (`SharedPreferences`).
   - Ninguna clave privada o token de acceso está expuesto en código fuente duro ni en el repositorio de control de versiones.
+- **Firma Criptográfica Permanente:**
+  - `release.keystore` fijado en el repositorio para garantizar que cada release de Android comparta la misma firma de identidad, erradicando los bloqueos de actualización del sistema operativo.
 - **Comunicaciones Seguras:**
   - El 100% de las peticiones a la API de Notion (`https://api.notion.com/v1`) y RAWG (`https://api.rawg.io/api`) viajan encriptadas mediante HTTPS/TLS 1.3.
 - **Sanitización de Datos:**
@@ -88,6 +94,6 @@ Documento oficial emitido por el rol **Systems-Auditor (Quality Gatekeeper)**. E
 
 - **Veredicto:** **`PASS`**
 - **Observaciones:**
-  - Se valida el correcto funcionamiento de todas las funcionalidades: persistencia offline, vista dual, paginador, sistema multi-año dinámico, generador de tarjeta social y arquitectura de temas claro/oscuro.
-  - El hotfix para el pipeline de compilación en Windows resolvió completamente el error de compilación.
+  - Se valida el correcto funcionamiento de todas las funcionalidades: persistencia offline, vista dual, paginador, sistema multi-año dinámico, generador de tarjeta social, arquitectura de temas claro/oscuro, responsividad móvil y firma persistente de Android.
+  - La corrección del error 400 de Notion en v2.8.4 protege eficazmente la integridad de portadas alojadas internamente.
   - El proyecto cumple con todos los estándares técnicos y de diseño exigidos. Aprobado para despliegue y distribución por parte del rol `DevOps-Engineer`.

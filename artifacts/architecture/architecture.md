@@ -1,13 +1,13 @@
 ---
 tipo: architecture
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.4
 estado: activo
-fecha: 2026-08-26
-tags: [arquitectura, flutter, notion-api, rawg-api, theme-architecture, offline-cache, pagination, gamification, smart-sync, victor-engineer]
+fecha: 2026-08-27
+tags: [arquitectura, flutter, notion-api, rawg-api, theme-architecture, offline-cache, pagination, gamification, smart-sync, backup-service, mobile-responsive, permanent-signing, victor-engineer]
 ---
 
-# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v2.7.2)
+# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v2.8.4)
 
 Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer**.
 
@@ -19,14 +19,17 @@ Documento maestro de arquitectura técnica del sistema, stack tecnológico, topo
 - **Plataformas Soportadas:** Windows Desktop (x64 nativo) y Android (APK Fat / AAB).
 - **Base de Datos Principal:** Notion API v1 (`2022-06-28`) consumida directamente vía HTTPS.
 - **Servicio de Enriquecimiento:** RAWG Video Games Database API (búsqueda, carátulas HD y metadatos).
-- **Capa de Red & Concurrencia:** `http` con cola FIFO de peticiones y rate limiter estricto (máximo 3 req/s).
-- **Capa de Persistencia Local:** `shared_preferences` para credenciales, configuración de temas y caché offline persistente.
+- **Capa de Red & Concurrencia:** `http: ^1.2.0` con cola FIFO de peticiones y rate limiter estricto (máximo 3 req/s).
+- **Capa de Persistencia Local:** `shared_preferences: ^2.2.2` para credenciales, configuración de temas, metas anuales y caché offline persistente.
+- **Capa de Respaldos:** `BackupService` con serialización/deserialización JSON de biblioteca completa y metadatos de configuración.
+- **Seguridad & Firma Android:** `release.keystore` permanente (RSA 2048 / SHA-256) con validez hasta 2054 y versionado dinámico inyectado en CI/CD.
 - **Diseño & Identidad de Marca:** Sistema oficial **Victor Engineer**:
   - **Acento Primario:** Rojo Carmesí `#DC2626`.
   - **Tipografía:** Google Fonts `Outfit` (titulares, marcas, métricas) + `Inter` (cuerpo de texto, datos y tablas).
   - **Tema Oscuro (Obsidian Zinc):** `#09090B` fondo, `#121215` tarjetas, `#27272A` bordes.
   - **Tema Claro (Crisp Zinc):** `#FAFAFA` fondo, `#FFFFFF` tarjetas, `#E4E4E7` bordes, `#09090B` texto.
 - **Exportación Gráfica:** `RepaintBoundary` con renderizado a 2.5x pixel ratio para generación de tarjetas PNG.
+- **Dependencias Optimizadas (v2.8.3):** Cero dependencias muertas; eliminados `dio` y `flutter_staggered_grid_view`.
 
 ---
 
@@ -36,17 +39,18 @@ Documento maestro de arquitectura técnica del sistema, stack tecnológico, topo
 graph TD
     User["Usuario (Gamer en Windows Desktop / Móvil)"]
 
-    subgraph Presentation["Capa de Presentación (UI/UX)"]
-        AppBar["AppBar: Victor Engineer Brand + Quick Theme Toggle"]
+    subgraph Presentation["Capa de Presentación (UI/UX Responsiva)"]
+        AppBar["AppBar: Victor Engineer Brand + Quick Theme Toggle + Mobile Menu"]
         HeroSpotlight["Hero Spotlight: Jugando Ahora (+1h Quick Log)"]
-        ViewSwitcher["Toolbar: Dual View Switcher (Grid / Lista) + Paginador"]
+        FilterToolbar["Toolbar Responsiva: Filtros Duales Móvil / Toolbar Unificada PC"]
+        ViewSwitcher["Toolbar: Dual View Switcher (Grid / Lista) + Paginador Centrado"]
         GameGrid["Grid Cinematográfico (Cover Hover Scale & Progress)"]
         GameList["Lista Compacta de Alta Densidad (_GameListRow)"]
         DetailView["Ficha Cinematográfica de Juego (Backdrop & HLTB Breakdown)"]
         SocialCard["Generador de Tarjeta Social / Reseña (RepaintBoundary PNG)"]
-        Analytics["Hub de Analíticas (Stepper Multi-Año, Metas & Hall of Fame)"]
+        Analytics["Hub de Analíticas (Stepper Multi-Año Móvil 2-Row, Metas & Hall of Fame)"]
         SearchModal["Buscador RAWG con Acordeón de Géneros y Portadas HD"]
-        Settings["Configuración (Gestor de Temas 3-Way, Token & Caché)"]
+        Settings["Configuración (ThemeManager, Token, Backup JSON & Caché)"]
     end
 
     subgraph StateAndTheme["Capa de Estado y Tokens Visuales"]
@@ -55,15 +59,16 @@ graph TD
     end
 
     subgraph Domain["Lógica de Dominio y Modelos"]
-        GameModel["Modelo Game (Cálculo HLTB, Fechas, Estado, Puntuación)"]
+        GameModel["Modelo Game (Cálculo HLTB, Fechas, Estado, Puntuación, toNotionProperties)"]
         PlatformHlp["PlatformHelper (Logos Vectoriales Oficiales & Paletas)"]
+        BackupSvc["BackupService (Exportación / Importación JSON de Biblioteca)"]
     end
 
     subgraph Data["Capa de Datos y Red"]
-        NotionSvc["NotionService (Rate Limiter 3 req/s, Stale-While-Revalidate)"]
-        NotionPars["NotionParser (Mapeo Bidireccional JSON <-> Entidades)"]
+        NotionSvc["NotionService (Rate Limiter 3 req/s, Stale-While-Revalidate, Error Deserializer)"]
+        NotionPars["NotionParser (Mapeo Bidireccional JSON <-> Entidades & S3 Filter)"]
         RAWGClient["RAWG API Client (Búsqueda y Metadatos)"]
-        LocalStorage["SharedPreferences (Caché Offline, Metas Anuales, Vistas)"]
+        LocalStorage["SharedPreferences (Caché Offline, Metas Anuales, Preferencias)"]
     end
 
     subgraph Cloud["Servicios Cloud"]
@@ -73,6 +78,7 @@ graph TD
 
     User --> AppBar
     User --> HeroSpotlight
+    User --> FilterToolbar
     User --> ViewSwitcher
     User --> DetailView
     User --> Analytics
@@ -81,6 +87,7 @@ graph TD
 
     AppBar --> ThemeMgr
     Settings --> ThemeMgr
+    Settings --> BackupSvc
     Presentation --> AppCol
     ThemeMgr --> AppCol
 
@@ -97,6 +104,8 @@ graph TD
     NotionSvc --> LocalStorage
     NotionSvc --> NotionCloud
     RAWGClient --> RAWGCloud
+    BackupSvc --> LocalStorage
+    BackupSvc --> NotionSvc
 ```
 
 ---
@@ -108,22 +117,6 @@ La aplicación implementa una arquitectura reactiva que desacopla los componente
 1. **`ThemeManager`:** Singleton que extiende `ChangeNotifier` y gestiona el `ThemeMode` activo (`dark`, `light`, `system`), persistiendo la clave `'preferred_theme_mode'` en `SharedPreferences`.
 2. **`AppColors`:** Fachada estática que evalúa `Theme.of(context).brightness == Brightness.dark` para entregar colores semánticos (`background`, `surface`, `surfaceSubtle`, `border`, `textPrimary`, `textSecondary`, `textMuted`, `primary`).
 3. **`AnimatedBuilder`:** En `main.dart`, envuelve el `MaterialApp` escuchando cambios en `ThemeManager.instance` para redibujar instantáneamente todas las vistas sin necesidad de recargar la aplicación.
-
-```mermaid
-sequenceDiagram
-    participant User as Usuario
-    participant Toggle as AppBar / Settings
-    participant TM as ThemeManager
-    participant Prefs as SharedPreferences
-    participant App as MaterialApp (AnimatedBuilder)
-    participant UI as Pantallas y Componentes
-
-    User->>Toggle: Clic en cambio de tema (Sol / Luna)
-    Toggle->>TM: toggleTheme() / setThemeMode()
-    TM->>Prefs: setString('preferred_theme_mode', mode)
-    TM->>App: notifyListeners()
-    App->>UI: Reconstrucción fluida con tokens AppColors
-```
 
 ---
 
@@ -154,24 +147,30 @@ sequenceDiagram
 
 ---
 
-## 🧩 Componentes Modulares de la Versión v2.7.2
+## 🛡️ Manejo de Portadas en Notion & Prevención de Error 400 (v2.8.4)
 
-1. **`_GameCard` (Grid Cinematográfico):**
-   - Miniatura a escala completa con `Hero` animation.
-   - Micro-barra de progreso HLTB integrada en la carátula.
-   - Indicador de estado con resplandor cromático y badge de calificación en estrellas.
-   - Escala interactiva en hover (`1.05x`) con sombras reactivas según el tema.
-2. **`_GameListRow` (Lista Compacta):**
-   - Altura contenida de 54px para visualización de alta densidad.
-   - Miniatura de portada de 36x48px con bordes redondeados.
-   - Insignia de plataforma oficial mapeada por `PlatformHelper`.
-   - Botón de incremento directo `+1h` con actualización optimista.
-3. **Paginador Inteligente con Despeje de FAB:**
-   - Control dinámico de segmentación por página (10, 25, 50, 100 o Todos).
-   - Botones de navegación `< X / Y >` **centrados** con `Spacer` elásticos y franja de seguridad de 100px a la derecha para eliminar colisiones con el FloatingActionButton `+ Añadir`.
-   - Superficie adaptativa en `AppColors.surface` con borde semántico superior.
-4. **Selector Multi-Año en Analíticas:**
-   - Stepper temporal interactivo `< [Año] >` que recalcula retrospectivamente los logros o permite configurar metas anticipadas para años venideros (`annual_game_goal_${year}`).
-   - Salón de la Fama con récords (*El Titán*, *Obra Maestra*, *Aventura Ágil*) y medidor de salud del backlog.
-5. **Tarjeta Social de Reseña:**
-   - Capturador gráfico en `GameDetailScreen` que sintetiza los metadatos de un juego terminado en una postal estética lista para ser compartida en foros o redes de videojuegos.
+Cuando una imagen se sube directamente a Notion, Notion la aloja en servidores AWS S3 (`prod-files-secure.s3...`) clasificada como `type: file`. La API de Notion prohíbe enviar URLs de S3 bajo `type: external`, rechazándolo con HTTP 400 (`validation_error`).
+
+### Estrategia de Blindaje Implementada:
+1. **Detección de Cambio de Portada (`_saveChanges`):** Compara el valor del controlador con la portada original del juego. Si no hubo modificación (`coverChanged == false`), el campo `Portada` se omite del PATCH, preservando el archivo original en Notion.
+2. **Filtro de Enlaces Internos (`toNotionProperties`):** Si una URL contiene `amazonaws.com`, `prod-files-secure` o `notion-static.com`, se bloquea su serialización como archivo externo.
+3. **Deserialización de Errores (`NotionApiException`):** Parsea el campo `message` del JSON devuelto por Notion para exponer explicaciones claras y legibles en la interfaz de usuario en lugar de códigos opacos.
+
+---
+
+## 📱 Motor de Ergonomía y Responsividad Móvil (v2.8.1)
+
+1. **Barra de Filtros en Doble Fila:**
+   - En pantallas estrechas (< 600px), los estados se distribuyen en una fila superior y los menús desplegables (Plataforma, Género, Orden y Limpiar) se sitúan en una hilera inferior dedicada, eliminando desbordes horizontales.
+2. **Escalado Inteligente de AppBar:**
+   - `FittedBox` y `Flexible` protegen el logotipo Victor Engineer en pantallas < 500px, agrupando acciones secundarias en un menú popup `⋮`.
+3. **Selector Anual 2-Row:**
+   - En `AnalyticsScreen`, el stepper `< [Año] >` y el contador de juegos se dividen en dos hileras compactas para prevenir overflows en dispositivos móviles.
+
+---
+
+## 💾 Arquitectura del Servicio de Respaldo (`BackupService` v2.8.0)
+
+Provee soberanía total de datos mediante exportación e importación offline:
+- **Estructura JSON Canónica:** Almacena versión del esquema, estampa ISO 8601 y la lista completa de entidades `Game` con todos sus atributos serializados.
+- **Restauración Inteligente:** Permite recargar la biblioteca en modo offline o sincronizar masivamente hacia Notion si se configura una nueva base de datos.

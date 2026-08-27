@@ -1,13 +1,13 @@
 ---
 tipo: task
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.0
+version: v2.8.4
 estado: completado
-fecha: 2026-08-26
-tags: [tareas, checklist, v2.8.0, filter-sheet, genre-helper, touch-filters, json-backup, project-planner]
+fecha: 2026-08-27
+tags: [tareas, checklist, v2.8.4, notion-api, fix-400, optimization, mobile-responsive, permanent-signing, project-planner]
 ---
 
-# ✅ Checklist de Tareas Técnicas (v2.8.0)
+# ✅ Checklist de Tareas Técnicas (v2.8.4)
 
 Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados.
 

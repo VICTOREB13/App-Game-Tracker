@@ -1,13 +1,13 @@
 ---
 tipo: plan
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.4
 estado: completado
-fecha: 2026-08-26
-tags: [plan, v2.7.2, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, smart-sync, victor-engineer]
+fecha: 2026-08-27
+tags: [plan, v2.8.4, offline-cache, dual-view, pagination, multi-year-goals, gamification, social-card, theme-manager, light-mode, smart-sync, backup-service, mobile-responsive, permanent-signing, fix-400, victor-engineer]
 ---
 
-# 📋 Plan de Implementación Consolidado (v2.7.2)
+# 📋 Plan de Implementación Consolidado (v2.8.4)
 
 Plan integral de evolución técnica orquestado por el rol **Project-Planner** y ejecutado en conjunto por **Backend-Architect**, **Frontend-UI**, **Systems-Auditor** y **DevOps-Engineer**, consolidando la arquitectura final del **Rastreador de Entretenimiento Personal**.
 
@@ -20,7 +20,9 @@ Plan integral de evolución técnica orquestado por el rol **Project-Planner** y
 3. **Control de Biblioteca:** Selector de vista dual (Grid de carátulas cinematográficas vs. Lista de alta densidad) y paginador dinámico con tamaños de 10, 25, 50, 100 o Todos los juegos.
 4. **Gamificación Dinámica sin Obsolescencia:** Sistema de metas y balances multi-año interactivo (`< [Año] >`) para consultar el pasado o planificar años venideros (2025, 2026, 2027...).
 5. **Viralidad y Logros Compartibles:** Exportación directa a PNG de tarjetas sociales con calificación y reseña en alta resolución.
-6. **Estabilidad y Resiliencia en CI/CD:** Garantizar compilaciones automáticas limpias y sin fallos en GitHub Actions para Windows x64.
+6. **Ergonomía Móvil Integral:** Adaptación de filtros en doble fila, layout 2x2 en estadísticas y selector de metas anuales sin desbordes.
+7. **Identidad Nativa & Distribución:** Branding oficial Victor Engineer en iconos ejecutables y firma criptográfica persistente para actualizaciones continuas de Android en 1 toque.
+8. **Resiliencia ante la API de Notion:** Blindaje frente a errores de validación 400 por archivos S3 y deserialización de mensajes de error transparentes.
 
 ---
 
@@ -68,20 +70,50 @@ Plan integral de evolución técnica orquestado por el rol **Project-Planner** y
   - Enlace reactivo en `main.dart` con `AnimatedBuilder` sobre `ThemeManager.instance`.
   - Toggle directo de 1 clic en la barra superior del Dashboard (`Icons.light_mode_rounded` / `Icons.dark_mode_rounded`).
   - Selector de 3 opciones en `SettingsScreen`: *Oscuro*, *Claro* y *Sistema*.
-  - Adaptación cromática de `DashboardScreen`, `AnalyticsScreen`, `GameDetailScreen`, `SearchScreen`, `SettingsScreen` y `SetupScreen`.
 
 ### Fase 6: 🛡️ Estabilización de Compilación & CI/CD Release v2.7.1
 - **Rol Responsable:** `Systems-Auditor` & `DevOps-Engineer`
 - **Implementación:**
   - Corrección del error de compilación `createGame` en `search_screen.dart` restaurando `await notion.createPage(notion.gamesDbId, properties)`.
-  - Implementación del helper de conveniencia `createGame()` en `NotionService` para interoperabilidad completa.
-  - Sincronización de versión a `2.7.1+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
-  - Ejecución de auditoría de calidad con veredicto `Status: PASS`.
+  - Implementación del helper de conveniencia `createGame()` en `NotionService`.
 
-### Fase 7: 💎 Pulido de Modo Claro, Smart Sync con Notion & Despeje de FAB (v2.7.2)
+### Fase 7: 💎 Pulido de Modo Claro, Smart Sync & Despeje de FAB (v2.7.2)
 - **Rol Responsable:** `Frontend-UI`, `Backend-Architect` & `Systems-Auditor`
 - **Implementación:**
-  - **Rediseño de Contraste en Modo Claro:** Adaptación de chips de estado (`Todos`, `Jugando`, `Por jugar`, `Jugado`) a fondos blancos y bordes grises nítidos; migración de dropdowns (`Plataforma`, `Género`, `Orden`) a tokens semánticos `AppColors`; corrección del color de texto en el buscador para garantizar contraste óptimo.
-  - **Paginación Centrada & Despeje de FAB:** Reorganización de la barra inferior con controles `< X / Y >` centrados mediante espaciadores elásticos y margen de 100px a la derecha, evitando que el botón `+ Añadir` tape los controles de página.
-  - **Smart Sync con Notion:** Chequeo ultrarrápido (1 registro remoto por `last_edited_time`) antes de descargas masivas; adición de timeout HTTP de 15 segundos; bloque `finally` para asegurar que el indicador de carga se detenga siempre con SnackBar de feedback.
-  - **Tarjeta Social Adaptativa a Temas:** Soporte nativo para previsualizar y exportar tarjetas en formato Claro u Oscuro, con switch `[ ☀️ Claro | 🌙 Oscuro ]` interactivo dentro del diálogo modal.
+  - Rediseño de contraste en modo claro para chips de estado y menús desplegables.
+  - Paginador centrado con zona de seguridad de 100px para eliminar colisiones con el botón flotante `+ Añadir`.
+  - Smart Sync mediante comprobación previa de 1 registro (`last_edited_time`) con timeout de 15 segundos.
+
+### Fase 8: 💾 Modal Bottom Sheet QoL, Normalización & Respaldo JSON (v2.8.0)
+- **Rol Responsable:** `Frontend-UI` & `Backend-Architect`
+- **Implementación:**
+  - Creación de `BackupService` para exportar e importar la biblioteca en JSON estructurado.
+  - Modal sheet táctil con esquinas redondeadas para filtros en pantallas reducidas.
+  - Normalización de géneros redundantes en catálogo.
+
+### Fase 9: 📱 Ergonomía Móvil & Barra de Filtros Dual (v2.8.1)
+- **Rol Responsable:** `Frontend-UI`
+- **Implementación:**
+  - Barra de filtros en dos hileras compactas para dispositivos móviles.
+  - AppBar móvil protegida con `FittedBox` y menú popup `⋮` para acciones secundarias.
+  - Cuadrícula 2x2 para tarjetas de métricas y selector anual de dos filas en `AnalyticsScreen`.
+
+### Fase 10: 🛡️ Branding Nativo Victor Engineer & Firma Persistente Android (v2.8.2)
+- **Rol Responsable:** `Frontend-UI` & `DevOps-Engineer`
+- **Implementación:**
+  - Integración del icono de mando gamer 2D minimalista sobre rojo Victor Engineer (`#DC2626`) en `app_icon.png`, `app_icon.ico` y mipmaps Android.
+  - Preservación del vector original [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg) con el monograma VE.
+  - Generación de keystore permanente (`release.keystore`, validez 2054) y versionado dinámico en GitHub Actions para eliminar errores de actualización en Android.
+
+### Fase 11: 🧹 Purga de Assets Huérfanos & Optimización (v2.8.3)
+- **Rol Responsable:** `Systems-Auditor`
+- **Implementación:**
+  - Eliminación de 7 imágenes obsoletas y duplicadas, reduciendo el bundle en más de 361 KB.
+  - Desinstalación limpia de `dio` y `flutter_staggered_grid_view` en `pubspec.yaml`.
+
+### Fase 12: 🛠️ Corrección Error 400 Notion S3 & Parser Blindado (v2.8.4)
+- **Rol Responsable:** `Backend-Architect` & `Frontend-UI`
+- **Implementación:**
+  - Detección inteligente de portadas modificadas en `_saveChanges()` para no re-enviar archivos de S3 como `type: external`.
+  - Filtro de enlaces internos en `toNotionProperties()` y constructores robustos en `NotionParser`.
+  - Deserialización de mensajes JSON de error en `NotionApiException` para exhibir textos claros en la interfaz.

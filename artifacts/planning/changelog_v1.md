@@ -1,10 +1,10 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.8.1
+version: v2.8.4
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v2.8.1, mobile-responsive, dual-row-filters, appbar-collision-fix, fitted-box, mobile-polish]
+tags: [proyecto, changelog, versiones, v2.8.4, notion-api, fix-400, optimization, mobile-responsive, permanent-signing, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
@@ -240,8 +240,43 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ---
 
-## [2.0.0] - 2026-07-19
+## [2.0.0] - 2026-07-19 (Architecture Pivot: Notion Direct Cloud Database)
+
+### Changed & Rebuilt
+- **Migración Arquitectónica Mayor:**
+  - Supresión definitiva de Supabase como backend intermediario.
+  - Implementación de [`NotionService`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/lib/services/notion_service.dart) para comunicación directa con la API oficial de Notion (`2022-06-28`).
+  - Integración de rate limiter estricto (máximo 3 req/s) con cola FIFO para respetar las cuotas de Notion.
+- **Flujo de Configuración Inicial (`SetupScreen`):**
+  - Asistente de vinculación de credenciales (Notion Internal Integration Token + Database ID de juegos).
+- **Pipeline CI/CD:**
+  - Automatización de compilación de APK en GitHub Actions (`build_apk.yml`).
+- **Identidad Visual "Arcade Noir":**
+  - Primera iteración en tema oscuro con cuadrícula de juegos, filtros básicos por estado y seguimiento de progreso.
+
+---
+
+## [1.0.0] - 2026-04-07 (Beta Release - Supabase MVP Architecture)
+
 ### Added
-- Migración completa a Notion API directa con rate limiter y caché en memoria.
-- Eliminación de Supabase.
-- Rediseño visual "Arcade Noir".
+- **Integración con Supabase Backend:**
+  - Autenticación de usuarios (registro, inicio de sesión y gestión de sesiones con Supabase Auth).
+  - Persistencia de biblioteca de juegos en PostgreSQL alojado en Supabase.
+- **Pantalla de Búsqueda de Videojuegos:**
+  - Consulta a catálogo y adición de títulos a la biblioteca personal.
+- **Dashboard de Analíticas:**
+  - Gráficos de distribución de juegos por estado (`fl_chart`) y desglose de horas jugadas.
+- **Despliegue Móvil Inicial:**
+  - Configuración inicial de GitHub Actions para compilación automática de APKs de Android.
+
+---
+
+## [0.1.0] - 2026-04-07 (Alpha Prototype - Initial Scaffold)
+
+### Added
+- **Inicialización del Repositorio:**
+  - Scaffold inicial del proyecto Flutter (`tracker_app`).
+  - Estructura base de carpetas (`lib/models`, `lib/screens`, `lib/services`).
+  - Definición inicial de entidades y modelos de datos para videojuegos.
+  - Configuración de dependencias esenciales (`http`, `google_fonts`, `shared_preferences`).
+

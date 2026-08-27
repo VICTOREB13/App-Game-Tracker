@@ -1,15 +1,15 @@
 ---
 tipo: api_spec
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.4
 estado: activo
-fecha: 2026-08-26
-tags: [api_spec, backend-architect, notion-api, rawg-api, data-contracts, rate-limiting, serialization, smart-sync]
+fecha: 2026-08-27
+tags: [api_spec, backend-architect, notion-api, rawg-api, data-contracts, rate-limiting, serialization, smart-sync, backup-json, fix-400]
 ---
 
-# 📡 Especificación de API y Contrato de Datos (v2.7.2)
+# 📡 Especificación de API y Contrato de Datos (v2.8.4)
 
-Documento técnico elaborado por el rol **Backend-Architect** que formaliza los contratos de datos, modelos de entidad, esquemas de propiedades en Notion, endpoints REST consumidos y mecanismos de rate limiting y persistencia local.
+Documento técnico elaborado por el rol **Backend-Architect** que formaliza los contratos de datos, modelos de entidad, esquemas de propiedades en Notion, endpoints REST consumidos y mecanismos de rate limiting, persistencia local y respaldos offline.
 
 ---
 
@@ -23,15 +23,34 @@ La base de datos principal reside en Notion. Cada registro (fila) es una `Page` 
 | **`Estado`** | `status` / `select` | `String` | `'Por jugar'`, `'Jugando'`, `'Jugado'` | Estado actual de avance del jugador |
 | **`Plataforma`** | `select` | `String?` | `'PC'`, `'Playstation 5'`, `'Nintendo Switch'`, etc. | Plataforma en la que se disfruta el juego |
 | **`Horas Jugadas`** | `number` | `num` | $\ge 0$ | Horas acumuladas de partida registradas |
-| **`Calificación`** | `select` | `String?` | `'⭐'` a `'⭐⭐⭐⭐⭐'` | Puntuación personal en estrellas |
+| **`Calificación`** | `select` | `String?` | `'★'` a `'★★★★★'` | Puntuación personal en estrellas (`\u2605` y `\u2730`) |
 | **`Fecha de Inicio`** | `date` | `DateTime?` | Formato ISO 8601 (`YYYY-MM-DD`) | Fecha en que se inició la aventura |
-| **`Fecha de Culminación`** | `date` | `DateTime?` | Formato ISO 8601 (`YYYY-MM-DD`) | Fecha en que se finalizó el juego |
+| **`Fecha de Culminación (primera campaña)`** | `date` | `DateTime?` | Formato ISO 8601 (`YYYY-MM-DD`) | Fecha en que se finalizó el juego |
 | **`HLTB Principal`** | `number` | `num?` | $\ge 0$ | Horas estimadas HowLongToBeat (Main Story) |
-| **`HLTB Extra`** | `number` | `num?` | $\ge 0$ | Horas estimadas HLTB (Main + Extras) |
-| **`HLTB 100%`** | `number` | `num?` | $\ge 0$ | Horas estimadas HLTB (Completionist) |
+| **`HLTB Completista`** | `number` | `num?` | $\ge 0$ | Horas estimadas HLTB (Completionist) |
 | **`Géneros`** | `multi_select` | `List<String>` | Lista de etiquetas | Géneros y temáticas del título |
-| **`Portada`** | `files` | `String?` | URL HTTP/HTTPS externa | Enlace a la imagen de portada en alta resolución |
-| **`Reseña / Notas`** | `rich_text` | `String?` | Texto plano / Markdown | Comentario personal, análisis y recuerdos |
+| **`Portada`** | `files` | `String?` | URL externa válida | Enlace a la imagen de portada externa |
+| **`Resumen`** | `rich_text` | `String?` | Texto plano / Markdown | Comentario personal, análisis y recuerdos |
+| **`Link`** | `url` | `String?` | URL válida | Enlace de referencia (Wikipedia, Steam, etc.) |
+
+---
+
+## 🛡️ Contrato de Manejo de Portadas & Protección Error 400 (v2.8.4)
+
+Notion impone una regla estricta de validación en su API (`validation_error`):
+> *"A file with type `external` cannot contain a Notion hosted file url. Use type `file`."*
+
+Cuando un usuario sube un archivo directamente a Notion, Notion genera una URL interna de AWS S3 (`prod-files-secure.s3...`). Si una aplicación cliente envía esa URL como `external`, Notion responde con **HTTP 400**.
+
+### Reglas de Construcción en `toNotionProperties` y `NotionParser`:
+1. **Omitir Portada Inalterada:** Al ejecutar `_saveChanges()`, si `currentCover.trim() == originalCover.trim()`, la propiedad `Portada` se excluye del payload PATCH. Esto asegura que la imagen original alojada en Notion permanezca intacta.
+2. **Filtro de URLs S3 en `buildExternalFile`:** Si una URL contiene `amazonaws.com`, `prod-files-secure` o `notion-static.com`, se bloquea su emisión como archivo externo para evitar el rechazo de validación.
+3. **Manejo de Nulos y Cadenas Vacías:**
+   - `buildSelect(null)` $\rightarrow$ `{'select': null}` (unsets selection cleanly).
+   - `buildUrl(null)` $\rightarrow$ `{'url': null}`.
+   - `buildDate(null)` $\rightarrow$ `{'date': null}`.
+   - `buildRichText(null)` $\rightarrow$ `{'rich_text': []}`.
+   - `buildMultiSelect([])` $\rightarrow$ `{'multi_select': []}`.
 
 ---
 
@@ -55,7 +74,7 @@ La base de datos principal reside en Notion. Cada registro (fila) es una `Page` 
         "direction": "descending"
       }
     ],
-    "start_cursor": "string (opcional para paginación Notion)"
+    "start_cursor": null
   }
   ```
 - **Respuesta:** `200 OK` con `{ "results": [ ... ], "has_more": false, "next_cursor": null }`.
@@ -73,7 +92,7 @@ La base de datos principal reside en Notion. Cada registro (fila) es una `Page` 
       "Horas Jugadas": { "number": 12.5 },
       "Fecha de Inicio": { "date": { "start": "2026-08-26" } },
       "Géneros": { "multi_select": [{ "name": "RPG" }, { "name": "Soulslike" }] },
-      "Portada": { "files": [{ "name": "Cover", "type": "external", "external": { "url": "https://..." } }] },
+      "Portada": { "files": [{ "name": "cover", "type": "external", "external": { "url": "https://..." } }] },
       "HLTB Principal": { "number": 58 }
     }
   }
@@ -88,49 +107,54 @@ La base de datos principal reside en Notion. Cada registro (fila) es una `Page` 
     "properties": {
       "Horas Jugadas": { "number": 13.5 },
       "Estado": { "status": { "name": "Jugado" } },
-      "Fecha de Culminación": { "date": { "start": "2026-08-26" } }
+      "Fecha de Culminación (primera campaña)": { "date": { "start": "2026-08-26" } }
     }
   }
   ```
 - **Respuesta:** `200 OK` con el objeto `Page` actualizado.
 
-### 4. Validar Conexión y Base de Datos
-- **`GET /users/me`:** Valida que el token interno de integración sea válido y tenga permisos activos.
-- **`GET /databases/{database_id}`:** Valida que la base de datos exista y haya sido compartida con la integración.
+### 4. Deserialización de Excepciones (`NotionApiException`)
+- Si Notion retorna un código distinto de 200, la respuesta cruda JSON se almacena en `responseBody`.
+- El getter `detailedMessage` parsea `json.decode(responseBody)['message']`, entregando explicaciones legibles (e.g. *"Invalid status option"*, *"Contains invalid url"*) directamente al usuario.
+
+---
+
+## 💾 Especificación del Esquema de Respaldo JSON (`BackupService` v2.8.0)
+
+El servicio `BackupService` exporta e importa la biblioteca completa bajo la siguiente estructura JSON canónica:
+
+```json
+{
+  "app": "tracker_app",
+  "version": "2.8.4",
+  "exported_at": "2026-08-27T12:00:00.000Z",
+  "total_games": 102,
+  "games": [
+    {
+      "id": "2c294bde-8dc7-8037-aad0-edb9fd13108a",
+      "title": "Overwatch 2",
+      "status": "Jugado",
+      "platform": "PC",
+      "hours_played": 749.0,
+      "rating": "★★★★✰",
+      "genres": ["Shooter"],
+      "hltb_main": 94.58,
+      "hltb_completionist": 589.7,
+      "cover_url": "https://media.rawg.io/media/games/4ea/4ea507ceebeabb43edbc09468f5aaac6.jpg",
+      "summary": "Notas personales...",
+      "link": "https://es.wikipedia.org/wiki/Overwatch_2",
+      "start_date": "2025-12-07T00:00:00.000Z",
+      "completed_date": "2025-12-10T00:00:00.000Z"
+    }
+  ]
+}
+```
 
 ---
 
 ## 🚦 Control de Concurrencia y Rate Limiting
 
-Para cumplir estrictamente con los límites de Notion API (máximo 3 peticiones por segundo sin incurrir en errores `429 Too Many Requests`), el servicio `NotionService` implementa una cola FIFO de promesas:
-
-```mermaid
-sequenceDiagram
-    participant UI as Componentes UI
-    participant Queue as Request Queue FIFO
-    participant Limiter as Rate Limiter (3 req/s)
-    participant Notion as Notion API Cloud
-
-    UI->>Queue: Petición HTTP (GET/POST/PATCH)
-    Queue->>Limiter: Completer programado
-    Limiter->>Notion: Envío con espaciado mínimo (333 ms)
-    Notion-->>Limiter: Respuesta (200 OK)
-    Limiter-->>UI: Resolución inmediata
-```
-
----
-
-## 💾 Capa de Persistencia Local y Caché Offline
-
-Para garantizar un cold-start instantáneo (**0 ms**) y resiliencia total frente a caídas de red:
-- **Key Local (`SharedPreferences`):** `notion_persistent_games_cache_v1`
-- **Contenido:** JSON serializado con la lista de objetos `Page` de Notion.
-### ⚡ Optimización Smart Sync & Timeout de Red
-- **Head Check Ligero (1 solo registro):**
-  - Endpoint: `POST /databases/{database_id}/query` con `page_size: 1` ordenado por `last_edited_time` descendente.
-  - Lógica de Verificación: Se compara el `last_edited_time` del registro remoto con el primer elemento de la caché local persistida. Si coinciden, la biblioteca no sufrió alteraciones en la nube y se devuelven los datos locales en $\sim 0.35$ s, evitando descargar la base de datos completa.
-- **Límite de Tiempo (HTTP Timeout):**
-  - Todas las peticiones HTTP (`GET`, `POST`, `PATCH`) cuentan con un timeout estricto de **15 segundos**. En caso de agotarse el tiempo, la aplicación libera los recursos inmediatamente y utiliza la instantánea local sin bloquear la interfaz de usuario.
+Para cumplir estrictamente con los límites de Notion API (máximo 3 peticiones por segundo sin incurrir en errores `429 Too Many Requests`), el servicio `NotionService` implementa una cola FIFO de promesas con espaciado de 333 ms entre peticiones y reintentos con backoff exponencial.
 
 ---
 

@@ -2,9 +2,9 @@
 tipo: overview
 proyecto: App_Rastreador_de_Entretenimiento_Personal
 estado: activo
-version: v2.7.2
-fecha: 2026-08-26
-tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, victor-engineer, light-mode, dark-mode, multi-year, offline-cache, smart-sync, v2.7.2]
+version: v2.8.4
+fecha: 2026-08-27
+tags: [proyecto, overview, notion, flutter, entretenimiento, gaming, victor-engineer, light-mode, dark-mode, multi-year, offline-cache, smart-sync, mobile-responsive, backup-json, permanent-signing, v2.8.4]
 ---
 
 # 🚀 Visión General del Proyecto: Rastreador de Entretenimiento Personal
@@ -13,12 +13,13 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 
 ---
 
-## 📖 Capacidades y Funcionalidades Principales (v2.7.2)
+## 📖 Capacidades y Funcionalidades Principales (v2.8.4)
 
 ### 1. 🗄️ Gestión Integral y Bidireccional de Biblioteca (Notion API)
 - Conexión directa mediante *Internal Integration Token* de Notion sin intermediarios (Supabase eliminado).
 - Control exhaustivo de campos: Título, Estado (*Por jugar*, *Jugando*, *Jugado*), Plataforma, Horas Jugadas, Fechas de Inicio y Culminación, Calificación en estrellas (1-5), Tiempos HowLongToBeat (Principal, Extra, 100%), Géneros, Portada y Reseña/Notas personales.
 - Sincronización transparente con actualización optimista en la interfaz para cambios instantáneos.
+- **Blindaje ante Portadas S3 y Error 400 (v2.8.4):** Detección inteligente de modificaciones en la portada; si la carátula no fue editada, se omite del PATCH para no corromper archivos alojados internamente en Notion.
 
 ### 2. ⚡ Rendimiento Extremo, Caché Offline (0 ms) & Smart Sync
 - Almacenamiento local en disco con `SharedPreferences` que retiene la última instantánea serializada de la biblioteca.
@@ -50,6 +51,7 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
   - ⭐ *Obra Maestra* (Juego con 5 estrellas y máxima dedicación).
   - ⚡ *Aventura Ágil* (Juego completado en menor tiempo).
 - Medidor de salud de biblioteca (*Backlog Health*) y desglose porcentual de finalización.
+- **Adaptabilidad Móvil (v2.8.1):** Selector anual reorganizado en dos hileras compactas para prevenir desbordes de pantalla en dispositivos móviles.
 
 ### 7. 🖼️ Generador de Tarjeta Social / Reseña Exportable (PNG) Adaptativa
 - Captura de alta resolución mediante `RepaintBoundary` (pixel ratio 2.5x).
@@ -62,13 +64,30 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 - Modal enriquecido para asignar estado, plataforma, fecha de inicio, horas y selección múltiple de géneros con acordeón temático.
 - Inserción directa en Notion mediante `createPage` con tolerancia y compatibilidad retroactiva.
 
+### 9. 📱 Ergonomía Móvil y Barra de Filtros Dual (v2.8.1)
+- **Barra de Filtros en Doble Fila:** Hilera superior para estados de juego y segunda hilera para selectores de plataforma, género, orden y botón de limpieza, evitando scrolls incómodos en teléfonos.
+- **AppBar Protegida:** Escalado automático de logotipo y reagrupación de accesos secundarios en menú `⋮` en pantallas < 500px.
+- **Cuadrícula 2x2 para Métricas:** Reorganización de tarjetas de estadísticas para visualización balanceada en pantallas táctiles verticales.
+
+### 10. 🛡️ Firma Criptográfica Permanente de Android & Branding Nativo (v2.8.2)
+- **Firma Persistente (`release.keystore`):** Keystore dedicado con validez hasta 2054 que erradica el error de "Conflicto con un paquete ya existente", permitiendo actualizaciones continuas sin desinstalar.
+- **Versionado Dinámico:** Sincronización automática de `--build-name` con `pubspec.yaml` y código de versión estrictamente creciente.
+- **Iconografía Oficial Victor Engineer:** Icono ejecutable de escritorio (`app_icon.ico`) y móvil (`app_icon.png` y mipmaps Android) con mando 2D plano sobre rojo `#DC2626`, conservando el monograma vector `icon.svg` original intacto.
+
+### 11. 🧹 Optimización y Cero Código Muerto (v2.8.3)
+- **Eliminación de Assets Huérfanos:** Purga de 7 imágenes redundantes con un ahorro directo de más de **361 KB** en el paquete final.
+- **Eliminación de Dependencias Redundantes:** Desinstalación limpia de `dio` y `flutter_staggered_grid_view` en `pubspec.yaml`, reduciendo superficie de ataque y acelerando los builds de CI/CD.
+
+### 12. 💾 Respaldo y Restauración JSON Offline (`BackupService` v2.8.0)
+- Exportación e importación de la colección entera en formato JSON estructurado con metadatos completos y estampas temporales, ofreciendo redundancia y soberanía de datos local.
+
 ---
 
 ## 🗺️ Índice de Artefactos del Proyecto
 
-- **Arquitectura del Sistema:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_architecture|Arquitectura del Sistema v2.7.2]]
+- **Arquitectura del Sistema:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_architecture|Arquitectura del Sistema v2.8.4]]
 - **Contrato de Datos y API:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_api_spec|Especificación de API Notion y RAWG]]
-- **Plan de Implementación:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_implementation_plan|Plan de Implementación v2.7.2]]
+- **Plan de Implementación:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_implementation_plan|Plan de Implementación v2.8.4]]
 - **Lista de Tareas:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_task|Checklist de Tareas]]
 - **Historial de Versiones:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_changelog_v1|Changelog v1]]
 - **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Rastreador_de_Entretenimiento_Personal_audit_report|Reporte de Auditoría]]
