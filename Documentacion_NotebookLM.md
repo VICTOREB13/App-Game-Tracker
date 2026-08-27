@@ -1,70 +1,117 @@
-# Rastreador de Entretenimiento Next Level - Documentación de Deep Research (NotebookLM)
+# 🎮 Rastreador de Entretenimiento Personal (App Game Tracker v3.0.5) - Documentación Técnica y Deep Research para NotebookLM
 
-Este documento contiene la investigación profunda (Deep Research) y la documentación técnica completa del proyecto **Rastreador de Entretenimiento Next Level**. Está optimizado para ser procesado por Google NotebookLM, estructurando la información en las áreas clave de Aplicaciones Web, Frontend, Backend y la integración con Notion API.
-
----
-
-## 1. Aplicaciones Web y Ecosistema Global
-El proyecto se concibe como una solución moderna para el seguimiento y gestión de videojuegos ("Game Tracker"). La arquitectura está diseñada de forma multiplataforma. Aunque la base principal actual es una aplicación construida con Flutter, el framework permite exportar fácilmente el proyecto como una **Aplicación Web** (PWA o Single Page Application). 
-
-- **Arquitectura de Software**: Cliente-Servidor (Serverless Backend).
-- **Flujo de Trabajo**: El usuario puede ver su biblioteca de juegos, filtrarlos por estados (Jugando, Completado, Por Jugar, etc.) y visualizar analíticas avanzadas.
-- **Escalabilidad Web**: Al estar basado en Flutter para el cliente y Supabase para el backend, su despliegue web requiere mínima refactorización, lo que permite unificar la experiencia en web y móvil bajo una misma base de código.
+Este documento contiene la investigación profunda (Deep Research) y la especificación técnica completa del proyecto **Rastreador de Entretenimiento Personal (App Game Tracker)** en su versión **v3.0.5 Local-First**. Está estructurado y optimizado específicamente para ser procesado, indexado y analizado por **Google NotebookLM**.
 
 ---
 
-## 2. Frontend (Flutter)
-El Frontend está desarrollado con **Flutter** utilizando el lenguaje **Dart**. Es responsable de la interfaz de usuario (UI), la gestión del estado y la interacción directa con el backend (Supabase).
+## 1. Visión General y Ecosistema Arquitectónico
 
-### Estructura de Directorios y Archivos Clave
-- `lib/main.dart`: Punto de entrada de la aplicación. Configura la inicialización de Supabase usando variables de entorno (`.env`) y maneja la redirección según el estado de autenticación (Login vs Dashboard). Cuenta con un tema oscuro y moderno implementado con `Google Fonts` (Outfit).
-- `lib/models/`:
-  - `game.dart`: Define el modelo de datos de un Videojuego, con propiedades como título, URL de portada, estado, horas jugadas, plataforma, tags, género y proveedor (ej. Steam, Xbox).
-  - `profile.dart`: Maneja la información del perfil del usuario.
-- `lib/screens/`:
-  - `login_screen.dart`: Pantalla de inicio de sesión gestionada a través de Supabase Auth.
-  - `dashboard.dart`: Pantalla principal de "Mi Biblioteca". Permite listar, filtrar (por estado y A-Z/Recientes) y visualizar la colección en un Grid adaptativo.
-  - `analytics_screen.dart`: Visualización de datos usando la librería `fl_chart`. Incluye gráficos de torta (distribución de estados) y gráficos de barras apiladas (dominancia de plataformas).
-  - `game_detail_screen.dart`: Interfaz para la visualización detallada y edición manual de un juego.
-  - `search_screen.dart` y `settings_screen.dart`: Pantallas para búsqueda y configuración del perfil.
-- `lib/services/`:
-  - `sync_service.dart`: Servicio que orquesta la comunicación con las *Edge Functions* de Supabase para disparar la sincronización de juegos desde plataformas externas como Steam, PSN o Xbox.
+El proyecto **App Game Tracker** es una solución multiplataforma de grado profesional desarrollada en **Flutter** para **Windows Desktop (x64 nativo)** y **Android**. Su objetivo primordial es brindar al usuario soberanía total y privacidad absoluta sobre la gestión, auditoría y analítica de su biblioteca de videojuegos.
 
-### Tecnologías Frontend
-- **Framework**: Flutter (SDK >= 3.2.0)
-- **Librerías Críticas**: `supabase_flutter`, `flutter_dotenv`, `google_fonts`, `fl_chart` (analíticas interactivas), `cached_network_image`.
+A diferencia de soluciones tradicionales dependientes de servidores en la nube lentos, autenticaciones externas o bases de datos como servicio (BaaS) con cuotas y latencias variables, la versión **v3.0.5** adopta una arquitectura **100% Local-First** impulsada por **SQLite 3**:
+- **Cold Start de 0 ms:** La aplicación no realiza ninguna petición de red para inicializarse ni para renderizar el panel principal.
+- **Operación Offline Continua:** Todas las funciones de biblioteca, filtrado, analíticas, edición de fichas y cálculo de metas anuales operan sin conexión a internet.
+- **Consultas Indexadas en < 2 ms:** Aceleración por índices B-Tree en la base de datos local.
+- **Soberanía y Privacidad:** La colección de juegos y horas no se envía a servidores de terceros; reside exclusivamente en el dispositivo del usuario (`%APPDATA%` en Windows o almacenamiento interno protegido en Android).
 
 ---
 
-## 3. Backend (Supabase & Edge Functions)
-El proyecto utiliza **Supabase** como backend como servicio (BaaS), aprovechando su base de datos PostgreSQL, el servicio de autenticación y su motor de Edge Functions.
+## 2. Capa de Frontend y Sistema de Diseño (Flutter & Victor Engineer)
 
-### Edge Functions: `sync-games`
-Ubicado en `supabase/functions/sync-games/index.ts`, este componente serverless (escrito en TypeScript y ejecutado sobre Deno) es el motor de sincronización automática.
+El Frontend está desarrollado con **Flutter 3.22+** sobre el lenguaje **Dart**. Implementa un sistema de diseño propio y estilizado conforme a la identidad de marca personal **Victor Engineer** ([victorengineer.fyi](https://victorengineer.fyi)).
 
-- **Flujo de Sincronización**:
-  1. Recibe un POST con la acción (ej. `sync-steam`), `userId` y `providerId`.
-  2. Consulta la API externa (ej. API oficial de Steam usando `STEAM_KEY` y `steamid`).
-  3. Procesa y mapea la respuesta (juegos, horas de juego, última vez jugado) y hace un "upsert" en la tabla `games` de Supabase.
-- **Enriquecimiento de Metadatos (RAWG)**: 
-  Si el juego es nuevo y no existe previamente, el backend llama a la API de **RAWG** (`RAWG_KEY`) para obtener metadatos enriquecidos de forma automática, tales como la URL de la portada (`background_image`), géneros y etiquetas.
-- **Auditoría**: Registra cada intento de sincronización en la tabla `sync_logs` para control de errores y monitoreo.
+### Componentes y Vistas Clave
+- `lib/main.dart`: Inicializa el motor de base de datos local `DatabaseService` y el gestor de temas `ThemeManager`, arrancando inmediatamente en el dashboard principal con cero retraso.
+- `lib/models/game.dart`: Modelo de dominio canónico.
+  - **Patrón Sentinel (`_sentinel`):** Implementado en `copyWith` para distinguir de manera rigurosa entre un parámetro omitido (conserva el valor actual) y un valor `null` explícito (permite vaciar enlaces, portadas, resúmenes y calificaciones en SQLite).
+  - **Límites Defensivos de Memoria:** Clamping transparente de recursos (títulos a 255 caracteres, resúmenes a 2000, URLs a 2048, géneros a 20 elementos de 50 caracteres y horas entre 0 y 99,999) para evitar saturación de memoria.
+- `lib/screens/dashboard.dart`: Panel maestro con selector de vista dual:
+  - **Grid Cinematográfico:** Tarjetas con elevación, micro-barra de progreso HLTB, indicador de estado y animación en hover.
+  - **Lista Compacta (`_GameListRow`):** Fila de alta densidad (54px) con miniatura, logotipos oficiales de plataforma, pill de estado, estrellas y botón rápido `+1h`.
+  - **Paginación Inteligente:** Opciones de 10, 25, 50, 100 o Todos con controles centrados y margen de seguridad para evitar colisiones con el botón flotante.
+- `lib/screens/game_detail_screen.dart`: Ficha cinemática del juego. Incluye selector dual de carátulas (URL web o archivo local de galería), botón de búsqueda rápida en HowLongToBeat con auto-completado de horas, campo de enlace enciclopédico de Wikipedia con botón de borrado de un toque y selector de calificación.
+- `lib/screens/search_screen.dart`: Buscador en vivo contra RAWG API.
+  - **Selector Visual de Plataformas:** Sustituye los menús desplegables tradicionales por chips interactivos con logotipos vectoriales de fabricantes.
+  - **Detección Automática:** Lee las plataformas oficiales del juego devueltas por RAWG y las muestra filtradas con opción de expandir a "+ Otras plataformas".
+  - **Captura Ilimitada de Géneros:** Extrae todos los géneros provistos por RAWG sin restricciones de lista cerrada.
+  - **Auto-Enlace Wikipedia:** Asigna automáticamente el enlace oficial enciclopédico antes de guardar en SQLite.
+- `lib/screens/analytics_screen.dart`: Hub de estadísticas, salud del backlog, distribución porcentual por estado y plataforma, metas anuales dinámicas multi-año y Salón de la Fama (*El Titán*, *Obra Maestra*, *Aventura Ágil*).
+- `lib/screens/settings_screen.dart`: Centro de configuración y mantenimiento:
+  - Optimización en caliente de SQLite (`VACUUM`).
+  - Sincronización manual de Steam con resolución de Vanity URL.
+  - Acción masiva **"Buscar Metadatos HLTB en mi Biblioteca"**.
+  - Acción masiva **"Sincronizar Géneros, Portadas y Wikipedia"**.
+  - Exportación e importación de copias de seguridad JSON.
+- `lib/widgets/app_cover_image.dart`: Widget de renderizado híbrido inteligente que discrimina automáticamente entre URLs remotas (`CachedNetworkImage`) y archivos locales en disco (`Image.file`).
+- `lib/widgets/platform_helper.dart`: Motor gráfico de marcas con logotipos vectoriales oficiales (PlayStation, Xbox, Steam, Nintendo Switch, GOG, Epic) y paletas semánticas asociadas.
 
 ---
 
-## 4. Notion y su API: Análisis e Integración
-El código fuente revela que el ecosistema asume a Notion como un posible `provider` (proveedor) de información, evidenciado en el fallback predeterminado de los análisis: `provider ?? 'Notion'`. Aunque la fuente de verdad primaria es Supabase, la integración con la API de Notion abre vectores funcionales muy potentes que se recomiendan explorar.
+## 3. Capa de Datos Local-First (SQLite 3)
 
-### Arquitectura de Integración Recomendada con Notion API:
-1. **Sincronización Bidireccional (Backup y Productividad)**:
-   - Se puede utilizar la **Notion API** para volcar y mantener sincronizada la biblioteca de juegos desde Supabase hacia una base de datos (Database) en el entorno de Notion del usuario.
-   - **Endpoints clave**: `POST https://api.notion.com/v1/pages` para crear un registro en la base de datos de Notion, configurando propiedades (`properties`) como `Status` (tipo Select), `Hours` (tipo Number), y `Platform` (tipo Select).
-2. **Dashboard de Segunda Pantalla**:
-   - Los usuarios enfocados en la productividad suelen rastrear su vida en Notion. Al integrar la API, la app puede enviar hooks cuando el estado de un juego cambia a "Completado", actualizando instantáneamente la base de datos de Notion correspondiente mediante el endpoint `PATCH https://api.notion.com/v1/pages/{page_id}`.
-3. **Flujo de Implementación**:
-   - Crear una nueva *Edge Function* en Supabase (ej. `sync-notion`).
-   - Requerir OAuth 2.0 o que el usuario ingrese un `NOTION_API_KEY` (Integration Token) y el `Database ID` directamente en el `settings_screen.dart` del frontend.
-   - Utilizar un cron job en Supabase (o webhooks locales de Flutter) para ejecutar la sincronización periódicamente y evitar saturar la API (Rate Limits).
+El almacenamiento principal está orquestado por `DatabaseService` (`lib/services/database_service.dart`), utilizando `sqflite_common_ffi` en Windows Desktop y `sqflite` nativo en Android.
+
+### Esquema DDL y Aceleración B-Tree
+```sql
+CREATE TABLE IF NOT EXISTS games (
+    id TEXT PRIMARY KEY,                       -- UUIDv4 canónico
+    title TEXT NOT NULL,                      -- Título oficial (máx 255)
+    cover_url TEXT,                           -- URL remota o ruta local
+    status TEXT NOT NULL DEFAULT 'Por jugar',  -- 'Por jugar', 'Jugando', 'Jugado'
+    platform TEXT,                            -- 'PC', 'Playstation 5', etc.
+    hours_played REAL DEFAULT 0.0,            -- Horas jugadas
+    genres TEXT,                              -- JSON array serializado
+    rating TEXT,                              -- '★' a '★★★★★' o NULL
+    hltb_main REAL,                           -- Horas Campaña HLTB
+    hltb_completionist REAL,                  -- Horas 100% HLTB
+    summary TEXT,                             -- Notas y reflexiones personales
+    link TEXT,                                -- URL oficial (Wikipedia)
+    start_date TEXT,                          -- YYYY-MM-DD
+    completed_date TEXT,                      -- YYYY-MM-DD
+    steam_id INTEGER,                         -- AppID de Steam
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_games_steam_id ON games(steam_id);
+CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
+CREATE INDEX IF NOT EXISTS idx_games_platform ON games(platform);
+CREATE INDEX IF NOT EXISTS idx_games_title ON games(title);
+```
 
 ---
-*Fin del Documento. Documentación generada específicamente para ingesta y análisis en NotebookLM.*
+
+## 4. Integraciones y Servicios de Red On-Demand
+
+Aunque el almacenamiento es local-first, la aplicación consume APIs públicas y servicios especializados para enriquecer la biblioteca a demanda del usuario:
+
+### 1. Steam Web API (`SteamService`)
+- **Consulta Dual:** `GetOwnedGames` (biblioteca propia comprada) + `GetRecentlyPlayedGames` (juegos jugados mediante **Family Sharing**).
+- **Filtro de Ruido (30 Minutos):** Ignora automáticamente juegos con menos de 0.5 horas registradas.
+- **Emparejamiento Tri-Fase (`StringNormalizer`):**
+  1. Coincidencia por `steam_id`.
+  2. Coincidencia exacta por nombre limpio (remueve `™`, `®`, signos de puntuación).
+  3. Coincidencia por similitud difusa (algoritmo Sørensen-Dice / Levenshtein con ratio $> 0.90$).
+- **Auto-Culminación por HLTB:** Si las horas jugadas acumuladas alcanzan o superan la duración de la historia principal (`hltb_main`), el juego se marca de inmediato como *Jugado* con fecha de finalización automática.
+
+### 2. Servicio Nativo HowLongToBeat (`HltbService`)
+- Cliente HTTP directo contra la API interna moderna de HowLongToBeat (`/api/search/site/init` y `/api/search/site`).
+- Gestión automática de tokens de seguridad (`x-auth-token`, `x-hp-key`, `x-hp-val`) y reintentos transparentes.
+- Extrae la duración en horas de la **Historia Principal** y **Completista 100%**.
+
+### 3. RAWG Video Games Database API (`MetadataService`)
+- Catálogo de más de 500,000 videojuegos para autocompletado de portadas de alta resolución, fechas de lanzamiento y plataformas de lanzamiento.
+- Captura de todos los géneros sin truncamiento ni listas cerradas.
+
+### 4. Wikimedia Wikipedia API (`MetadataService`)
+- Motor de búsqueda enciclopédico con sanitización de títulos, consulta cruzada bilingüe (`es`/`en`) y cabecera de contacto oficial `User-Agent: GameTracker/3.0 (victorengineer.fyi; contact@victorengineer.fyi)`.
+
+---
+
+## 5. Portabilidad, Seguridad y Ciclo de Vida CI/CD
+
+- **Portabilidad JSON (`BackupService`):** Exportación completa de la biblioteca a la carpeta de Descargas en formato JSON canónico v3.0 e importación retrocompatible con esquemas antiguos.
+- **Dataset de Prueba (`sample_games_library.json`):** Colección de 12 títulos de prueba incluida en la raíz para pruebas inmediatas tras la instalación.
+- **Firma Persistente de Android (`release.keystore`):** Keystore dedicado con validez de 27 años (hasta 2054) que erradica conflictos de actualización en Android.
+- **GitHub Actions CI/CD (`release.yml`):** Compilación y publicación automática en tags (`v*`) generando artefactos portables para Windows x64 (ZIP) y Android (APK).
+- **Protección de Workflows:** Blindaje en `.github/workflows/sync-docs.yml` para aislar secretos y bóvedas en forks externos.

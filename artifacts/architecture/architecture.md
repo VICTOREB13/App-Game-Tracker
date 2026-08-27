@@ -1,25 +1,28 @@
 ---
 tipo: architecture
 proyecto: App_Game_Tracker
-version: v3.0.0-planning
-estado: en_transicion
+version: v3.0.5
+estado: activo
 fecha: 2026-08-27
-tags: [arquitectura, flutter, sqlite-local, steam-api, rawg-api, theme-architecture, offline-first, pagination, gamification, backup-service, mobile-responsive, permanent-signing, victor-engineer, open-source]
+tags: [arquitectura, flutter, sqlite-local, steam-api, howlongtobeat, rawg-api, wikipedia-api, theme-architecture, offline-first, pagination, gamification, backup-service, mobile-responsive, permanent-signing, victor-engineer, open-source, v3.0.5]
 ---
 
-# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v3.0.0)
+# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v3.0.5)
 
 Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer** ([victorengineer.fyi](https://victorengineer.fyi)).
 
 ---
 
-## 🛠️ Stack Tecnológico (v3.0.0 Local-First)
+## 🛠️ Stack Tecnológico (v3.0.5 Local-First)
 
 - **Frontend & Core:** Flutter 3.22+ / Dart SDK (`>= 3.2.0 < 4.0.0`).
 - **Plataformas Soportadas:** Windows Desktop (x64 nativo) y Android (APK Fat / AAB).
 - **Base de Datos Principal:** **SQLite 3 Local** (`sqflite: ^2.3.2` en Android y `sqflite_common_ffi: ^2.3.2+1` en Windows Desktop). Cero latencia (0 ms), sin límites de llamadas ni dependencia de servidores en la nube.
-- **Sincronización de Tiempo Real:** **Steam Web API** (`IPlayerService`, `ISteamUser`) para sincronizar biblioteca oficial y horas de juego.
-- **Servicio de Enriquecimiento:** **RAWG Video Games Database API** (búsqueda, carátulas HD y metadatos de más de 500k juegos).
+- **Sincronización Steam:** **Steam Web API** (`IPlayerService`, `ISteamUser`) para sincronizar biblioteca oficial, Family Sharing y horas jugadas.
+- **Servicio Nativo de Duración:** **HowLongToBeat Internal API** (`HltbService`) con cliente HTTP directo y rotación transparente de tokens de seguridad.
+- **Servicios de Enriquecimiento:**
+  - **RAWG Video Games Database API:** Búsqueda, carátulas HD y catálogo de más de 500k juegos con todos los géneros sin límites.
+  - **Wikipedia Wikimedia API:** Consulta cruzada bilingüe (`es`/`en`) con sanitización de títulos y cabeceras oficiales.
 - **Capa de Persistencia & Configuración:** SQLite para entidades de juego y `shared_preferences` para preferencias de usuario (claves de API, tema, metas anuales).
 - **Capa de Respaldos:** `BackupService` con serialización/deserialización JSON de biblioteca completa y metadatos de configuración.
 - **Seguridad & Firma Android:** `release.keystore` permanente (RSA 2048 / SHA-256) con validez hasta 2054 y versionado dinámico inyectado en CI/CD.
@@ -30,28 +33,29 @@ Documento maestro de arquitectura técnica del sistema, stack tecnológico, topo
   - **Tema Oscuro (Obsidian Zinc):** `#09090B` fondo, `#121215` tarjetas, `#27272A` bordes.
   - **Tema Claro (Crisp Zinc):** `#FAFAFA` fondo, `#FFFFFF` tarjetas, `#E4E4E7` bordes, `#09090B` texto.
 - **Exportación Gráfica:** `RepaintBoundary` con renderizado a 2.5x pixel ratio para generación de tarjetas PNG.
-- **Dependencias Optimizadas (v2.8.3):** Cero dependencias muertas; eliminados `dio` y `flutter_staggered_grid_view`.
+- **Dependencias Optimizadas:** Cero dependencias muertas; eliminadas librerías huérfanas (`dio`, `flutter_staggered_grid_view`).
 
 ---
 
-## 📐 Diagrama de Arquitectura Multicapa
+## 📐 Diagrama de Arquitectura Multicapa (v3.0.5)
 
 ```mermaid
 graph TD
-    User["Usuario (Gamer en Windows Desktop / Móvil)"]
+    User["Usuario (Gamer en Windows Desktop / Android)"]
 
     subgraph Presentation["Capa de Presentación (UI/UX Responsiva)"]
-        AppBar["AppBar: Victor Engineer Brand + Quick Theme Toggle + Mobile Menu"]
+        AppBar["AppBar: Victor Engineer Brand + Steam Sync + Quick Theme Toggle"]
         HeroSpotlight["Hero Spotlight: Jugando Ahora (+1h Quick Log)"]
-        FilterToolbar["Toolbar Responsiva: Filtros Duales Móvil / Toolbar Unificada PC"]
+        FilterToolbar["Toolbar: Filtros de Estado, Plataforma, Género y Orden"]
         ViewSwitcher["Toolbar: Dual View Switcher (Grid / Lista) + Paginador Centrado"]
         GameGrid["Grid Cinematográfico (Cover Hover Scale & Progress)"]
         GameList["Lista Compacta de Alta Densidad (_GameListRow)"]
-        DetailView["Ficha Cinematográfica de Juego (Backdrop & HLTB Breakdown)"]
+        DetailView["Ficha Cinematográfica de Juego (Backdrop, Wikipedia & HLTB Quick Lookup)"]
+        PlatformSelector["Selector Visual de Plataformas (Chips Táctiles & Detección RAWG)"]
         SocialCard["Generador de Tarjeta Social / Reseña (RepaintBoundary PNG)"]
         Analytics["Hub de Analíticas (Stepper Multi-Año Móvil 2-Row, Metas & Hall of Fame)"]
-        SearchModal["Buscador RAWG con Acordeón de Géneros y Portadas HD"]
-        Settings["Configuración (ThemeManager, Token, Backup JSON & Caché)"]
+        SearchModal["Buscador RAWG con Géneros Ilimitados y Enlace Wiki Automático"]
+        Settings["Configuración (SQLite Vacuum, Steam Sync, HLTB Bulk Sync, RAWG Key & Backup JSON)"]
     end
 
     subgraph StateAndTheme["Capa de Estado y Tokens Visuales"]
@@ -60,21 +64,25 @@ graph TD
     end
 
     subgraph Domain["Lógica de Dominio y Modelos"]
-        GameModel["Modelo Game (Cálculo HLTB, Fechas, Estado, Puntuación, toNotionProperties)"]
-        PlatformHlp["PlatformHelper (Logos Vectoriales Oficiales & Paletas)"]
+        GameModel["Modelo Game (Patrón Sentinel copyWith, Límites Defensivos, toSqliteMap)"]
+        PlatformHlp["PlatformHelper (Logos Vectoriales Oficiales & Paletas de Fabricante)"]
+        StringNorm["StringNormalizer (Fuzzy Similarity > 0.90 & Clean Title)"]
         BackupSvc["BackupService (Exportación / Importación JSON de Biblioteca)"]
     end
 
-    subgraph Data["Capa de Datos y Red"]
-        NotionSvc["NotionService (Rate Limiter 3 req/s, Stale-While-Revalidate, Error Deserializer)"]
-        NotionPars["NotionParser (Mapeo Bidireccional JSON <-> Entidades & S3 Filter)"]
-        RAWGClient["RAWG API Client (Búsqueda y Metadatos)"]
-        LocalStorage["SharedPreferences (Caché Offline, Metas Anuales, Preferencias)"]
+    subgraph Data["Capa de Datos Local-First & Red"]
+        DatabaseSvc["DatabaseService (Singleton SQLite: B-Tree Indexes, CRUD, Vacuum)"]
+        SteamSvc["SteamService (Dual Sync, 30-min Noise Filter, Family Sharing & HLTB Auto-Complete)"]
+        HltbSvc["HltbService (Native HowLongToBeat Client: Tokens & Campaign/100% Extraction)"]
+        MetadataSvc["MetadataService (RAWG Genres/Covers & Wikipedia Wikimedia Engine)"]
+        LocalStorage["SharedPreferences (Claves API, Metas Anuales, Preferencias)"]
     end
 
-    subgraph Cloud["Servicios Cloud"]
-        NotionCloud["Notion Database Cloud (Database ID)"]
-        RAWGCloud["RAWG Games Database API"]
+    subgraph CloudAPIs["Servicios Externos (On-Demand)"]
+        SteamAPI["Steam Web API (GetOwnedGames, GetRecentlyPlayedGames, ResolveVanityURL)"]
+        HLTBCloud["HowLongToBeat Internal REST API"]
+        RAWGCloud["RAWG Video Games Database API"]
+        WikiCloud["Wikimedia Wikipedia API (es/en)"]
     end
 
     User --> AppBar
@@ -88,7 +96,9 @@ graph TD
 
     AppBar --> ThemeMgr
     Settings --> ThemeMgr
+    Settings --> DatabaseSvc
     Settings --> BackupSvc
+    Settings --> HltbSvc
     Presentation --> AppCol
     ThemeMgr --> AppCol
 
@@ -98,80 +108,72 @@ graph TD
     GameList --> GameModel
     GameList --> PlatformHlp
     DetailView --> SocialCard
+    DetailView --> PlatformSelector
+    DetailView --> HltbSvc
+    DetailView --> MetadataSvc
 
-    Presentation --> NotionSvc
-    SearchModal --> RAWGClient
-    NotionSvc --> NotionPars
-    NotionSvc --> LocalStorage
-    NotionSvc --> NotionCloud
-    RAWGClient --> RAWGCloud
-    BackupSvc --> LocalStorage
-    BackupSvc --> NotionSvc
+    SearchModal --> MetadataSvc
+    SearchModal --> HltbSvc
+    SearchModal --> PlatformSelector
+
+    AppBar --> SteamSvc
+    Settings --> SteamSvc
+
+    SteamSvc --> SteamAPI
+    SteamSvc --> StringNorm
+    SteamSvc --> HltbSvc
+    SteamSvc --> MetadataSvc
+    SteamSvc --> DatabaseSvc
+
+    HltbSvc --> HLTBCloud
+    MetadataSvc --> RAWGCloud
+    MetadataSvc --> WikiCloud
+
+    Presentation --> DatabaseSvc
+    DatabaseSvc --> GameModel
+    BackupSvc --> DatabaseSvc
+    Settings --> LocalStorage
 ```
 
 ---
 
-## 🎨 Arquitectura del Sistema de Temas (`ThemeManager` & `AppColors`)
+## 🧩 Patrones de Diseño Arquitectónicos Implementados
 
-La aplicación implementa una arquitectura reactiva que desacopla los componentes visuales de los colores duros:
+### 1. Patrón Sentinel para Soporte Completo de `NULL` en `copyWith`
+Para permitir el borrado o vaciado explícito de propiedades opcionales (`link`, `coverUrl`, `summary`, `rating`, `startDate`, `completedDate`) sin que el operador `??` restaure accidentalmente los valores antiguos, el modelo `Game` implementa el patrón **Sentinel**:
+```dart
+static const Object _sentinel = Object();
 
-1. **`ThemeManager`:** Singleton que extiende `ChangeNotifier` y gestiona el `ThemeMode` activo (`dark`, `light`, `system`), persistiendo la clave `'preferred_theme_mode'` en `SharedPreferences`.
-2. **`AppColors`:** Fachada estática que evalúa `Theme.of(context).brightness == Brightness.dark` para entregar colores semánticos (`background`, `surface`, `surfaceSubtle`, `border`, `textPrimary`, `textSecondary`, `textMuted`, `primary`).
-3. **`AnimatedBuilder`:** En `main.dart`, envuelve el `MaterialApp` escuchando cambios en `ThemeManager.instance` para redibujar instantáneamente todas las vistas sin necesidad de recargar la aplicación.
-
----
-
-## ⚡ Patrón de Caché Persistente & Smart Sync (*Stale-While-Revalidate*)
-
-Para lograr tiempos de carga imperceptibles y evitar transferencias redundantes de red:
-
-```mermaid
-sequenceDiagram
-    participant App as Inicio / Refrescar
-    participant NotionSvc as NotionService
-    participant Disk as SharedPreferences (Disco Local)
-    participant Cloud as Notion Cloud API
-
-    App->>Disk: getLocalCache() (0 ms cold-start)
-    App->>NotionSvc: getGames(useCache, forceFullSync: false)
-    NotionSvc->>Cloud: Head Query (1 registro ordenado por last_edited_time)
-    alt Fecha remota == Fecha local en caché
-        Cloud-->>NotionSvc: Coincidencia detectada (350 ms)
-        NotionSvc-->>App: Retorna caché local de inmediato (sin transferir 100+ juegos)
-    else Hay cambios remotos o caché vacía
-        NotionSvc->>Cloud: queryDatabase() completa con timeout de 15s
-        Cloud-->>NotionSvc: Lista actualizada de juegos
-        NotionSvc->>Disk: saveLocalCache()
-        NotionSvc-->>App: Actualización de biblioteca en pantalla
-    end
+Game copyWith({
+  String? id,
+  String? title,
+  Object? coverUrl = _sentinel,
+  Object? summary = _sentinel,
+  Object? link = _sentinel,
+  Object? rating = _sentinel,
+  ...
+}) {
+  return Game(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    coverUrl: identical(coverUrl, _sentinel) ? this.coverUrl : (coverUrl as String?),
+    summary: identical(summary, _sentinel) ? this.summary : (summary as String?),
+    link: identical(link, _sentinel) ? this.link : (link as String?),
+    rating: identical(rating, _sentinel) ? this.rating : (rating as String?),
+    ...
+  );
+}
 ```
 
----
+### 2. Límites Defensivos de Memoria (Defensive Resource Clamping)
+El modelo `Game` valida de forma transparente las entradas para garantizar que datasets masivos o respuestas de APIs de terceros nunca degraden el heap de memoria ni la base de datos:
+- Título: truncado a 255 caracteres.
+- Resumen/Notas: truncado a 2000 caracteres.
+- URLs (portadas y enlaces): truncadas a 2048 caracteres.
+- Géneros: máximo 20 géneros por juego, truncados a 50 caracteres cada uno.
+- Horas jugadas y HLTB: clamped entre 0.0 y 99,999.0 horas.
 
-## 🛡️ Manejo de Portadas en Notion & Prevención de Error 400 (v2.8.4)
-
-Cuando una imagen se sube directamente a Notion, Notion la aloja en servidores AWS S3 (`prod-files-secure.s3...`) clasificada como `type: file`. La API de Notion prohíbe enviar URLs de S3 bajo `type: external`, rechazándolo con HTTP 400 (`validation_error`).
-
-### Estrategia de Blindaje Implementada:
-1. **Detección de Cambio de Portada (`_saveChanges`):** Compara el valor del controlador con la portada original del juego. Si no hubo modificación (`coverChanged == false`), el campo `Portada` se omite del PATCH, preservando el archivo original en Notion.
-2. **Filtro de Enlaces Internos (`toNotionProperties`):** Si una URL contiene `amazonaws.com`, `prod-files-secure` o `notion-static.com`, se bloquea su serialización como archivo externo.
-3. **Deserialización de Errores (`NotionApiException`):** Parsea el campo `message` del JSON devuelto por Notion para exponer explicaciones claras y legibles en la interfaz de usuario en lugar de códigos opacos.
-
----
-
-## 📱 Motor de Ergonomía y Responsividad Móvil (v2.8.1)
-
-1. **Barra de Filtros en Doble Fila:**
-   - En pantallas estrechas (< 600px), los estados se distribuyen en una fila superior y los menús desplegables (Plataforma, Género, Orden y Limpiar) se sitúan en una hilera inferior dedicada, eliminando desbordes horizontales.
-2. **Escalado Inteligente de AppBar:**
-   - `FittedBox` y `Flexible` protegen el logotipo Victor Engineer en pantallas < 500px, agrupando acciones secundarias en un menú popup `⋮`.
-3. **Selector Anual 2-Row:**
-   - En `AnalyticsScreen`, el stepper `< [Año] >` y el contador de juegos se dividen en dos hileras compactas para prevenir overflows en dispositivos móviles.
-
----
-
-## 💾 Arquitectura del Servicio de Respaldo (`BackupService` v2.8.0)
-
-Provee soberanía total de datos mediante exportación e importación offline:
-- **Estructura JSON Canónica:** Almacena versión del esquema, estampa ISO 8601 y la lista completa de entidades `Game` con todos sus atributos serializados.
-- **Restauración Inteligente:** Permite recargar la biblioteca en modo offline o sincronizar masivamente hacia Notion si se configura una nueva base de datos.
+### 3. Selector Visual de Plataformas con Detección Automática
+- Al cargar los metadatos de RAWG, el sistema extrae las plataformas oficiales del juego (`rawgGame['platforms']`) y las normaliza mediante `_canonicalPlatform`.
+- Se representan en pantalla mediante chips visuales con logotipos vectoriales oficiales provistos por `PlatformHelper`.
+- Si el usuario requiere una plataforma alternativa (emuladores, GOG, Epic), el selector conmuta instantáneamente al catálogo global.

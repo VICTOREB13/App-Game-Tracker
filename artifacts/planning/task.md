@@ -1,93 +1,86 @@
 ---
 tipo: task
 proyecto: App_Game_Tracker
-version: v3.0.0
+version: v3.0.5
 estado: completado
 fecha: 2026-08-27
 agent: Project-Planner
-tags: [tareas, checklist, v3.0.0, sqlite, steam-api, games-py, cover-picker, rawg-api, open-source, devops, backend, frontend, quality-gate]
+tags: [tareas, checklist, v3.0.5, sqlite, steam-api, howlongtobeat, rawg-api, platform-selector, sentinel-pattern, open-source, devops, backend, frontend, quality-gate]
 ---
 
-# ✅ Checklist de Tareas Técnicas: Migración a SQLite Local, Steam Sync & Portadas Híbridas (v3.0.0)
+# ✅ Checklist Maestro de Tareas Técnicas (v3.0.5)
 
-Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados.
-
----
-
-## 🗄️ 1. Infraestructura de Datos SQLite Local, Selector de Archivos & Normalización
-- [x] `(Backend-Architect)` Añadir dependencias `sqflite: ^2.3.2`, `sqflite_common_ffi: ^2.3.2+1`, `path_provider: ^2.1.2`, `path: ^1.9.0`, `file_picker: ^8.0.0` y `uuid: ^4.3.3` a `pubspec.yaml`.
-- [x] `(Backend-Architect)` Crear `StringNormalizer` (`lib/services/string_normalizer.dart`) replicando `limpiar_nombre(n)` de `games.py` y `similar(a, b)` con similitud difusa `>= 0.90`.
-- [x] `(Backend-Architect)` Crear singleton `DatabaseService` (`lib/services/database_service.dart`) con detección de entorno FFI para Windows Desktop y nativo para Android.
-- [x] `(Backend-Architect)` Definir esquema DDL de tabla `games` con campos canónicos (`id`, `title`, `cover_url`, `status`, `platform`, `hours_played`, `genres`, `rating`, `hltb_main`, `hltb_completionist`, `summary`, `link`, `start_date`, `completed_date`, `steam_id`, `created_at`, `updated_at`).
-- [x] `(Backend-Architect)` Crear índices B-Tree en `steam_id`, `status`, `platform` y `title` para búsquedas en < 2 ms.
-- [x] `(Backend-Architect)` Refactorizar clase `Game` (`lib/models/game.dart`) reemplazando `notionPageId` por `id` (UUID) e implementando `toSqliteMap()`, `fromSqliteMap()`, `toJson()`, `fromJson()` y getter retrocompatible `notionPageId`.
-- [x] `(Backend-Architect)` Implementar métodos CRUD completos (`getAllGames`, `getGameById`, `insertGame`, `updateGame`, `deleteGame`, `batchUpsertGames`, `getGameCount`, `getTotalHours`, `vacuum`).
+Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados a lo largo de todas las iteraciones.
 
 ---
 
-## 🎮 2. Portabilidad de Lógica de Steam de `games.py` a Dart
+## 🗄️ 1. Infraestructura de Datos SQLite Local-First & Modelos (v3.0.0)
+- [x] `(Backend-Architect)` Añadir dependencias SQLite (`sqflite`, `sqflite_common_ffi`, `path_provider`, `path`, `file_picker`, `uuid`) en `pubspec.yaml`.
+- [x] `(Backend-Architect)` Crear singleton `DatabaseService` (`lib/services/database_service.dart`) con soporte dual FFI (Windows) y nativo (Android).
+- [x] `(Backend-Architect)` Definir esquema DDL de tabla `games` con campos canónicos e índices B-Tree en `steam_id`, `status`, `platform` y `title` para consultas en < 2 ms.
+- [x] `(Backend-Architect)` Refactorizar clase `Game` (`lib/models/game.dart`) con serialización `toSqliteMap()` y deserialización `fromSqliteMap()`.
+- [x] `(Backend-Architect)` Implementar operaciones CRUD completas y comando de mantenimiento en caliente `vacuum()`.
+
+---
+
+## 🎮 2. Integración y Sincronización con Steam Web API (v3.0.0)
 - [x] `(Backend-Architect)` Crear servicio `SteamService` (`lib/services/steam_service.dart`).
-- [x] `(Backend-Architect)` Implementar consulta dual a Steam Web API: `GetOwnedGames` (juegos propios) y `GetRecentlyPlayedGames` (juegos de **Family Sharing** y horas recientes).
-- [x] `(Backend-Architect)` Implementar método `resolveVanityUrl(apiKey, vanityUrl)` para convertir nombres de usuario personalizados en SteamID64 (`ISteamUser/ResolveVanityURL`).
-- [x] `(Backend-Architect)` Implementar el filtro estricto de 30 minutos (`playtimeHours >= 0.5`) de `games.py`.
-- [x] `(Backend-Architect)` Implementar el algoritmo de emparejamiento tri-fase:
-  - Intento 1: Coincidencia por `steam_id` indexado.
-  - Intento 2: Coincidencia exacta por nombre limpio (`StringNormalizer.cleanTitle`).
-  - Intento 3: Coincidencia por similitud difusa (`similarity > 0.90`).
-- [x] `(Backend-Architect)` Implementar reglas de creación automática: estado `"Jugado"` si horas > 1h, sino `"Por Jugar"`, plataforma `"PC"`, y `fecha_inicio = hoy` si horas > 0.
-- [x] `(Backend-Architect)` Implementar reglas de actualización y **Auto-Culminación por HLTB**: si `horas >= hltb_main`, cambiar estado a `"Jugado"`, registrar `fecha_culminacion = hoy`, y proteger contra alteraciones si ya estaba en `ESTADOS_FINALES`.
-- [x] `(Backend-Architect)` Retornar reporte de sincronización estructurado (juegos actualizados, creados, Family Sharing y auto-culminados).
+- [x] `(Backend-Architect)` Implementar consulta dual a Steam Web API: `GetOwnedGames` (biblioteca propia) y `GetRecentlyPlayedGames` (juegos de **Family Sharing**).
+- [x] `(Backend-Architect)` Implementar resolución de Vanity URL a SteamID64 (`ISteamUser/ResolveVanityURL`).
+- [x] `(Backend-Architect)` Implementar filtro de ruido de 30 minutos (`playtimeHours >= 0.5`).
+- [x] `(Backend-Architect)` Implementar matching tri-fase: Steam ID $\rightarrow$ Nombre limpio $\rightarrow$ Similitud difusa con `StringNormalizer` ($> 0.90$).
+- [x] `(Backend-Architect)` Implementar auto-culminación por HLTB al superar las horas de la historia principal.
 
 ---
 
-## 🔍 3. Servicio de Enriquecimiento de Metadatos (`rellenar_metadata`)
-- [x] `(Backend-Architect)` Crear servicio `MetadataService` (`lib/services/metadata_service.dart`).
-- [x] `(Backend-Architect)` Implementar consulta a RAWG API (`search`, `page_size: 1`) para extraer carátulas en HD (`background_image`) y géneros principales cuando falten en un juego.
-- [x] `(Backend-Architect)` Implementar consulta a Wikipedia API (`es.wikipedia.org` y `en.wikipedia.org`) para auto-rellenar el enlace de referencia canónico.
-- [x] `(Backend-Architect)` Integrar consulta de tiempos HLTB (Main Story y Completionist).
+## 🧹 3. Purga de Legado & Límites Defensivos de Memoria (v3.0.1)
+- [x] `(Backend-Architect)` Eliminar definitivamente el getter heredado `notionPageId` en `Game`.
+- [x] `(Frontend-UI)` Migrar todas las etiquetas Hero, `ValueKey` en animaciones Stagger y referencias de lista a `game.id`.
+- [x] `(Backend-Architect)` Implementar límites defensivos de variables: títulos (255 chars), resúmenes (2000 chars), URLs (2048 chars), géneros (20x50 chars) y horas (0 a 99,999).
 
 ---
 
-## 🎨 4. Capa de Presentación & UI/UX (Frontend - Preservación Visual & Portadas Híbridas)
-- [x] `(Frontend-UI)` Preservar al 100% el diseño visual, componentes, colores Zinc/Crimson, tipografías y vistas existentes sin alteraciones estéticas.
-- [x] `(Frontend-UI)` Modificar `main.dart` para inicializar `DatabaseService` y arrancar directamente en `DashboardScreen` con 0 ms de espera.
-- [x] `(Frontend-UI)` Conectar `DashboardScreen` con `DatabaseService.getAllGames()`, eliminando dependencias de red de Notion.
-- [x] `(Frontend-UI)` Reemplazar botón de sincronización en AppBar por botón animado de **"Sincronizar Steam"** manteniendo la misma posición y estilo visual.
-- [x] `(Frontend-UI)` Crear widget universal `AppCoverImage` (`lib/widgets/app_cover_image.dart`) que detecta y renderiza tanto URLs web (`CachedNetworkImage`) como imágenes locales (`Image.file`).
-- [x] `(Frontend-UI)` Modificar `GameDetailScreen` para implementar el selector híbrido de portadas:
-  - Campo de texto para pegar URL web directa (`https://...`).
-  - Botón para elegir archivo desde la galería de fotos en Android o explorador de Windows (`file_picker`), con copia persistente en `covers/cover_{id}_{timestamp}.png`.
-  - Persistencia de guardado y eliminación en `DatabaseService`.
-- [x] `(Frontend-UI)` Adaptar `SearchScreen` para insertar juegos directamente en SQLite local al seleccionarlos desde el buscador de RAWG API.
-- [x] `(Frontend-UI)` Adaptar `AnalyticsScreen` para calcular métricas directamente de SQLite.
-- [x] `(Frontend-UI)` Rediseñar `SettingsScreen` conservando la estética actual:
-  - Panel de control de **Base de Datos Local (SQLite)** con conteo de juegos, horas totales, optimización (Vacuum) y ruta del archivo `.db`.
-  - Panel de **Integración Steam** con inputs para API Key y SteamID, resolución de Vanity URL, botón de prueba y botón de sincronización directa.
-  - Panel de **Búsqueda RAWG** con API Key.
-  - Panel de **Copia de Seguridad JSON** con selector de explorador y botón de carga de dataset de prueba.
-  - Sección oficial de autoría **Victor Engineer** con enlace canónico a `https://victorengineer.fyi`.
+## ⏱️ 4. Servicio Nativo HowLongToBeat (`HltbService`) (v3.0.2)
+- [x] `(Backend-Architect)` Crear `HltbService` (`lib/services/hltb_service.dart`) con cliente HTTP directo contra `/api/search/site/init` y `/api/search/site`.
+- [x] `(Backend-Architect)` Implementar extracción y conversión de segundos a horas para Historia Principal y 100% Completista.
+- [x] `(Backend-Architect)` Integrar gestión de tokens de seguridad (`x-auth-token`, `x-hp-key`, `x-hp-val`) y reintentos automáticos.
+- [x] `(Frontend-UI)` Añadir botón interactivo **"Buscar en HLTB"** con indicador de carga en `GameDetailScreen`.
+- [x] `(Frontend-UI)` Añadir acción masiva **"Buscar Metadatos HLTB en mi Biblioteca"** en `SettingsScreen` con reporte en diálogo modal.
+- [x] `(Backend-Architect)` Integrar consulta de HLTB durante la sincronización de Steam para juegos sin estimación.
 
 ---
 
-## 💾 5. Servicio de Respaldo, Portabilidad JSON & Dataset de Prueba
-- [x] `(Backend-Architect)` Crear dataset de prueba `sample_games_library.json` con catálogo variado y realista de juegos para importación inmediata.
-- [x] `(Backend-Architect)` Actualizar `BackupService` (`lib/services/backup_service.dart`) para exportar directamente desde SQLite a un archivo JSON limpio y legible en Descargas.
-- [x] `(Backend-Architect)` Implementar importador híbrido en `BackupService` capaz de restaurar tanto el nuevo formato JSON v3.0 como copias de seguridad previas de Notion (v2.x).
+## 🌐 5. Géneros RAWG Ilimitados & Enlaces Oficiales de Wikipedia (v3.0.3)
+- [x] `(Frontend-UI)` Remover filtros de lista cerrada en `SearchScreen` para capturar **todos** los géneros devueltos por RAWG.
+- [x] `(Backend-Architect)` Reestructurar `MetadataService.searchWikipedia` con `Uri.https`, sanitización de símbolos (`™`, `®`, `©`) y cabecera oficial `User-Agent: GameTracker/3.0`.
+- [x] `(Frontend-UI)` Automatizar asignación de enlace de Wikipedia al guardar juegos desde el buscador.
+- [x] `(Backend-Architect)` Asignar géneros RAWG y enlaces de Wikipedia durante la sincronización con Steam.
+- [x] `(Frontend-UI)` Añadir botón de acción rápida de Wikipedia (`Icons.travel_explore_rounded`) en `GameDetailScreen`.
+- [x] `(Frontend-UI)` Añadir botón de acción masiva **"Sincronizar Géneros, Portadas y Wikipedia"** en `SettingsScreen`.
 
 ---
 
-## 🚀 6. Publicación Open Source, Documentación & CI/CD
-- [x] `(DevOps-Engineer)` Redactar `README.md` maestro de nivel profesional en la raíz del repositorio con identidad de marca personal Victor Engineer ([victorengineer.fyi](https://victorengineer.fyi)), badges, arquitectura y guía paso a paso para obtener claves de RAWG y Steam.
-- [x] `(DevOps-Engineer)` Crear archivo `LICENSE` con la licencia de código abierto MIT.
-- [x] `(DevOps-Engineer)` Crear workflow `.github/workflows/release.yml` con activación **exclusiva en tags (`v*`)** (sin ejecutarse en push a `main`) para compilar Windows x64 ZIP y APK Android firmado.
-- [x] `(DevOps-Engineer)` Desactivar el antiguo workflow `games.yml`.
+## 🎯 6. Selector Visual de Plataformas con Detección Automática (v3.0.4)
+- [x] `(Frontend-UI)` Eliminar el dropdown vertical que desbordaba la pantalla en `_promptGameDetails`.
+- [x] `(Backend-Architect)` Extraer las plataformas oficiales del juego desde `rawgGame['platforms']` y normalizarlas con `_canonicalPlatform`.
+- [x] `(Frontend-UI)` Implementar selector basado en **Chips interactivos con logotipos de fabricantes** (`PlatformHelper`).
+- [x] `(Frontend-UI)` Añadir botón conmutador **"+ Otras plataformas"** para acceder al catálogo global.
+- [x] `(Frontend-UI)` Restringir altura máxima de menús desplegables (`menuMaxHeight: 220`) y reorganizar ergonómicamente el formulario.
 
 ---
 
-## 📋 7. Auditoría de Calidad & Quality Gate (Audit)
-- [x] `(Systems-Auditor)` Pruebas unitarias implementadas para `StringNormalizer` (`string_normalizer_test.dart`) y modelo `Game` (`game_model_test.dart`).
-- [x] `(Systems-Auditor)` Validar que las transacciones y consultas SQLite se ejecuten en < 5 ms en Windows y Android.
-- [x] `(Systems-Auditor)` Validar renderizado correcto tanto de portadas remotas como de fotos locales de la galería en `DashboardScreen` y `GameDetailScreen` con `AppCoverImage`.
-- [x] `(Systems-Auditor)` Validar precisión de `StringNormalizer` y fuzzy matching con juegos con nombres complejos.
-- [x] `(Systems-Auditor)` Validar consistencia y robustez de la importación y exportación de archivos JSON.
-- [x] `(Systems-Auditor)` Generar y archivar el reporte formal de auditoría (`audit_report.md`) con aprobación para el pase a producción.
+## 🛠️ 7. CRUD Completo con Patrón Sentinel & Borrado de Enlaces (v3.0.5)
+- [x] `(Backend-Architect)` Implementar el patrón `_sentinel` en `Game.copyWith` para soportar asignación explícita de `null` en propiedades opcionales (`link`, `coverUrl`, `summary`, `rating`).
+- [x] `(Frontend-UI)` Añadir botón interactivo de borrado rápido (`Icons.clear_rounded`) en el campo de enlace de Wikipedia en `GameDetailScreen`.
+- [x] `(Backend-Architect)` Validar que `DatabaseService.updateGame` guarde exitosamente valores `NULL` en la base de datos SQLite.
+- [x] `(Frontend-UI)` Permitir restablecer la calificación a 'Sin calificar' (`NULL`).
+- [x] `(Systems-Auditor)` Añadir prueba unitaria en `game_model_test.dart` validando el borrado de enlaces y portadas mediante `copyWith(link: null)`.
+
+---
+
+## 🚀 8. Seguridad, CI/CD Automatizado & Documentación Open Source
+- [x] `(DevOps-Engineer)` Actualizar `README.md` con la versión final v3.0.5 y enlaces oficiales a [victorengineer.fyi](https://victorengineer.fyi).
+- [x] `(DevOps-Engineer)` Proteger workflow `.github/workflows/sync-docs.yml` agregando `if: github.repository == 'victorengineer-dev/App-Game-Tracker'`.
+- [x] `(DevOps-Engineer)` Blindar `.gitignore` con exclusiones de bases de datos locales (`*.db`, `*.sqlite`), backups JSON y archivos `.env`.
+- [x] `(DevOps-Engineer)` Verificar pipeline de releases `.github/workflows/release.yml` en tags (`v*`) para compilar Windows x64 ZIP y APK firmado permanente.
+- [x] `(Project-Planner)` Actualizar todos los artefactos del proyecto al estado v3.0.5.
