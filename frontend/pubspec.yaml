@@ -1,5 +1,5 @@
-name: Rastreador_de_Entretenimiento
-description: "Rastreador de Entretenimiento Next Level"
+name: tracker_app
+description: "Rastreador de Entretenimiento Personal"
 publish_to: 'none'
 
 version: 2.8.4+1
