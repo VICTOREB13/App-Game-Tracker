@@ -45,14 +45,27 @@ jobs:
             echo "✅ Iconos Victor Engineer instalados en mipmap de Android"
           fi
 
+      - name: Configurar Firma Criptográfica Permanente (Keystore)
+        run: |
+          mkdir -p ~/.android
+          cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+          echo "✅ Keystore de firma permanente configurado en ~/.android/debug.keystore"
+
       - name: Restaurar dependencias
         working-directory: ./frontend
         run: flutter pub get
 
+      - name: Extraer Versión de pubspec.yaml
+        id: app_version
+        working-directory: ./frontend
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1 | tr -d ' ')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Versión detectada para APK: $VERSION"
 
       - name: Compilar APK (Fat APK)
         working-directory: ./frontend
-        run: flutter build apk --release --build-name=1.0.0 --build-number=${{ github.run_number }}
+        run: flutter build apk --release --build-name=${{ steps.app_version.outputs.VERSION }} --build-number=${{ github.run_number }}
 
       - name: Subir APK al Artifact
         uses: actions/upload-artifact@v4

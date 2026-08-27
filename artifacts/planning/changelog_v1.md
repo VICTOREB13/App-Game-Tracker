@@ -19,9 +19,11 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - Creado `app_icon.ico` nativo multi-resolución (16x16, 32x32, 48x48, 64x64, 128x128, 256x256) a partir del vector oficial [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg).
   - Integrado paso de instalación en el pipeline de CI (`build_windows.yml`) que reemplaza automáticamente el icono genérico de Flutter en `windows/runner/resources/app_icon.ico`.
   - Ahora `tracker_app.exe` en el Explorador de Windows, la Barra de Tareas y la ventana principal exhibe el logotipo oficial rojo con las siglas blancas **VE** de Victor Engineer.
-- **Iconos Nativos de Lanzador para Android (APK):**
-  - Generados iconos de alta definición para todas las densidades de pantalla (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
-  - Integrado paso de copia en el pipeline de CI (`build_apk.yml`) para que el APK generado se instale con el icono oficial de Victor Engineer en el escritorio y cajón de apps de Android.
+- **Firma Criptográfica Permanente de Android (`release.keystore`):**
+  - Resuelto el error *"Conflicto con un paquete ya existente"* al intentar actualizar la app en Android sin desinstalarla.
+  - El error ocurría porque cada compilación en GitHub Actions se ejecuta en una máquina virtual efímera nueva, generando una clave temporal `debug.keystore` con una huella digital criptográfica (SHA-256) diferente en cada ejecución. Como Android prohíbe actualizar un paquete con firmas distintas por seguridad, bloqueaba la actualización.
+  - Se generó y fijó un keystore permanente de larga duración (validez de 27 años, hasta 2054) en [`frontend/assets/keystore/release.keystore`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/keystore/release.keystore), inyectado en `~/.android/debug.keystore` durante el build.
+  - Se dinamizó `--build-name` para extraer automáticamente la versión real desde `pubspec.yaml` (v2.8.2) y un `versionCode` estrictamente creciente (`github.run_number`), permitiendo actualizaciones directas con 1 solo toque de aquí en adelante.
 
 ## [2.8.1] - 2026-08-27 (Mobile Ergonomics, Dual-Row Filter Architecture & Visual Collision Fixes)
 

@@ -138,6 +138,8 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Generar suite de iconos de lanzador para Android en todas las resoluciones mipmap (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
 - [x] `(DevOps-Engineer)` Actualizar pipeline `build_windows.yml` para inyectar `app_icon.ico` en `windows/runner/resources/app_icon.ico` antes de compilar el binario release.
 - [x] `(DevOps-Engineer)` Actualizar pipeline `build_apk.yml` para copiar los iconos mipmap en `android/app/src/main/res/` antes de compilar el APK.
+- [x] `(DevOps-Engineer)` Generar keystore de firma criptográfica permanente (`release.keystore`, RSA 2048, SHA256) con validez hasta 2054.
+- [x] `(DevOps-Engineer)` Actualizar `build_apk.yml` para usar el keystore permanente e inyectar dinámicamente la versión (`build-name`) desde `pubspec.yaml`, resolviendo el error "Conflicto con un paquete ya existente" al actualizar en Android.
 - [x] `(Systems-Auditor)` Validar que `tracker_app.exe` y el APK de Android exhiban la identidad oficial de Victor Engineer sin depender del icono por defecto de Flutter.
 
 
