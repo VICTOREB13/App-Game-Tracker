@@ -1,16 +1,36 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento
-version: v2.6.0
+version: v2.7.0
 estado: activo
 fecha: 2026-08-26
-tags: [proyecto, changelog, versiones, offline-cache, dual-view, pagination, multi-year, gamification, social-card, victor-engineer]
+tags: [proyecto, changelog, versiones, light-mode, dark-mode, theme-manager, settings, anti-slop, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.7.0] - 2026-08-26 (Crisp Zinc Light Mode & Cross-App Theme Architecture)
+
+### Added & Polished
+- **Modo Claro "Crisp Zinc" (Light Mode):**
+  - Integración completa de un tema claro elegante y de alto contraste (fondo `#FAFAFA`, superficies `#FFFFFF`, bordes sutiles `#E4E4E7`, texto `#09090B` y acento rojo Victor Engineer `#DC2626`).
+  - Mantenimiento idéntico e intacto del **Modo Oscuro (Obsidian Zinc `#09090B`)**.
+  - Toggle directo de 1 clic en la barra superior del `DashboardScreen` con iconos animados de sol/luna.
+  - Selector de tema de 3 opciones en `SettingsScreen`: **Oscuro**, **Claro** y **Sistema** (sigue el SO).
+  - Persistencia automática de la preferencia en `SharedPreferences` (`preferred_theme_mode`).
+- **Arquitectura Centralizada de Color (`AppColors` & `ThemeManager`):**
+  - Adaptación transversal en `DashboardScreen`, `AnalyticsScreen`, `GameDetailScreen`, `SearchScreen`, `SettingsScreen` y `SetupScreen`.
+  - Degradados adaptativos, filtros, chips de géneros y diálogos que reaccionan instantáneamente sin reiniciar la app.
+- **Renovación Completa de `SettingsScreen`:**
+  - Sustitución de colores cian/magenta heredados por la paleta oficial Victor Engineer.
+  - Tarjetas de estado de conexión, gestión de clave RAWG API, vaciado de caché y metadatos de versión.
+- **Refinamiento de Búsqueda RAWG (`SearchScreen`):**
+  - Diálogo modal y acordeón de géneros con estilos acordes al tema activo y acento rojo.
+
+---
 
 ## [2.6.0] - 2026-08-26 (Definitive Release: Offline Cache, Dual View, Pagination & Gamification)
 
@@ -96,3 +116,11 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 - Modal avanzado de adición con DatePicker, horas iniciales y selector desplegable de géneros.
 - Buscador en tiempo real en la biblioteca dentro del Dashboard.
 - Soporte y workflow de compilación para Windows PC (Desktop).
+
+---
+
+## [2.0.0] - 2026-07-19
+### Added
+- Migración completa a Notion API directa con rate limiter y caché en memoria.
+- Eliminación de Supabase.
+- Rediseño visual "Arcade Noir".

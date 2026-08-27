@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/notion_service.dart';
+import '../services/theme_manager.dart';
 import 'dashboard.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -109,7 +110,7 @@ class _SetupScreenState extends State<SetupScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -156,7 +157,7 @@ class _SetupScreenState extends State<SetupScreen>
                         style: GoogleFonts.outfit(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFAFAFA),
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                       TextSpan(
@@ -207,22 +208,22 @@ class _SetupScreenState extends State<SetupScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121215),
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF27272A)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline,
-                          size: 16, color: Color(0xFF71717A)),
+                      Icon(Icons.info_outline,
+                          size: 16, color: AppColors.textSecondary(context)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'El Database ID se encuentra en la URL de tu base de datos en Notion. Asegúrate de compartir la DB con tu integración.',
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: const Color(0xFFA1A1AA),
+                            color: AppColors.textSecondary(context),
                             height: 1.4,
                           ),
                         ),
@@ -322,12 +323,12 @@ class _SetupScreenState extends State<SetupScreen>
       controller: controller,
       style: GoogleFonts.inter(
         fontSize: 14,
-        color: const Color(0xFFFAFAFA),
+        color: AppColors.textPrimary(context),
       ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF71717A)),
+        prefixIcon: Icon(icon, color: AppColors.textSecondary(context)),
         suffixIcon: isValidating
             ? const Padding(
                 padding: EdgeInsets.all(12),

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/game.dart';
 import '../services/notion_service.dart';
 import '../services/notion_parser.dart';
+import '../services/theme_manager.dart';
 import 'search_screen.dart';
 import 'settings_screen.dart';
 import 'game_detail_screen.dart';
@@ -615,7 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           style: GoogleFonts.outfit(
                             fontSize: 19,
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFFFAFAFA),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         TextSpan(
@@ -637,7 +638,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               _isSearchActive ? Icons.close_rounded : Icons.search_rounded,
               color: _isSearchActive
                   ? const Color(0xFFDC2626)
-                  : const Color(0xFFFAFAFA),
+                  : AppColors.textPrimary(context),
             ),
             tooltip: _isSearchActive ? 'Cerrar búsqueda' : 'Buscar juegos',
             onPressed: () {
@@ -654,6 +655,20 @@ class _DashboardScreenState extends State<DashboardScreen>
             },
           ),
           if (!_isSearchActive) ...[
+            IconButton(
+              icon: Icon(
+                Theme.of(context).brightness == Brightness.dark
+                    ? Icons.light_mode_rounded
+                    : Icons.dark_mode_rounded,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFF59E0B)
+                    : const Color(0xFF71717A),
+              ),
+              tooltip: Theme.of(context).brightness == Brightness.dark
+                  ? 'Cambiar a Modo Claro'
+                  : 'Cambiar a Modo Oscuro',
+              onPressed: () => ThemeManager.instance.toggleTheme(),
+            ),
             IconButton(
               icon: _isRefreshing
                   ? const SizedBox(
@@ -1610,19 +1625,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                 height: 28,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121215),
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF27272A)),
+                  border: Border.all(color: AppColors.border(context)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     value: _pageSize,
-                    dropdownColor: const Color(0xFF18181B),
-                    icon: const Icon(Icons.arrow_drop_down_rounded,
-                        color: Color(0xFFA1A1AA), size: 18),
+                    dropdownColor: AppColors.surface(context),
+                    icon: Icon(Icons.arrow_drop_down_rounded,
+                        color: AppColors.textSecondary(context), size: 18),
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: const Color(0xFFFAFAFA),
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w600,
                     ),
                     items: const [
@@ -1649,8 +1664,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 IconButton(
                   icon: const Icon(Icons.chevron_left_rounded, size: 20),
                   color: _currentPage > 1
-                      ? const Color(0xFFFAFAFA)
-                      : const Color(0xFF52525B),
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textMuted(context),
                   onPressed: _currentPage > 1
                       ? () => setState(() => _currentPage--)
                       : null,
@@ -1663,9 +1678,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF18181B),
+                    color: AppColors.surfaceSubtle(context),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF27272A)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Text(
                     '$_currentPage / $_totalPages',
@@ -1679,8 +1694,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 IconButton(
                   icon: const Icon(Icons.chevron_right_rounded, size: 20),
                   color: _currentPage < _totalPages
-                      ? const Color(0xFFFAFAFA)
-                      : const Color(0xFF52525B),
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textMuted(context),
                   onPressed: _currentPage < _totalPages
                       ? () => setState(() => _currentPage++)
                       : null,
@@ -1800,13 +1815,13 @@ class _GameListRowState extends State<_GameListRow> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: _isHovered
-                ? const Color(0xFF18181B)
-                : const Color(0xFF121215),
+                ? AppColors.surfaceSubtle(context)
+                : AppColors.surface(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _isHovered
                   ? const Color(0xFFDC2626).withOpacity(0.5)
-                  : const Color(0xFF27272A),
+                  : AppColors.border(context),
               width: 1,
             ),
             boxShadow: [
@@ -1834,22 +1849,24 @@ class _GameListRowState extends State<_GameListRow> {
                           placeholder: (_, __) => Container(
                             width: 36,
                             height: 48,
-                            color: const Color(0xFF27272A),
+                            color: AppColors.border(context),
                           ),
                           errorWidget: (_, __, ___) => Container(
                             width: 36,
                             height: 48,
-                            color: const Color(0xFF27272A),
-                            child: const Icon(Icons.gamepad_rounded,
-                                size: 16, color: Color(0xFF71717A)),
+                            color: AppColors.border(context),
+                            child: Icon(Icons.gamepad_rounded,
+                                size: 16,
+                                color: AppColors.textSecondary(context)),
                           ),
                         )
                       : Container(
                           width: 36,
                           height: 48,
-                          color: const Color(0xFF27272A),
-                          child: const Icon(Icons.gamepad_rounded,
-                              size: 16, color: Color(0xFF71717A)),
+                          color: AppColors.border(context),
+                          child: Icon(Icons.gamepad_rounded,
+                              size: 16,
+                              color: AppColors.textSecondary(context)),
                         ),
                 ),
               ),
@@ -1870,7 +1887,7 @@ class _GameListRowState extends State<_GameListRow> {
                         fontWeight: FontWeight.w600,
                         color: _isHovered
                             ? const Color(0xFFDC2626)
-                            : const Color(0xFFFAFAFA),
+                            : AppColors.textPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -2036,12 +2053,12 @@ class _GameCardState extends State<_GameCard> {
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             decoration: BoxDecoration(
-              color: const Color(0xFF121215),
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: _isHovered
                     ? const Color(0xFFDC2626).withOpacity(0.7)
-                    : const Color(0xFF27272A),
+                    : AppColors.border(context),
                 width: _isHovered ? 1.2 : 1,
               ),
               boxShadow: [
@@ -2052,10 +2069,16 @@ class _GameCardState extends State<_GameCard> {
                     spreadRadius: 1,
                     offset: const Offset(0, 6),
                   )
-                else
+                else if (Theme.of(context).brightness == Brightness.dark)
                   BoxShadow(
                     color: Colors.black.withOpacity(0.3),
                     blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                else
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
               ],
@@ -2116,11 +2139,14 @@ class _GameCardState extends State<_GameCard> {
                         right: 0,
                         height: 44,
                         child: Container(
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [Colors.transparent, Color(0xFF121215)],
+                              colors: [
+                                Colors.transparent,
+                                AppColors.surface(context)
+                              ],
                             ),
                           ),
                         ),
@@ -2207,7 +2233,7 @@ class _GameCardState extends State<_GameCard> {
                         style: GoogleFonts.outfit(
                           color: _isHovered
                               ? const Color(0xFFDC2626)
-                              : const Color(0xFFFAFAFA),
+                              : AppColors.textPrimary(context),
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
+import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
 
 class AnalyticsScreen extends StatefulWidget {
@@ -118,15 +119,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF121215),
+        backgroundColor: AppColors.surface(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF27272A)),
+          side: BorderSide(color: AppColors.border(context)),
         ),
         title: Text(
           'Meta Anual $_selectedYear',
           style: GoogleFonts.outfit(
-            color: const Color(0xFFFAFAFA),
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -137,7 +138,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             Text(
               '¿Cuántos juegos te propones completar durante el año $_selectedYear?',
               style: GoogleFonts.inter(
-                color: const Color(0xFFA1A1AA),
+                color: AppColors.textSecondary(context),
                 fontSize: 13,
               ),
             ),
@@ -149,16 +150,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFFFAFAFA),
+                color: AppColors.textPrimary(context),
               ),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFF18181B),
+                fillColor: AppColors.surfaceSubtle(context),
                 suffixText: 'juegos',
-                suffixStyle: GoogleFonts.inter(color: const Color(0xFFA1A1AA)),
+                suffixStyle:
+                    GoogleFonts.inter(color: AppColors.textSecondary(context)),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFF27272A)),
+                  borderSide: BorderSide(color: AppColors.border(context)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -173,7 +175,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancelar',
-              style: GoogleFonts.inter(color: const Color(0xFFA1A1AA)),
+              style: GoogleFonts.inter(color: AppColors.textSecondary(context)),
             ),
           ),
           ElevatedButton(
@@ -204,9 +206,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF09090B),
-        body: Center(
+      return Scaffold(
+        backgroundColor: AppColors.background(context),
+        body: const Center(
           child: CircularProgressIndicator(color: Color(0xFFDC2626)),
         ),
       );
@@ -273,15 +275,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         : '0';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF09090B),
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF09090B),
+        backgroundColor: AppColors.background(context),
         elevation: 0,
         title: Text(
           'Estadísticas & Analíticas',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.bold,
-            color: const Color(0xFFFAFAFA),
+            color: AppColors.textPrimary(context),
           ),
         ),
       ),
@@ -327,7 +329,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF121215),
+                  color: AppColors.surface(context),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: const Color(0xFFDC2626).withOpacity(0.35),
@@ -366,7 +368,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFAFAFA),
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                           ],
@@ -379,7 +381,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             IconButton(
                               icon: const Icon(Icons.chevron_left_rounded,
                                   size: 20),
-                              color: const Color(0xFFA1A1AA),
+                              color: AppColors.textSecondary(context),
                               onPressed: () {
                                 setState(() => _selectedYear--);
                                 _loadYearGoal();
@@ -393,24 +395,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF18181B),
+                                color: AppColors.surfaceSubtle(context),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                    color: const Color(0xFF27272A)),
+                                    color: AppColors.border(context)),
                               ),
                               child: Text(
                                 '$_selectedYear',
                                 style: GoogleFonts.outfit(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFAFAFA),
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                             ),
                             IconButton(
                               icon: const Icon(Icons.chevron_right_rounded,
                                   size: 20),
-                              color: const Color(0xFFA1A1AA),
+                              color: AppColors.textSecondary(context),
                               onPressed: () {
                                 setState(() => _selectedYear++);
                                 _loadYearGoal();
@@ -467,7 +469,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           '${completedInSelectedYear.length} de $_annualGoal juegos completados',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: const Color(0xFFFAFAFA),
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -487,7 +489,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       child: LinearProgressIndicator(
                         value: yearProgress,
                         minHeight: 8,
-                        backgroundColor: const Color(0xFF18181B),
+                        backgroundColor: AppColors.surfaceSubtle(context),
                         valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFFDC2626)),
                       ),
@@ -504,7 +506,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             fontSize: 11,
                             color: completedInSelectedYear.length >= _annualGoal
                                 ? const Color(0xFF10B981)
-                                : const Color(0xFFA1A1AA),
+                                : AppColors.textSecondary(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -515,7 +517,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              color: const Color(0xFF71717A),
+                              color: AppColors.textMuted(context),
                             ),
                           ),
                       ],
@@ -533,7 +535,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121215),
+                        color: AppColors.surface(context),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                             color: const Color(0xFFF59E0B).withOpacity(0.3)),
@@ -564,7 +566,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFAFAFA),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -572,7 +574,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             '${backlogGames.length} juegos por empezar',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFFA1A1AA),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -585,7 +587,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121215),
+                        color: AppColors.surface(context),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                             color: const Color(0xFF10B981).withOpacity(0.3)),
@@ -614,7 +616,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFFFAFAFA),
+                              color: AppColors.textPrimary(context),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -622,7 +624,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             '${statusData['Jugado'] ?? 0} de $totalGames terminados',
                             style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: const Color(0xFFA1A1AA),
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                         ],
@@ -639,7 +641,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFAFAFA),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -684,7 +686,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFAFAFA),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 16),
@@ -692,9 +694,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 height: 200,
                 child: totalGames == 0
                     ? Center(
-                        child: Text('Sin datos',
-                            style: GoogleFonts.inter(
-                                color: const Color(0xFFA1A1AA))))
+                        child: Text(
+                          'Sin datos',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      )
                     : PieChart(
                         PieChartData(
                           sectionsSpace: 3,
@@ -741,7 +747,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Text(
                         '${e.key} (${e.value})',
                         style: GoogleFonts.inter(
-                          color: const Color(0xFFA1A1AA),
+                          color: AppColors.textSecondary(context),
                           fontSize: 12,
                         ),
                       ),
@@ -757,7 +763,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFFAFAFA),
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               const SizedBox(height: 20),
@@ -765,9 +771,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 height: 260,
                 child: platformData.isEmpty
                     ? Center(
-                        child: Text('Sin datos',
-                            style: GoogleFonts.inter(
-                                color: const Color(0xFFA1A1AA))))
+                        child: Text(
+                          'Sin datos',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSecondary(context),
+                          ),
+                        ),
+                      )
                     : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: SizedBox(
@@ -799,7 +809,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                         child: Text(
                                           keys[value.toInt()],
                                           style: GoogleFonts.inter(
-                                            color: const Color(0xFFA1A1AA),
+                                            color: AppColors.textSecondary(
+                                                context),
                                             fontSize: 9,
                                           ),
                                         ),
@@ -870,7 +881,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFFAFAFA),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -878,10 +889,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF121215),
+                        color: AppColors.surface(context),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: const Color(0xFF27272A), width: 1),
+                          color: AppColors.border(context),
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -894,7 +907,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                             child: Text(
                               game.title,
                               style: GoogleFonts.inter(
-                                color: const Color(0xFFFAFAFA),
+                                color: AppColors.textPrimary(context),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -927,7 +940,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF121215),
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
@@ -946,7 +959,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               label,
               style: GoogleFonts.inter(
                 fontSize: 10,
-                color: const Color(0xFFA1A1AA),
+                color: AppColors.textSecondary(context),
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -969,7 +982,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF121215),
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
@@ -999,7 +1012,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               style: GoogleFonts.outfit(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFFFAFAFA),
+                color: AppColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 2),
@@ -1007,7 +1020,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               stat,
               style: GoogleFonts.inter(
                 fontSize: 10,
-                color: const Color(0xFFA1A1AA),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],

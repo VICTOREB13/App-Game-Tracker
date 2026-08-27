@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../services/notion_service.dart';
 import '../services/notion_parser.dart';
+import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -78,7 +79,7 @@ class _SearchScreenState extends State<SearchScreen> {
             'Configura tu RAWG API Key en Configuración para buscar juegos',
             style: GoogleFonts.inter(),
           ),
-          backgroundColor: const Color(0xFFFFBE0B),
+          backgroundColor: const Color(0xFFF59E0B),
         ),
       );
       return;
@@ -115,12 +116,11 @@ class _SearchScreenState extends State<SearchScreen> {
       for (var g in rawgGame['genres']) {
         final name = g['name']?.toString();
         if (name != null && name.isNotEmpty) {
-          // Normalize matching with Notion options if found
           final match = _allAvailableGenres.firstWhere(
             (gen) => gen.toLowerCase() == name.toLowerCase(),
-            orElse: () => name,
+            orElse: () => '',
           );
-          if (!selectedGenres.contains(match)) {
+          if (match.isNotEmpty && !selectedGenres.contains(match)) {
             selectedGenres.add(match);
           }
         }
@@ -133,13 +133,14 @@ class _SearchScreenState extends State<SearchScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return Dialog(
-              backgroundColor: const Color(0xFF141927),
+              backgroundColor: AppColors.surface(context),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Color(0xFF1C2237)),
+                side: BorderSide(color: AppColors.border(context)),
               ),
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 550, maxHeight: 680),
+                constraints:
+                    const BoxConstraints(maxWidth: 550, maxHeight: 680),
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -160,22 +161,26 @@ class _SearchScreenState extends State<SearchScreen> {
                                   placeholder: (_, __) => Container(
                                     width: 60,
                                     height: 80,
-                                    color: const Color(0xFF1C2237),
+                                    color: AppColors.surfaceSubtle(context),
                                   ),
                                   errorWidget: (_, __, ___) => Container(
                                     width: 60,
                                     height: 80,
-                                    color: const Color(0xFF1C2237),
-                                    child: const Icon(Icons.gamepad_rounded,
-                                        size: 24, color: Color(0xFF3A4060)),
+                                    color: AppColors.surfaceSubtle(context),
+                                    child: Icon(Icons.gamepad_rounded,
+                                        size: 24,
+                                        color:
+                                            AppColors.textSecondary(context)),
                                   ),
                                 )
                               : Container(
                                   width: 60,
                                   height: 80,
-                                  color: const Color(0xFF1C2237),
-                                  child: const Icon(Icons.gamepad_rounded,
-                                      size: 24, color: Color(0xFF3A4060)),
+                                  color: AppColors.surfaceSubtle(context),
+                                  child: Icon(Icons.gamepad_rounded,
+                                      size: 24,
+                                      color:
+                                          AppColors.textSecondary(context)),
                                 ),
                         ),
                         const SizedBox(width: 14),
@@ -185,8 +190,8 @@ class _SearchScreenState extends State<SearchScreen> {
                             children: [
                               Text(
                                 rawgGame['name'] ?? 'Juego',
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: const Color(0xFFF0F2F5),
+                                style: GoogleFonts.outfit(
+                                  color: AppColors.textPrimary(context),
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -199,7 +204,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     ? 'Lanzamiento: ${rawgGame['released']}'
                                     : 'Sin fecha de lanzamiento',
                                 style: GoogleFonts.inter(
-                                  color: const Color(0xFF6B7394),
+                                  color: AppColors.textSecondary(context),
                                   fontSize: 12,
                                 ),
                               ),
@@ -208,10 +213,10 @@ class _SearchScreenState extends State<SearchScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'HLTB estimado: ${rawgGame['playtime']}h',
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFF00F0FF),
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFDC2626),
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
@@ -221,7 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Divider(color: Color(0xFF1C2237)),
+                    Divider(color: AppColors.border(context)),
                     const SizedBox(height: 8),
 
                     // Scrollable form fields
@@ -235,19 +240,27 @@ class _SearchScreenState extends State<SearchScreen> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Estado',
-                                          style: GoogleFonts.inter(
-                                              color: const Color(0xFFA1A1AA),
-                                              fontSize: 12)),
+                                      Text(
+                                        'Estado',
+                                        style: GoogleFonts.inter(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       DropdownButtonFormField<String>(
                                         value: selectedStatus,
-                                        dropdownColor: const Color(0xFF18181B),
+                                        dropdownColor:
+                                            AppColors.surface(context),
                                         style: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            color: const Color(0xFFFAFAFA)),
+                                          fontSize: 13,
+                                          color:
+                                              AppColors.textPrimary(context),
+                                        ),
                                         items: _availableStatuses
                                             .map((s) => DropdownMenuItem(
                                                 value: s,
@@ -261,9 +274,20 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 () => selectedStatus = val);
                                           }
                                         },
-                                        decoration: const InputDecoration(
-                                          contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 10),
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: AppColors.surfaceSubtle(
+                                              context),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 12, vertical: 8),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            borderSide: BorderSide(
+                                                color: AppColors.border(
+                                                    context)),
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -272,43 +296,64 @@ class _SearchScreenState extends State<SearchScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Plataforma',
-                                          style: GoogleFonts.inter(
-                                              color: const Color(0xFFA1A1AA),
-                                              fontSize: 12)),
+                                      Text(
+                                        'Plataforma',
+                                        style: GoogleFonts.inter(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       DropdownButtonFormField<String>(
                                         value: selectedPlatform,
-                                        dropdownColor: const Color(0xFF18181B),
-                                        borderRadius: BorderRadius.circular(12),
+                                        dropdownColor:
+                                            AppColors.surface(context),
                                         style: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            color: const Color(0xFFFAFAFA)),
+                                          fontSize: 13,
+                                          color:
+                                              AppColors.textPrimary(context),
+                                        ),
                                         items: _availablePlatforms
-                                            .map((s) => DropdownMenuItem(
-                                                value: s,
+                                            .map((p) => DropdownMenuItem(
+                                                value: p,
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
-                                                    PlatformHelper.getIcon(s, size: 14),
-                                                    const SizedBox(width: 8),
-                                                    Text(s,
-                                                        style: GoogleFonts.inter(
-                                                            fontSize: 13)),
+                                                    PlatformHelper.getIcon(p,
+                                                        size: 14),
+                                                    const SizedBox(width: 6),
+                                                    Text(p,
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                                fontSize: 12)),
                                                   ],
                                                 )))
                                             .toList(),
                                         onChanged: (val) {
                                           if (val != null) {
-                                            setDialogState(
-                                                () => selectedPlatform = val);
+                                            setDialogState(() =>
+                                                selectedPlatform = val);
                                           }
                                         },
-                                        decoration: const InputDecoration(
-                                          contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 10),
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: AppColors.surfaceSubtle(
+                                              context),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 12, vertical: 8),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            borderSide: BorderSide(
+                                                color: AppColors.border(
+                                                    context)),
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -316,94 +361,76 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
 
-                            // Fecha de Inicio & Horas Jugadas
+                            // Horas & Fecha de Inicio
                             Row(
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Fecha de Inicio',
-                                          style: GoogleFonts.inter(
-                                              color: const Color(0xFFA1A1AA),
-                                              fontSize: 12)),
+                                      Text(
+                                        'Fecha de Inicio',
+                                        style: GoogleFonts.inter(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       InkWell(
                                         onTap: () async {
                                           final picked = await showDatePicker(
                                             context: context,
-                                            initialDate: selectedStartDate ??
-                                                DateTime.now(),
-                                            firstDate: DateTime(1980),
-                                            lastDate: DateTime.now()
-                                                .add(const Duration(days: 365)),
-                                            builder: (context, child) => Theme(
-                                              data: ThemeData.dark().copyWith(
-                                                colorScheme:
-                                                    const ColorScheme.dark(
-                                                  primary: Color(0xFFDC2626),
-                                                  surface: Color(0xFF121215),
-                                                ),
-                                              ),
-                                              child: child!,
-                                            ),
+                                            initialDate: DateTime.now(),
+                                            firstDate: DateTime(2000),
+                                            lastDate: DateTime(2100),
                                           );
                                           if (picked != null) {
                                             setDialogState(() =>
                                                 selectedStartDate = picked);
                                           }
                                         },
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 11),
+                                              horizontal: 12, vertical: 12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF141927),
+                                            color: AppColors.surfaceSubtle(
+                                                context),
                                             borderRadius:
-                                                BorderRadius.circular(12),
+                                                BorderRadius.circular(10),
                                             border: Border.all(
-                                                color: const Color(0xFF1C2237)),
+                                                color: AppColors.border(
+                                                    context)),
                                           ),
                                           child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
                                             children: [
-                                              Row(
-                                                children: [
-                                                  const Icon(
-                                                      Icons.calendar_today_rounded,
-                                                      size: 14,
-                                                      color: Color(0xFF00F0FF)),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    selectedStartDate == null
-                                                        ? 'Sin fecha'
-                                                        : DateFormat('dd/MM/yyyy')
-                                                            .format(
-                                                                selectedStartDate!),
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 12,
-                                                      color: selectedStartDate ==
-                                                              null
-                                                          ? const Color(0xFF6B7394)
-                                                          : const Color(
-                                                              0xFFF0F2F5),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (selectedStartDate != null)
-                                                GestureDetector(
-                                                  onTap: () => setDialogState(
-                                                      () => selectedStartDate =
-                                                          null),
-                                                  child: const Icon(
-                                                      Icons.close_rounded,
-                                                      size: 14,
-                                                      color: Color(0xFF6B7394)),
+                                              const Icon(
+                                                  Icons.calendar_today_rounded,
+                                                  size: 14,
+                                                  color: Color(0xFFDC2626)),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                selectedStartDate == null
+                                                    ? 'Sin fecha'
+                                                    : DateFormat('dd/MM/yyyy')
+                                                        .format(
+                                                            selectedStartDate!),
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: selectedStartDate ==
+                                                          null
+                                                      ? AppColors
+                                                          .textSecondary(
+                                                              context)
+                                                      : AppColors.textPrimary(
+                                                          context),
                                                 ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -414,25 +441,36 @@ class _SearchScreenState extends State<SearchScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text('Horas Jugadas',
-                                          style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
-                                              fontSize: 12)),
+                                      Text(
+                                        'Horas Jugadas',
+                                        style: GoogleFonts.inter(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: hoursController,
                                         keyboardType: TextInputType.number,
                                         style: GoogleFonts.inter(
-                                            fontSize: 13,
-                                            color: const Color(0xFFF0F2F5)),
-                                        decoration: const InputDecoration(
-                                          prefixIcon: Icon(Icons.timer_outlined,
-                                              size: 16,
-                                              color: Color(0xFF6B7394)),
-                                          contentPadding: EdgeInsets.symmetric(
-                                              horizontal: 12, vertical: 10),
+                                          fontSize: 13,
+                                          color:
+                                              AppColors.textPrimary(context),
+                                        ),
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(
+                                            Icons.timer_outlined,
+                                            size: 16,
+                                            color: AppColors.textSecondary(
+                                                context),
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 12, vertical: 10),
                                         ),
                                       ),
                                     ],
@@ -445,12 +483,13 @@ class _SearchScreenState extends State<SearchScreen> {
                             // Desplegable / Acordeón de Géneros
                             Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1C2237).withOpacity(0.5),
+                                color: AppColors.surfaceSubtle(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                    color: isGenreAccordionExpanded
-                                        ? const Color(0xFF00F0FF).withOpacity(0.4)
-                                        : const Color(0xFF1C2237)),
+                                  color: isGenreAccordionExpanded
+                                      ? const Color(0xFFDC2626).withOpacity(0.4)
+                                      : AppColors.border(context),
+                                ),
                               ),
                               clipBehavior: Clip.antiAlias,
                               child: Column(
@@ -471,38 +510,41 @@ class _SearchScreenState extends State<SearchScreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              const Icon(Icons.category_rounded,
+                                              const Icon(
+                                                  Icons.category_rounded,
                                                   size: 16,
-                                                  color: Color(0xFF00F0FF)),
+                                                  color: Color(0xFFDC2626)),
                                               const SizedBox(width: 8),
                                               Text(
                                                 'Géneros',
-                                                style: GoogleFonts.spaceGrotesk(
+                                                style: GoogleFonts.outfit(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w600,
                                                   color:
-                                                      const Color(0xFFF0F2F5),
+                                                      AppColors.textPrimary(
+                                                          context),
                                                 ),
                                               ),
-                                              const SizedBox(width: 8),
+                                              const SizedBox(width: 6),
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                         horizontal: 6,
-                                                        vertical: 2),
+                                                        vertical: 1),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFF00F0FF)
-                                                      .withOpacity(0.15),
+                                                  color:
+                                                      const Color(0xFFDC2626)
+                                                          .withOpacity(0.15),
                                                   borderRadius:
-                                                      BorderRadius.circular(6),
+                                                      BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
                                                   '${selectedGenres.length}',
                                                   style: GoogleFonts.inter(
-                                                    fontSize: 11,
+                                                    fontSize: 10,
                                                     fontWeight: FontWeight.bold,
                                                     color:
-                                                        const Color(0xFF00F0FF),
+                                                        const Color(0xFFDC2626),
                                                   ),
                                                 ),
                                               ),
@@ -510,24 +552,27 @@ class _SearchScreenState extends State<SearchScreen> {
                                           ),
                                           Icon(
                                             isGenreAccordionExpanded
-                                                ? Icons.keyboard_arrow_up_rounded
-                                                : Icons.keyboard_arrow_down_rounded,
-                                            color: const Color(0xFF6B7394),
+                                                ? Icons.keyboard_arrow_up
+                                                : Icons.keyboard_arrow_down,
                                             size: 20,
+                                            color: AppColors.textSecondary(
+                                                context),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
                                   if (isGenreAccordionExpanded) ...[
-                                    const Divider(
-                                        height: 1, color: Color(0xFF1C2237)),
+                                    Divider(
+                                        height: 1,
+                                        color: AppColors.border(context)),
                                     Padding(
                                       padding: const EdgeInsets.all(12),
                                       child: Wrap(
                                         spacing: 6,
                                         runSpacing: 6,
-                                        children: _allAvailableGenres.map((g) {
+                                        children:
+                                            _allAvailableGenres.map((g) {
                                           final isSelected =
                                               selectedGenres.contains(g);
                                           return FilterChip(
@@ -535,33 +580,30 @@ class _SearchScreenState extends State<SearchScreen> {
                                               g,
                                               style: GoogleFonts.inter(
                                                 fontSize: 11,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w600
-                                                    : FontWeight.normal,
                                                 color: isSelected
-                                                    ? const Color(0xFF0A0E1A)
-                                                    : const Color(0xFF6B7394),
+                                                    ? Colors.white
+                                                    : AppColors
+                                                        .textSecondary(
+                                                            context),
                                               ),
                                             ),
                                             selected: isSelected,
                                             selectedColor:
                                                 const Color(0xFFDC2626),
                                             backgroundColor:
-                                                const Color(0xFF18181B),
+                                                AppColors.surface(context),
                                             side: BorderSide(
                                               color: isSelected
                                                   ? Colors.transparent
-                                                  : const Color(0xFF27272A),
+                                                  : AppColors.border(context),
                                             ),
                                             shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(6)),
                                             showCheckmark: false,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 4, vertical: 0),
-                                            onSelected: (val) {
+                                            onSelected: (selected) {
                                               setDialogState(() {
-                                                if (val) {
+                                                if (selected) {
                                                   selectedGenres.add(g);
                                                 } else {
                                                   selectedGenres.remove(g);
@@ -570,26 +612,6 @@ class _SearchScreenState extends State<SearchScreen> {
                                             },
                                           );
                                         }).toList(),
-                                      ),
-                                    ),
-                                  ] else if (selectedGenres.isNotEmpty) ...[
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          14, 0, 14, 10),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              selectedGenres.join(' • '),
-                                              style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: const Color(0xFFA1A1AA),
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
                                       ),
                                     ),
                                   ],
@@ -611,7 +633,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           child: Text(
                             'Cancelar',
                             style: GoogleFonts.inter(
-                                color: const Color(0xFFA1A1AA)),
+                              color: AppColors.textSecondary(context),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -625,7 +648,8 @@ class _SearchScreenState extends State<SearchScreen> {
                           label: Text(
                             'Añadir a Notion',
                             style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.bold),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -699,22 +723,25 @@ class _SearchScreenState extends State<SearchScreen> {
             NotionParser.buildNumber(rawgGame['playtime']);
       }
 
-      await notion.createPage(notion.gamesDbId, properties);
+      await notion.createGame(properties);
 
       if (mounted) {
-        Navigator.pop(context); // Close loader
+        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${rawgGame['name']} añadido a Notion con éxito',
-                style: GoogleFonts.inter(color: Colors.white)),
+            content: Text(
+              '¡"${rawgGame['name']}" añadido a Notion con éxito!',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
             backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 3),
           ),
         );
-        Navigator.pop(context, true); // Return to dashboard
+        Navigator.pop(context, true); // Return to dashboard and refresh
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loader
+        Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al guardar en Notion: $e'),
@@ -728,9 +755,17 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
-        title: Text('Buscar y Añadir Juegos',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.background(context),
+        elevation: 0,
+        title: Text(
+          'Buscar y Añadir Juegos',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary(context),
+          ),
+        ),
       ),
       body: Center(
         child: Container(
@@ -742,11 +777,16 @@ class _SearchScreenState extends State<SearchScreen> {
                 controller: _searchController,
                 onSubmitted: _searchGames,
                 style: GoogleFonts.inter(
-                    fontSize: 15, color: const Color(0xFFF0F2F5)),
+                  fontSize: 15,
+                  color: AppColors.textPrimary(context),
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Buscar juego en RAWG (ej: Elden Ring, Hollow Knight)...',
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: Color(0xFF6B7394)),
+                  hintText:
+                      'Buscar juego en RAWG (ej: Elden Ring, Hollow Knight)...',
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary(context),
+                  ),
                   suffixIcon: _isSearching
                       ? const Padding(
                           padding: EdgeInsets.all(12),
@@ -754,21 +794,22 @@ class _SearchScreenState extends State<SearchScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Color(0xFF00F0FF)),
+                                strokeWidth: 2, color: Color(0xFFDC2626)),
                           ),
                         )
                       : IconButton(
-                          icon: const Icon(Icons.clear, color: Color(0xFF6B7394)),
+                          icon: Icon(Icons.clear,
+                              color: AppColors.textSecondary(context)),
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchResults = []);
                           },
                         ),
                   filled: true,
-                  fillColor: const Color(0xFF141927),
+                  fillColor: AppColors.surface(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFF1C2237)),
+                    borderSide: BorderSide(color: AppColors.border(context)),
                   ),
                 ),
               ),
@@ -781,13 +822,15 @@ class _SearchScreenState extends State<SearchScreen> {
                           children: [
                             Icon(Icons.sports_esports_rounded,
                                 size: 64,
-                                color: const Color(0xFF6B7394).withOpacity(0.3)),
+                                color: AppColors.textSecondary(context)
+                                    .withOpacity(0.3)),
                             const SizedBox(height: 16),
                             Text(
                               'Escribe el nombre de un juego para buscar',
                               style: GoogleFonts.inter(
-                                  color: const Color(0xFF6B7394),
-                                  fontSize: 14),
+                                color: AppColors.textSecondary(context),
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -803,11 +846,12 @@ class _SearchScreenState extends State<SearchScreen> {
                               .join(' • ');
 
                           return Card(
-                            color: const Color(0xFF141927),
+                            color: AppColors.surface(context),
                             margin: const EdgeInsets.symmetric(vertical: 6),
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
-                              side: const BorderSide(color: Color(0xFF1C2237)),
+                              side: BorderSide(color: AppColors.border(context)),
                             ),
                             child: InkWell(
                               onTap: () => _promptGameDetails(game),
@@ -821,7 +865,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                     ),
                                     child: game['background_image'] != null
                                         ? CachedNetworkImage(
-                                            imageUrl: game['background_image'],
+                                            imageUrl:
+                                                game['background_image'],
                                             width: 90,
                                             height: 90,
                                             fit: BoxFit.cover,
@@ -829,10 +874,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                         : Container(
                                             width: 90,
                                             height: 90,
-                                            color: const Color(0xFF1C2237),
-                                            child: const Icon(
-                                                Icons.gamepad_rounded,
-                                                color: Color(0xFF3A4060)),
+                                            color: AppColors.surfaceSubtle(
+                                                context),
+                                            child: Icon(
+                                              Icons.gamepad_rounded,
+                                              color: AppColors.textSecondary(
+                                                  context),
+                                            ),
                                           ),
                                   ),
                                   const SizedBox(width: 14),
@@ -846,10 +894,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                         children: [
                                           Text(
                                             game['name'] ?? '',
-                                            style: GoogleFonts.inter(
-                                              fontWeight: FontWeight.w600,
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.bold,
                                               fontSize: 15,
-                                              color: const Color(0xFFF0F2F5),
+                                              color: AppColors.textPrimary(
+                                                  context),
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -858,7 +907,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                           Text(
                                             game['released'] ?? 'Sin fecha',
                                             style: GoogleFonts.inter(
-                                              color: const Color(0xFF6B7394),
+                                              color: AppColors.textSecondary(
+                                                  context),
                                               fontSize: 12,
                                             ),
                                           ),
@@ -867,7 +917,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                             Text(
                                               genreNames,
                                               style: GoogleFonts.inter(
-                                                color: const Color(0xFF00F0FF)
+                                                color: const Color(0xFFDC2626)
                                                     .withOpacity(0.8),
                                                 fontSize: 11,
                                               ),
@@ -884,15 +934,19 @@ class _SearchScreenState extends State<SearchScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF00F0FF)
+                                        color: const Color(0xFFDC2626)
                                             .withOpacity(0.1),
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                            color: const Color(0xFF00F0FF)
-                                                .withOpacity(0.3)),
+                                          color: const Color(0xFFDC2626)
+                                              .withOpacity(0.3),
+                                        ),
                                       ),
-                                      child: const Icon(Icons.add_rounded,
-                                          color: Color(0xFF00F0FF), size: 20),
+                                      child: const Icon(
+                                        Icons.add_rounded,
+                                        color: Color(0xFFDC2626),
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ],

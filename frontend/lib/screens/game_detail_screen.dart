@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../models/game.dart';
 import '../services/notion_service.dart';
+import '../services/theme_manager.dart';
 import '../widgets/platform_helper.dart';
 
 class GameDetailScreen extends StatefulWidget {
@@ -263,12 +264,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final progress = hltbMain > 0 ? (hours / hltbMain).clamp(0.0, 1.0) : 0.0;
 
     return Scaffold(
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
+        backgroundColor: AppColors.background(context),
+        elevation: 0,
         title: Text('Ficha del Juego',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
+            )),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_rounded, color: Color(0xFFFAFAFA)),
+            icon: Icon(Icons.share_rounded,
+                color: AppColors.textPrimary(context)),
             tooltip: 'Exportar Ficha Social',
             onPressed: _showSocialCardDialog,
           ),
@@ -312,8 +320,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      const Color(0xFF09090B).withOpacity(0.6),
-                                      const Color(0xFF09090B),
+                                      AppColors.background(context)
+                                          .withOpacity(0.5),
+                                      AppColors.background(context),
                                     ],
                                   ),
                                 ),
@@ -389,11 +398,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 TextField(
                   controller: _coverUrlController,
                   style: GoogleFonts.inter(
-                      fontSize: 12, color: const Color(0xFF6B7394)),
-                  decoration: const InputDecoration(
+                      fontSize: 12, color: AppColors.textSecondary(context)),
+                  decoration: InputDecoration(
                     labelText: 'URL de Portada',
                     prefixIcon: Icon(Icons.image_outlined,
-                        size: 18, color: Color(0xFF6B7394)),
+                        size: 18, color: AppColors.textSecondary(context)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -401,9 +410,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 // Title
                 TextField(
                   controller: _titleController,
-                  style: GoogleFonts.spaceGrotesk(
-                      fontSize: 18, fontWeight: FontWeight.w600),
-                  decoration: const InputDecoration(labelText: 'Título del Juego'),
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                  decoration:
+                      const InputDecoration(labelText: 'Título del Juego'),
                 ),
                 const SizedBox(height: 20),
 
@@ -462,10 +475,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
                         onChanged: (val) => setState(() {}),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Horas Jugadas',
                           prefixIcon: Icon(Icons.timer_outlined,
-                              color: Color(0xFF6B7394)),
+                              color: AppColors.textSecondary(context)),
                         ),
                       ),
                     ),
@@ -485,10 +498,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF141927),
+                      color: AppColors.surface(context),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: const Color(0xFF00F0FF).withOpacity(0.3)),
+                          color: const Color(0xFFDC2626).withOpacity(0.35)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,15 +511,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           children: [
                             Text(
                               'Progreso de Campaña',
-                              style: GoogleFonts.spaceGrotesk(
+                              style: GoogleFonts.outfit(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF00F0FF),
+                                color: const Color(0xFFDC2626),
                               ),
                             ),
                             Text(
                               '${(progress * 100).toStringAsFixed(0)}%',
-                              style: GoogleFonts.spaceGrotesk(
+                              style: GoogleFonts.outfit(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 color: const Color(0xFFDC2626),
@@ -600,12 +613,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121215),
+                    color: AppColors.surface(context),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: _isGenreAccordionExpanded
                           ? const Color(0xFFDC2626).withOpacity(0.5)
-                          : const Color(0xFF27272A),
+                          : AppColors.border(context),
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -614,7 +627,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       InkWell(
                         onTap: () {
                           setState(() {
-                            _isGenreAccordionExpanded = !_isGenreAccordionExpanded;
+                            _isGenreAccordionExpanded =
+                                !_isGenreAccordionExpanded;
                           });
                         },
                         child: Padding(
@@ -633,7 +647,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFFAFAFA),
+                                      color: AppColors.textPrimary(context),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -660,7 +674,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                 _isGenreAccordionExpanded
                                     ? Icons.keyboard_arrow_up_rounded
                                     : Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFFA1A1AA),
+                                color: AppColors.textSecondary(context),
                                 size: 22,
                               ),
                             ],
@@ -668,7 +682,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                         ),
                       ),
                       if (_isGenreAccordionExpanded) ...[
-                        const Divider(height: 1, color: Color(0xFF27272A)),
+                        Divider(height: 1, color: AppColors.border(context)),
                         Padding(
                           padding: const EdgeInsets.all(14),
                           child: Wrap(
@@ -686,16 +700,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                                         : FontWeight.normal,
                                     color: isSelected
                                         ? Colors.white
-                                        : const Color(0xFFA1A1AA),
+                                        : AppColors.textSecondary(context),
                                   ),
                                 ),
                                 selected: isSelected,
                                 selectedColor: const Color(0xFFDC2626),
-                                backgroundColor: const Color(0xFF18181B),
+                                backgroundColor:
+                                    AppColors.surfaceSubtle(context),
                                 side: BorderSide(
                                   color: isSelected
                                       ? Colors.transparent
-                                      : const Color(0xFF27272A),
+                                      : AppColors.border(context),
                                 ),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(6)),
@@ -904,9 +919,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     return DropdownButtonFormField<String>(
       value: items.contains(value) ? value : items.first,
-      dropdownColor: const Color(0xFF18181B),
+      dropdownColor: AppColors.surface(context),
       borderRadius: BorderRadius.circular(12),
-      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFFAFAFA)),
+      style: GoogleFonts.inter(
+        fontSize: 14,
+        color: AppColors.textPrimary(context),
+      ),
       items: items
           .map((s) => DropdownMenuItem(
                 value: s,
@@ -917,7 +935,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       PlatformHelper.getIcon(s, size: 16),
                       const SizedBox(width: 8),
                     ],
-                    Text(s, style: GoogleFonts.inter(fontSize: 13)),
+                    Text(
+                      s,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textPrimary(context),
+                      ),
+                    ),
                   ],
                 ),
               ))
@@ -936,9 +960,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF121215),
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF27272A)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -948,12 +972,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               children: [
                 Text(label,
                     style: GoogleFonts.inter(
-                        fontSize: 10, color: const Color(0xFFA1A1AA))),
+                        fontSize: 10,
+                        color: AppColors.textSecondary(context))),
                 if (date != null && onClear != null)
                   GestureDetector(
                     onTap: onClear,
-                    child: const Icon(Icons.close_rounded,
-                        size: 12, color: Color(0xFFA1A1AA)),
+                    child: Icon(Icons.close_rounded,
+                        size: 12, color: AppColors.textSecondary(context)),
                   ),
               ],
             ),
@@ -968,7 +993,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       ? 'Seleccionar'
                       : DateFormat('dd/MM/yyyy').format(date),
                   style: GoogleFonts.inter(
-                      fontSize: 13, color: const Color(0xFFFAFAFA)),
+                      fontSize: 13,
+                      color: AppColors.textPrimary(context)),
                 ),
               ],
             ),
