@@ -333,42 +333,65 @@ class Game {
     );
   }
 
+  static const Object _sentinel = Object();
+
   /// Clona el juego con campos actualizados respetando los límites defensivos
+  /// y permitiendo asignar null explícito a campos opcionales para borrado o limpieza.
   Game copyWith({
     String? id,
     String? title,
-    String? coverUrl,
+    Object? coverUrl = _sentinel,
     String? status,
-    String? platform,
+    Object? platform = _sentinel,
     num? hoursPlayed,
     List<String>? genres,
-    String? rating,
-    num? hltbMain,
-    num? hltbCompletionist,
-    String? summary,
-    String? link,
-    DateTime? startDate,
-    DateTime? completedDate,
-    num? steamId,
+    Object? rating = _sentinel,
+    Object? hltbMain = _sentinel,
+    Object? hltbCompletionist = _sentinel,
+    Object? summary = _sentinel,
+    Object? link = _sentinel,
+    Object? startDate = _sentinel,
+    Object? completedDate = _sentinel,
+    Object? steamId = _sentinel,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Game(
       id: id ?? this.id,
       title: title ?? this.title,
-      coverUrl: coverUrl ?? this.coverUrl,
+      coverUrl: identical(coverUrl, _sentinel)
+          ? this.coverUrl
+          : (coverUrl as String?),
       status: status ?? this.status,
-      platform: platform ?? this.platform,
+      platform: identical(platform, _sentinel)
+          ? this.platform
+          : (platform as String?),
       hoursPlayed: hoursPlayed ?? this.hoursPlayed,
       genres: genres ?? this.genres,
-      rating: rating ?? this.rating,
-      hltbMain: hltbMain ?? this.hltbMain,
-      hltbCompletionist: hltbCompletionist ?? this.hltbCompletionist,
-      summary: summary ?? this.summary,
-      link: link ?? this.link,
-      startDate: startDate ?? this.startDate,
-      completedDate: completedDate ?? this.completedDate,
-      steamId: steamId ?? this.steamId,
+      rating: identical(rating, _sentinel)
+          ? this.rating
+          : (rating as String?),
+      hltbMain: identical(hltbMain, _sentinel)
+          ? this.hltbMain
+          : (hltbMain as num?),
+      hltbCompletionist: identical(hltbCompletionist, _sentinel)
+          ? this.hltbCompletionist
+          : (hltbCompletionist as num?),
+      summary: identical(summary, _sentinel)
+          ? this.summary
+          : (summary as String?),
+      link: identical(link, _sentinel)
+          ? this.link
+          : (link as String?),
+      startDate: identical(startDate, _sentinel)
+          ? this.startDate
+          : (startDate as DateTime?),
+      completedDate: identical(completedDate, _sentinel)
+          ? this.completedDate
+          : (completedDate as DateTime?),
+      steamId: identical(steamId, _sentinel)
+          ? this.steamId
+          : (steamId as num?),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

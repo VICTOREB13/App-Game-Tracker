@@ -80,5 +80,31 @@ void main() {
       expect(game.hoursPlayed, equals(0.0)); // Clamped a 0
       expect(game.hltbMain, equals(99999.0)); // Clamped a 99999
     });
+
+    test('copyWith permite borrar campos asignando null explícito (patrón Sentinel)', () {
+      final initialGame = Game(
+        id: 'uuid-test',
+        title: 'Hollow Knight',
+        coverUrl: 'https://ejemplo.com/hollow.jpg',
+        link: 'https://es.wikipedia.org/wiki/Hollow_Knight',
+        rating: '★★★★★',
+      );
+
+      // Borrar enlace y portada explícitamente pasando null
+      final updated = initialGame.copyWith(
+        link: null,
+        coverUrl: null,
+      );
+
+      expect(updated.link, isNull);
+      expect(updated.coverUrl, isNull);
+      expect(updated.title, equals('Hollow Knight'));
+      expect(updated.rating, equals('★★★★★')); // Se preserva
+
+      // Modificar título sin tocar link
+      final updatedTitle = initialGame.copyWith(title: 'Silksong');
+      expect(updatedTitle.title, equals('Silksong'));
+      expect(updatedTitle.link, equals('https://es.wikipedia.org/wiki/Hollow_Knight'));
+    });
   });
 }

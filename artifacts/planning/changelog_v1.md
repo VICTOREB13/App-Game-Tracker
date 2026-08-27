@@ -1,15 +1,27 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.4
+version: v3.0.5
 estado: activo
 fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.4, visual-platform-chips, rawg-platforms-detection, ui-ux-polish, victor-engineer]
+tags: [proyecto, changelog, versiones, v3.0.5, crud-null-deletion, sentinel-pattern, link-clear-button, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.0.5] - 2026-08-27 (CRUD Complete Null Support & Link Clearing)
+
+### Fixed & Enhanced
+- **Soporte Completo de Asignación y Borrado `NULL` en `Game.copyWith` (Patrón Sentinel):**
+  - Se corrigió el error fundamental donde pasar `null` a campos opcionales (`link: null`, `coverUrl: null`, `summary: null`, `rating: null`) restauraba los valores antiguos debido al operador de coalescencia nula `param ?? this.param`.
+  - Implementación del patrón canónico `_sentinel` de Dart en `Game.copyWith`, permitiendo distinguir entre un argumento no provisto (`_sentinel` $\rightarrow$ mantiene valor actual) y un valor `null` explícito (`identical(val, _sentinel) == false` $\rightarrow$ borra y asigna `NULL` en SQLite).
+- **Botón de Borrado Rápido en Campo de Enlace (`GameDetailScreen`):**
+  - Se añadió un botón `clear` (`Icons.clear_rounded`) interactivo al campo de Enlace Enciclopédico (Wikipedia) para vaciar el enlace con 1 solo toque.
+  - Al guardar los cambios con el enlace o la carátula vacía, SQLite actualiza exitosamente el registro con `NULL`, persistiendo la eliminación sin restaurar el valor anterior.
+- **Soporte de Calificación 'Sin calificar' a `NULL`:**
+  - Al seleccionar 'Sin calificar' en el dropdown de calificación, el valor se envía como `null` a SQLite, eliminando cualquier puntuación previa correctamente.
 
 ## [3.0.4] - 2026-08-27 (Modern Visual Platform Selector & RAWG Platform Detection)
 

@@ -364,7 +364,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         platform: _selectedPlatform,
         hoursPlayed: hours,
         genres: _selectedGenres,
-        rating: _selectedRating,
+        rating: _selectedRating == 'Sin calificar' ? null : _selectedRating,
         hltbMain: hltbMain,
         hltbCompletionist: hltbComp,
         coverUrl: newCover.isNotEmpty ? newCover : null,
@@ -1061,6 +1061,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 // Link / Wikipedia
                 TextField(
                   controller: _linkController,
+                  onChanged: (_) => setState(() {}),
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppColors.textPrimary(context),
@@ -1070,24 +1071,38 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     hintText: 'https://es.wikipedia.org/wiki/...',
                     prefixIcon: const Icon(Icons.public_rounded,
                         size: 18, color: Color(0xFFDC2626)),
-                    suffixIcon: _isSearchingWiki
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFDC2626),
-                              ),
-                            ),
-                          )
-                        : IconButton(
-                            tooltip: 'Buscar enlace en Wikipedia',
-                            icon: const Icon(Icons.travel_explore_rounded,
-                                color: Color(0xFFDC2626), size: 20),
-                            onPressed: _fetchWikipediaLink,
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_linkController.text.isNotEmpty)
+                          IconButton(
+                            tooltip: 'Borrar enlace',
+                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            onPressed: () {
+                              _linkController.clear();
+                              setState(() {});
+                            },
                           ),
+                        _isSearchingWiki
+                            ? const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                tooltip: 'Buscar enlace en Wikipedia',
+                                icon: const Icon(Icons.travel_explore_rounded,
+                                    color: Color(0xFFDC2626), size: 20),
+                                onPressed: _fetchWikipediaLink,
+                              ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
