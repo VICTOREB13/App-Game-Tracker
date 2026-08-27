@@ -31,6 +31,17 @@ jobs:
         working-directory: ./frontend
         run: flutter create --platforms windows .
 
+      - name: Configurar Icono Oficial Victor Engineer (Windows)
+        working-directory: ./frontend
+        shell: pwsh
+        run: |
+          if (Test-Path "assets/images/app_icon.ico") {
+            Copy-Item -Path "assets/images/app_icon.ico" -Destination "windows/runner/resources/app_icon.ico" -Force
+            Write-Host "✅ Icono app_icon.ico instalado exitosamente en windows/runner/resources/app_icon.ico"
+          } else {
+            Write-Warning "No se encontró assets/images/app_icon.ico"
+          }
+
       - name: Restaurar dependencias
         working-directory: ./frontend
         run: flutter pub get

@@ -12,6 +12,17 @@ tags: [proyecto, changelog, versiones, v2.8.1, mobile-responsive, dual-row-filte
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [2.8.2] - 2026-08-27 (Official Victor Engineer Native Branding & Iconography)
+
+### Added & Enhanced
+- **Icono Nativo Oficial Victor Engineer para Windows (.exe):**
+  - Creado `app_icon.ico` nativo multi-resolución (16x16, 32x32, 48x48, 64x64, 128x128, 256x256) a partir del vector oficial [`icon.svg`](file:///c:/Users/vmesp/Documents/Cositas/App-Rastreador-de-Entretenimiento/frontend/assets/images/icon.svg).
+  - Integrado paso de instalación en el pipeline de CI (`build_windows.yml`) que reemplaza automáticamente el icono genérico de Flutter en `windows/runner/resources/app_icon.ico`.
+  - Ahora `tracker_app.exe` en el Explorador de Windows, la Barra de Tareas y la ventana principal exhibe el logotipo oficial rojo con las siglas blancas **VE** de Victor Engineer.
+- **Iconos Nativos de Lanzador para Android (APK):**
+  - Generados iconos de alta definición para todas las densidades de pantalla (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+  - Integrado paso de copia en el pipeline de CI (`build_apk.yml`) para que el APK generado se instale con el icono oficial de Victor Engineer en el escritorio y cajón de apps de Android.
+
 ## [2.8.1] - 2026-08-27 (Mobile Ergonomics, Dual-Row Filter Architecture & Visual Collision Fixes)
 
 ### Added & Enhanced

@@ -37,6 +37,14 @@ jobs:
           sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
 
+      - name: Configurar Iconos Oficiales Victor Engineer (Android)
+        working-directory: ./frontend
+        run: |
+          if [ -d "assets/launcher_icons/android" ]; then
+            cp -r assets/launcher_icons/android/* android/app/src/main/res/
+            echo "✅ Iconos Victor Engineer instalados en mipmap de Android"
+          fi
+
       - name: Restaurar dependencias
         working-directory: ./frontend
         run: flutter pub get

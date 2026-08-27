@@ -131,6 +131,15 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Reorganizar selector de año y meta anual a 2 filas en móvil para que las flechas y botón 'Ajustar' queden 100% dentro del marco.
 - [x] `(Systems-Auditor)` Verificar ausencia de desbordamientos visuales y consistencia temática claro/oscuro.
 
+---
+
+## 🎨 13. Identidad Visual & Iconografía Nativa Victor Engineer (v2.8.2)
+- [x] `(Frontend-UI)` Renderizar vector `icon.svg` a alta resolución y generar `app_icon.png` (1024x1024) y `app_icon.ico` (multi-resolución para Windows).
+- [x] `(Frontend-UI)` Generar suite de iconos de lanzador para Android en todas las resoluciones mipmap (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+- [x] `(DevOps-Engineer)` Actualizar pipeline `build_windows.yml` para inyectar `app_icon.ico` en `windows/runner/resources/app_icon.ico` antes de compilar el binario release.
+- [x] `(DevOps-Engineer)` Actualizar pipeline `build_apk.yml` para copiar los iconos mipmap en `android/app/src/main/res/` antes de compilar el APK.
+- [x] `(Systems-Auditor)` Validar que `tracker_app.exe` y el APK de Android exhiban la identidad oficial de Victor Engineer sin depender del icono por defecto de Flutter.
+
 
 
 
