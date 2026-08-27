@@ -1,4 +1,4 @@
-# 🎮 App Game Tracker (v3.0.1)
+# 🎮 App Game Tracker (v3.0.4)
 
 > **Rastreador de Videojuegos y Entretenimiento Personal Local-First para Windows y Android.**  
 > Desarrollado con ❤️ por **[Victor Engineer](https://victorengineer.fyi)**.
@@ -15,7 +15,7 @@
 
 **App Game Tracker** es una aplicación multiplataforma moderna, elegante y de latencia cero diseñada para llevar el registro definitivo de tu biblioteca de videojuegos. 
 
-A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.0.1** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, garantizando arranque instantáneo (0 ms cold start), privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
+A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.0.4** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, servicio nativo de HowLongToBeat, selector visual de plataformas, privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
 
 ---
 
@@ -37,9 +37,10 @@ A diferencia de soluciones dependientes de la nube lenta o bases de datos de ter
   - Renderizado universal de imágenes remotas (`https://`) y archivos locales en disco.
   - Selector nativo de archivos y galería (`file_picker`) que copia de forma segura la portada a la carpeta persistente del sistema (`app_documents/covers/`).
 
-- 🌐 **Enriquecimiento de Metadatos (RAWG & Wikipedia):**
-  - Autocompletado de portadas de alta definición, plataformas de lanzamiento y géneros.
-  - Búsqueda integrada de resúmenes enciclopédicos.
+- 🌐 **Enriquecimiento de Metadatos (RAWG, HowLongToBeat & Wikipedia):**
+  - Autocompletado de portadas de alta definición, plataformas de lanzamiento y todos los géneros de RAWG sin restricciones.
+  - Búsqueda integrada de resúmenes y enlaces oficiales en Wikipedia con cabeceras Wikimedia conformes.
+  - Selector visual interactivo de plataformas con chips táctiles, logos oficiales y detección inteligente.
 
 - 📦 **Portabilidad y Respaldo Total (JSON):**
   - Exportación con un solo clic de tu biblioteca completa a tu carpeta de *Descargas*.

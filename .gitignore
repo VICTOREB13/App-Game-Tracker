@@ -23,3 +23,21 @@ local.properties
 
 # Windows
 **/windows/flutter/ephemeral/
+
+# Databases, Backups & Scratch
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+*.bak
+*backup*.json
+scratch/
+
+# Environment & Credentials
+.env
+.env.*
+*.key
+*.pem
+!frontend/assets/keystore/release.keystore
