@@ -128,6 +128,7 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Adaptar FAB a formato circular compacto (56px) en móvil y optimizar la barra de paginación inferior para centrar `< 1 / 12 >` sin colisiones.
 - [x] `(Frontend-UI)` Rediseñar métricas analíticas a cuadrícula 2x2 en móvil con `FittedBox` para evitar saltos de línea de números (`2176.3` y `65.8%`).
 - [x] `(Frontend-UI)` Adaptar Salón de la Fama a carrusel horizontal con tarjetas amplias (175px) en móvil para evitar truncamiento de títulos y medallas.
+- [x] `(Frontend-UI)` Reorganizar selector de año y meta anual a 2 filas en móvil para que las flechas y botón 'Ajustar' queden 100% dentro del marco.
 - [x] `(Systems-Auditor)` Verificar ausencia de desbordamientos visuales y consistencia temática claro/oscuro.
 
 

@@ -27,6 +27,9 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - **Cero Saltos de Línea en Números (`FittedBox`):** Valores como `2176.3` y porcentajes como `65.8%` ya no se dividen en dos renglones bajo ninguna configuración de escala o fuente.
 - **Salón de la Fama Adaptativo (`AnalyticsScreen`):**
   - En móvil, las tarjetas de récords (`El Titán`, `Obra Maestra`, `Aventura Ágil`) se despliegan en un carrusel deslizable horizontal de 175px por tarjeta, permitiendo leer títulos como *"Zenless Zone Zero"* y detalles sin truncamiento.
+- **Selector de Año y Meta Anual Adaptativo (`AnalyticsScreen`):**
+  - Resuelto el desbordamiento de las flechas de selección de año (`< 2026 >` y botón *Ajustar*), que en móvil quedaban cortadas y fuera del marco de la tarjeta.
+  - En móvil (< 600px), la cabecera se reorganiza en 2 líneas: Fila 1 para el título y botón *Ajustar*, y Fila 2 para un selector de año con botones táctiles generosos (`< Año 2026 >`) 100% dentro del marco y centrado.
 - **Ergonomía de Paginación y Botón Añadir (FAB):**
   - El FAB en móvil se adapta a botón circular compacto de 56px con icono `+`, reduciendo la zona de seguridad a 64px y compactando `'Por pág:'` a `'Ver:'`, manteniendo los controles `< 1 / 12 >` perfectamente centrados y cómodos de pulsar.
 

@@ -273,6 +273,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final completionRate = totalGames > 0
         ? ((statusData['Jugado'] ?? 0) / totalGames * 100).toStringAsFixed(1)
         : '0';
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: AppColors.background(context),
@@ -385,119 +386,234 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Year selector header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDC2626).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.emoji_events_rounded,
-                                  size: 16, color: Color(0xFFDC2626)),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Meta Anual de Juegos',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary(context),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Year stepper
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left_rounded,
-                                  size: 20),
-                              color: AppColors.textSecondary(context),
-                              onPressed: () {
-                                setState(() => _selectedYear--);
-                                _loadYearGoal();
-                              },
-                              tooltip: 'Año anterior',
-                              constraints: const BoxConstraints(
-                                  minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceSubtle(context),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                    color: AppColors.border(context)),
-                              ),
-                              child: Text(
-                                '$_selectedYear',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary(context),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right_rounded,
-                                  size: 20),
-                              color: AppColors.textSecondary(context),
-                              onPressed: () {
-                                setState(() => _selectedYear++);
-                                _loadYearGoal();
-                              },
-                              tooltip: 'Año siguiente',
-                              constraints: const BoxConstraints(
-                                  minWidth: 28, minHeight: 28),
-                              padding: EdgeInsets.zero,
-                            ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: _showEditGoalDialog,
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                    // Year selector header (Responsive: 2-row on mobile, 1-row on desktop)
+                    if (isMobile)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFDC2626).withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: const Color(0xFFDC2626).withOpacity(0.3),
-                                    width: 0.5,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.emoji_events_rounded,
+                                    size: 16, color: Color(0xFFDC2626)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Meta Anual de Juegos',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary(context),
                                   ),
                                 ),
-                                child: Row(
+                              ),
+                              InkWell(
+                                onTap: _showEditGoalDialog,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDC2626).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: const Color(0xFFDC2626).withOpacity(0.3),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.edit_rounded,
+                                          size: 11, color: Color(0xFFDC2626)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ajustar',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSubtle(context),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border(context)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                                  color: AppColors.textSecondary(context),
+                                  onPressed: () {
+                                    setState(() => _selectedYear--);
+                                    _loadYearGoal();
+                                  },
+                                  tooltip: 'Año anterior',
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
+                                  padding: EdgeInsets.zero,
+                                ),
+                                Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.edit_rounded,
-                                        size: 11, color: Color(0xFFDC2626)),
-                                    const SizedBox(width: 4),
+                                    const Icon(Icons.calendar_today_rounded,
+                                        size: 13, color: Color(0xFFDC2626)),
+                                    const SizedBox(width: 6),
                                     Text(
-                                      'Ajustar',
+                                      'Año $_selectedYear',
                                       style: GoogleFonts.outfit(
-                                        fontSize: 10,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFDC2626),
+                                        color: AppColors.textPrimary(context),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                                  color: AppColors.textSecondary(context),
+                                  onPressed: () {
+                                    setState(() => _selectedYear++);
+                                    _loadYearGoal();
+                                  },
+                                  tooltip: 'Año siguiente',
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
+                                  padding: EdgeInsets.zero,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      )
+                    else
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDC2626).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.emoji_events_rounded,
+                                    size: 16, color: Color(0xFFDC2626)),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Meta Anual de Juegos',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary(context),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Year stepper
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left_rounded,
+                                    size: 20),
+                                color: AppColors.textSecondary(context),
+                                onPressed: () {
+                                  setState(() => _selectedYear--);
+                                  _loadYearGoal();
+                                },
+                                tooltip: 'Año anterior',
+                                constraints: const BoxConstraints(
+                                    minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceSubtle(context),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: AppColors.border(context)),
+                                ),
+                                child: Text(
+                                  '$_selectedYear',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary(context),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right_rounded,
+                                    size: 20),
+                                color: AppColors.textSecondary(context),
+                                onPressed: () {
+                                  setState(() => _selectedYear++);
+                                  _loadYearGoal();
+                                },
+                                tooltip: 'Año siguiente',
+                                constraints: const BoxConstraints(
+                                    minWidth: 28, minHeight: 28),
+                                padding: EdgeInsets.zero,
+                              ),
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: _showEditGoalDialog,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDC2626).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: const Color(0xFFDC2626).withOpacity(0.3),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.edit_rounded,
+                                          size: 11, color: Color(0xFFDC2626)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Ajustar',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 14),
 
                     // Progress info
@@ -537,28 +653,34 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          completedInSelectedYear.length >= _annualGoal
-                              ? '¡Meta superada en $_selectedYear! 🏆'
-                              : 'Faltan ${_annualGoal - completedInSelectedYear.length} juegos para la meta',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: completedInSelectedYear.length >= _annualGoal
-                                ? const Color(0xFF10B981)
-                                : AppColors.textSecondary(context),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (completedInSelectedYear.isNotEmpty)
-                          Text(
-                            'Último: ${completedInSelectedYear.last.title}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: Text(
+                            completedInSelectedYear.length >= _annualGoal
+                                ? '¡Meta superada en $_selectedYear! 🏆'
+                                : 'Faltan ${_annualGoal - completedInSelectedYear.length} juegos para la meta',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
-                              color: AppColors.textMuted(context),
+                              fontSize: 11,
+                              color: completedInSelectedYear.length >= _annualGoal
+                                  ? const Color(0xFF10B981)
+                                  : AppColors.textSecondary(context),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
+                        ),
+                        if (completedInSelectedYear.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Último: ${completedInSelectedYear.last.title}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                color: AppColors.textMuted(context),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
