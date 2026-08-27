@@ -1,13 +1,13 @@
 ---
 tipo: task
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.0
 estado: completado
 fecha: 2026-08-26
-tags: [tareas, checklist, v2.7.2, offline-cache, dual-view, pagination, multi-year, gamification, social-card, light-mode, smart-sync, project-planner]
+tags: [tareas, checklist, v2.8.0, filter-sheet, genre-helper, touch-filters, json-backup, project-planner]
 ---
 
-# ✅ Checklist de Tareas Técnicas (v2.7.2)
+# ✅ Checklist de Tareas Técnicas (v2.8.0)
 
 Documento operativo gestionado por **Project-Planner** para registrar la asignación y ejecución de tareas entre agentes especializados.
 
@@ -103,5 +103,21 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Añadir `AppBar` con botón de retroceso (`Navigator.canPop`) y título adaptativo cuando la pantalla es invocada desde "Editar Conexión".
 - [x] `(Frontend-UI)` Adaptar el botón de acción para ejecutar `Navigator.pop(true)` al guardar cuando se proviene de Ajustes, preservando el flujo de navegación.
 - [x] `(Frontend-UI)` Añadir restricciones de ancho máximo (`maxWidth: 520`) para visualización centrada y responsive en pantallas de escritorio.
+
+---
+
+## 🚀 11. Calidad de Vida (QoL) & Reorganización de Géneros/Plataformas (v2.8.0)
+- [x] `(Frontend-UI)` Crear `GenreHelper` (`genre_helper.dart`) con normalización semántica virtual en memoria (sin tocar Notion) e iconografía temática.
+- [x] `(Frontend-UI)` Construir `FilterModalSheet` (`filter_modal_sheet.dart`) adaptativo para móvil (BottomSheet) y escritorio, con buscador integrado y conteo de juegos.
+- [x] `(Frontend-UI)` Integrar `FilterModalSheet` en `DashboardScreen` reemplazando los dropdowns rígidos de Género y Plataforma.
+- [x] `(Frontend-UI)` Añadir botón interactivo de "Limpiar Filtros" con contador de filtros activos y texto de resultados ("Mostrando X de Y juegos").
+- [x] `(Frontend-UI)` Añadir botón de borrado rápido `(X)` en el campo de búsqueda de la biblioteca.
+- [x] `(Backend-Architect)` Implementar `BackupService` (`backup_service.dart`) con métodos para **Exportar** e **Importar / Restaurar** la biblioteca completa en JSON.
+- [x] `(Frontend-UI)` Integrar sección de "Copia de Seguridad & Portabilidad" en `SettingsScreen` con botones para Exportar e Importar JSON.
+- [x] `(DevOps-Engineer)` Actualizar número de versión a `2.8.0+1` en `pubspec.yaml`, `settings_screen.dart` y `changelog_v1.md`.
+- [x] `(Systems-Auditor)` Ejecutar auditoría de calidad, validación de integridad JSON y accesibilidad táctil.
+
+
+
 
 

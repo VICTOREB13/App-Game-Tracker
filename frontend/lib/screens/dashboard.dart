@@ -12,6 +12,8 @@ import 'settings_screen.dart';
 import 'game_detail_screen.dart';
 import 'analytics_screen.dart';
 import '../widgets/platform_helper.dart';
+import '../widgets/genre_helper.dart';
+import '../widgets/filter_modal_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -250,10 +252,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 g.platform!.toLowerCase() ==
                     _selectedPlatformFilter.toLowerCase());
 
-        // Genre filter
+        // Genre filter (normalizado mediante GenreHelper)
         final matchesGenre = _selectedGenreFilter == 'Todos' ||
-            g.genres.any((gen) =>
-                gen.toLowerCase() == _selectedGenreFilter.toLowerCase());
+            GenreHelper.matches(g.genres, _selectedGenreFilter);
 
         // Search query filter (matches title, platform, or genres)
         bool matchesQuery = true;
@@ -262,7 +263,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           final platformMatch =
               g.platform != null && g.platform!.toLowerCase().contains(query);
           final genreMatch = g.genres
-              .any((genre) => genre.toLowerCase().contains(query));
+              .any((genre) => genre.toLowerCase().contains(query) ||
+                  GenreHelper.normalize(genre).toLowerCase().contains(query));
           matchesQuery = titleMatch || platformMatch || genreMatch;
         }
 
@@ -282,35 +284,81 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
   }
 
-  List<String> get _availablePlatformsInLibrary {
-    final Set<String> platforms = {'Todas'};
+  List<FilterOption> get _availablePlatformOptions {
+    final Map<String, int> counts = {};
     for (var g in _games) {
-      if (g.platform != null && g.platform!.isNotEmpty) {
-        platforms.add(g.platform!);
+      if (g.platform != null && g.platform!.trim().isNotEmpty) {
+        final p = g.platform!.trim();
+        counts[p] = (counts[p] ?? 0) + 1;
       }
     }
-    return platforms.toList();
+
+    final sortedKeys = counts.keys.toList()
+      ..sort((a, b) {
+        final cmp = counts[b]!.compareTo(counts[a]!);
+        if (cmp != 0) return cmp;
+        return a.compareTo(b);
+      });
+
+    return sortedKeys.map((name) {
+      return FilterOption(
+        label: name,
+        count: counts[name] ?? 0,
+        icon: PlatformHelper.getIcon(name, size: 16, isColor: true),
+        color: const Color(0xFFDC2626),
+      );
+    }).toList();
   }
 
-  List<String> get _availableGenresInLibrary {
-    final Set<String> genres = {'Todos'};
+  List<FilterOption> get _availableGenreOptions {
+    final Map<String, int> counts = {};
     for (var g in _games) {
+      final Set<String> normalizedForGame = {};
       for (var gen in g.genres) {
-        if (gen.isNotEmpty) genres.add(gen);
+        if (gen.trim().isNotEmpty) {
+          normalizedForGame.add(GenreHelper.normalize(gen));
+        }
+      }
+      for (var norm in normalizedForGame) {
+        counts[norm] = (counts[norm] ?? 0) + 1;
       }
     }
-    return genres.toList();
+
+    final sortedKeys = counts.keys.toList()
+      ..sort((a, b) {
+        final cmp = counts[b]!.compareTo(counts[a]!);
+        if (cmp != 0) return cmp;
+        return a.compareTo(b);
+      });
+
+    return sortedKeys.map((name) {
+      return FilterOption(
+        label: name,
+        count: counts[name] ?? 0,
+        icon: Icon(
+          GenreHelper.getIcon(name),
+          size: 16,
+          color: GenreHelper.getColor(name),
+        ),
+        color: GenreHelper.getColor(name),
+      );
+    }).toList();
   }
 
   List<Game> get _currentlyPlayingGames {
     return _games.where((g) => g.status == 'Jugando').toList();
   }
 
-  bool get _isAnyFilterActive =>
-      _selectedStatusFilter != 'Todos' ||
-      _selectedPlatformFilter != 'Todas' ||
-      _selectedGenreFilter != 'Todos' ||
-      _searchQuery.isNotEmpty;
+  int get _activeFiltersCount {
+    int count = 0;
+    if (_selectedStatusFilter != 'Todos') count++;
+    if (_selectedPlatformFilter != 'Todas') count++;
+    if (_selectedGenreFilter != 'Todos') count++;
+    if (_searchQuery.isNotEmpty) count++;
+    return count;
+  }
+
+  bool get _isAnyFilterActive => _activeFiltersCount > 0;
 
   void _clearAllFilters() {
     setState(() {
@@ -779,9 +827,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     color: AppColors.border(context),
                   ),
                   const SizedBox(width: 8),
-                  _buildPlatformDropdown(),
+                  _buildPlatformFilterButton(),
                   const SizedBox(width: 8),
-                  _buildGenreDropdown(),
+                  _buildGenreFilterButton(),
                   const SizedBox(width: 8),
                   _buildSortDropdown(),
                   if (_isAnyFilterActive) ...[
@@ -1375,184 +1423,162 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildPlatformDropdown() {
-    final platforms = _availablePlatformsInLibrary;
+  Widget _buildPlatformFilterButton() {
     final isFiltered = _selectedPlatformFilter != 'Todas';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: isFiltered
-            ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
-            : AppColors.surface(context),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
+    return InkWell(
+      onTap: () {
+        FilterModalSheet.show(
+          context: context,
+          title: 'Plataformas',
+          selectedValue: _selectedPlatformFilter,
+          options: _availablePlatformOptions,
+          allLabel: 'Todas',
+          onSelected: (val) {
+            setState(() {
+              _selectedPlatformFilter = val;
+              _applyFilters();
+            });
+          },
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
           color: isFiltered
-              ? const Color(0xFFDC2626)
-              : AppColors.border(context),
-          width: 1,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-        ],
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: platforms.contains(_selectedPlatformFilter)
-              ? _selectedPlatformFilter
-              : 'Todas',
-          dropdownColor: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          style: GoogleFonts.inter(
-            fontSize: 12,
+              ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+              : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
             color: isFiltered
                 ? const Color(0xFFDC2626)
-                : AppColors.textPrimary(context),
+                : AppColors.border(context),
+            width: 1,
           ),
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 20,
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isFiltered) ...[
+              PlatformHelper.getIcon(_selectedPlatformFilter, size: 14, isColor: true),
+              const SizedBox(width: 6),
+            ] else ...[
+              Icon(
+                Icons.videogame_asset_outlined,
+                size: 14,
+                color: AppColors.textSecondary(context),
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              isFiltered ? _selectedPlatformFilter : 'Plataforma: Todas',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isFiltered ? FontWeight.bold : FontWeight.normal,
+                color: isFiltered
+                    ? const Color(0xFFDC2626)
+                    : AppColors.textPrimary(context),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
               color: isFiltered
                   ? const Color(0xFFDC2626)
                   : AppColors.textSecondary(context),
             ),
-          ),
-          items: platforms
-              .map((p) => DropdownMenuItem(
-                    value: p,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (p != 'Todas') ...[
-                          PlatformHelper.getIcon(p, size: 14),
-                          const SizedBox(width: 8),
-                        ] else ...[
-                          Icon(Icons.videogame_asset_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary(context)),
-                          const SizedBox(width: 8),
-                        ],
-                        Text(
-                          p == 'Todas' ? 'Plataforma: Todas' : p,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: p == _selectedPlatformFilter
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: p == _selectedPlatformFilter
-                                ? const Color(0xFFDC2626)
-                                : AppColors.textPrimary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
-          onChanged: (val) {
-            if (val != null) {
-              setState(() {
-                _selectedPlatformFilter = val;
-                _applyFilters();
-              });
-            }
-          },
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildGenreDropdown() {
-    final genres = _availableGenresInLibrary;
+  Widget _buildGenreFilterButton() {
     final isFiltered = _selectedGenreFilter != 'Todos';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: isFiltered
-            ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
-            : AppColors.surface(context),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
+    return InkWell(
+      onTap: () {
+        FilterModalSheet.show(
+          context: context,
+          title: 'Géneros',
+          selectedValue: _selectedGenreFilter,
+          options: _availableGenreOptions,
+          allLabel: 'Todos',
+          onSelected: (val) {
+            setState(() {
+              _selectedGenreFilter = val;
+              _applyFilters();
+            });
+          },
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
           color: isFiltered
-              ? const Color(0xFFDC2626)
-              : AppColors.border(context),
-          width: 1,
-        ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
-            ),
-        ],
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: genres.contains(_selectedGenreFilter)
-              ? _selectedGenreFilter
-              : 'Todos',
-          dropdownColor: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          style: GoogleFonts.inter(
-            fontSize: 12,
+              ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+              : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
             color: isFiltered
                 ? const Color(0xFFDC2626)
-                : AppColors.textPrimary(context),
+                : AppColors.border(context),
+            width: 1,
           ),
-          icon: Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Icon(
-              Icons.arrow_drop_down_rounded,
-              size: 20,
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isFiltered
+                  ? GenreHelper.getIcon(_selectedGenreFilter)
+                  : Icons.tune_rounded,
+              size: 14,
               color: isFiltered
                   ? const Color(0xFFDC2626)
                   : AppColors.textSecondary(context),
             ),
-          ),
-          items: genres
-              .map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.category_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary(context)),
-                        const SizedBox(width: 8),
-                        Text(
-                          s == 'Todos' ? 'Género: Todos' : s,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: s == _selectedGenreFilter
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color: s == _selectedGenreFilter
-                                ? const Color(0xFFDC2626)
-                                : AppColors.textPrimary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
-          onChanged: (val) {
-            if (val != null) {
-              setState(() {
-                _selectedGenreFilter = val;
-                _applyFilters();
-              });
-            }
-          },
+            const SizedBox(width: 6),
+            Text(
+              isFiltered ? _selectedGenreFilter : 'Género: Todos',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isFiltered ? FontWeight.bold : FontWeight.normal,
+                color: isFiltered
+                    ? const Color(0xFFDC2626)
+                    : AppColors.textPrimary(context),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: isFiltered
+                  ? const Color(0xFFDC2626)
+                  : AppColors.textSecondary(context),
+            ),
+          ],
         ),
       ),
     );
@@ -1636,7 +1662,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 size: 14, color: Color(0xFFDC2626)),
             const SizedBox(width: 4),
             Text(
-              'Limpiar',
+              _activeFiltersCount > 1 ? 'Limpiar ($_activeFiltersCount)' : 'Limpiar',
               style: GoogleFonts.inter(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,

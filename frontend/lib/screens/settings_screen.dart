@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/notion_service.dart';
 import '../services/theme_manager.dart';
+import '../services/backup_service.dart';
 import 'setup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -339,6 +341,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 32),
 
+              // Copia de Seguridad & Portabilidad (JSON)
+              _buildSectionHeader('Copia de Seguridad & Portabilidad'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border(context)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Respalda toda tu biblioteca en un archivo JSON seguro o restaura una copia previa en cualquier dispositivo.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.textSecondary(context),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _exportBackup,
+                            icon: const Icon(Icons.file_download_outlined, size: 18),
+                            label: Text(
+                              'Exportar JSON',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFDC2626),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _showImportDialog,
+                            icon: const Icon(Icons.file_upload_outlined,
+                                size: 18, color: Color(0xFFDC2626)),
+                            label: Text(
+                              'Importar JSON',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary(context),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: AppColors.border(context)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+
               // Cache & Offline
               _buildSectionHeader('Almacenamiento Local & Caché'),
               const SizedBox(height: 12),
@@ -416,7 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Rastreador de Entretenimiento Personal • v2.7.2',
+                      'Rastreador de Entretenimiento Personal • v2.8.0',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
@@ -504,4 +581,236 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  Future<void> _exportBackup() async {
+    try {
+      final path = await BackupService.exportBackup();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Respaldo guardado exitosamente:\n$path'),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al exportar respaldo: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showImportDialog() async {
+    final availableBackups = await BackupService.getAvailableBackups();
+    final textController = TextEditingController();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface(context),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.restore_page_rounded,
+                  color: Color(0xFFDC2626), size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Restaurar Respaldo',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: AppColors.textPrimary(context),
+                ),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Selecciona un archivo de respaldo encontrado en tu carpeta de Descargas o pega la ruta/contenido JSON:',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: AppColors.textSecondary(context),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  if (availableBackups.isNotEmpty) ...[
+                    Text(
+                      'Respaldos recientes encontrados:',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...availableBackups.take(4).map((file) {
+                      final name = file.path.split(Platform.pathSeparator).last;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: InkWell(
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            await _processFileImport(file);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSubtle(context),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border(context)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.insert_drive_file_outlined,
+                                    size: 18, color: Color(0xFFDC2626)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded,
+                                    size: 12, color: Color(0xFFA1A1AA)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                  ],
+
+                  Text(
+                    'O especifica una ruta o contenido JSON:',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: textController,
+                    maxLines: 3,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppColors.textPrimary(context),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'C:\\ruta\\al\\archivo.json o contenido {...}',
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: AppColors.textSecondary(context),
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surfaceSubtle(context),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.all(10),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                    color: AppColors.textSecondary(context)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final input = textController.text.trim();
+                if (input.isEmpty) return;
+                Navigator.pop(ctx);
+                if (input.startsWith('{') || input.startsWith('[')) {
+                  await _processJsonStringImport(input);
+                } else {
+                  await _processFileImport(File(input));
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Restaurar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _processFileImport(File file) async {
+    try {
+      final count = await BackupService.importBackupFromFile(file);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('✅ ¡Éxito! Se restauraron $count juegos en la biblioteca.'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al restaurar: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  Future<void> _processJsonStringImport(String jsonStr) async {
+    try {
+      final count = await BackupService.importBackupFromJsonString(jsonStr);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('✅ ¡Éxito! Se restauraron $count juegos en la biblioteca.'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error al restaurar: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
 }
+

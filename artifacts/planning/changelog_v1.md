@@ -1,16 +1,35 @@
 ---
 tipo: changelog
 proyecto: App_Rastreador_de_Entretenimiento_Personal
-version: v2.7.2
+version: v2.8.0
 estado: activo
 fecha: 2026-08-26
-tags: [proyecto, changelog, versiones, light-mode, smart-sync, pagination-fix, notion-timeout, victor-engineer]
+tags: [proyecto, changelog, versiones, v2.8.0, filter-modal-sheet, genre-helper, json-backup, touch-filters, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+## [2.8.0] - 2026-08-26 (QoL & Filter Reorganization, Virtual Normalization & Dual JSON Backup)
+
+### Added & Enhanced
+- **Reorganización Táctil de Filtros (`FilterModalSheet`):**
+  - Reemplazados los menús desplegables rígidos y kilométricos por un componente modal interactivo y adaptativo (BottomSheet en Android/móvil y Diálogo en escritorio).
+  - **Buscador en Tiempo Real:** Campo de texto integrado en la cabecera que permite filtrar géneros y plataformas al instante mientras se teclea.
+  - **Conteo Dinámico por Categoría:** Cada opción muestra una pastilla numérica con la cantidad exacta de juegos asociados (ej. `Acción (18)`, `Nintendo Switch (12)`), ordenadas por frecuencia de títulos.
+  - **Acción Rápida Todos:** Opción directa para restablecer a *"Todos / Todas"* con 1 solo toque.
+- **Normalización Semántica Virtual de Géneros (`GenreHelper`):**
+  - Mapeo canónico transparente en memoria que unifica sinónimos bilingües de Notion y RAWG (ej: `Action` $\rightarrow$ `Acción`, `Adventure` $\rightarrow$ `Aventura`, `Racing` $\rightarrow$ `Carreras`, `RPG` $\rightarrow$ `Rol / RPG`).
+  - **Cero Modificaciones en Notion:** La base de datos remota no sufre ninguna alteración, eliminando cualquier riesgo de corrupción o rate limits.
+  - **Iconografía y Colores Temáticos:** Cada género dispone de un icono semántico dedicado (espadas, mira, mapa, volante, calavera, etc.) y un color característico en lugar del icono genérico anterior.
+- **Copia de Seguridad y Portabilidad Local (`BackupService`):**
+  - **Exportar Biblioteca (JSON):** Genera y descarga un archivo estructurado `tracker_backup_YYYYMMDD_HHmmss.json` en la carpeta de Descargas con todos los registros y propiedades de la biblioteca.
+  - **Importar / Restaurar Biblioteca (JSON):** Modal en Ajustes que detecta respaldos recientes en Descargas y permite restaurar la biblioteca local de inmediato offline o al cambiar de dispositivo.
+- **Calidad de Vida en Biblioteca (Dashboard QoL):**
+  - **Contador de Filtros Activos:** El botón de limpieza en la barra de herramientas ahora muestra dinámicamente la cantidad de filtros aplicados (`Limpiar (X)`).
+  - **Botón de Borrado Rápido en Buscador:** Borrado instantáneo del término de búsqueda con un toque.
 
 ## [2.7.2] - 2026-08-26 (Light Mode Contrast Polish, Smart Sync & FAB Clearance)
 
