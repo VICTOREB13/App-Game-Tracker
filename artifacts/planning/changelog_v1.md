@@ -36,7 +36,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
   - **Xbox:** Generada esfera 1:1 (`xbox_logo_green.png`) en verde oficial `#107C10`, erradicando el logo negro plano que se perdía en temas oscuros.
   - **Steam / PC:** Corregido el mapeo de recursos para cargar el icono circular azul/blanco (`steam-logo-steam-icon-transparent-free-png.webp`) en vez del texto blanco plano que se camuflaba en modo claro.
   - **GOG & Epic Games:** Creados recursos optimizados (`gog_logo_purple.png` en púrpura oficial y `epic_games_logo_bordered.png` con contorno de escudo protector).
-  - **Renderizado en Tarjeta Social y App:** `PlatformHelper.getIcon()` ahora preserva el color oficial (`isColor: true`) en insignias y fichas sociales, garantizando contraste y legibilidad absoluta tanto en previsualización como en archivos exportados.
+- **Selector de Tema en Pantalla de Conexión (`SetupScreen`):**
+  - Incorporada la tarjeta de selección visual de tres opciones (`[ 🌙 Oscuro | ☀️ Claro | 🖥️ Sistema ]`) en la pantalla de conexión y edición de credenciales de Notion.
+  - Conectado a `ThemeManager.instance` con reactividad instantánea al hacer clic en cualquiera de las opciones de tema.
+  - Añadido soporte de barra superior con botón de regreso (`Navigator.pop`) y restricciones de ancho máximo (520px) para pantallas de escritorio.
 
 ---
 

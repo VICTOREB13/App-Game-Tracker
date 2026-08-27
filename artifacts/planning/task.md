@@ -95,3 +95,13 @@ Documento operativo gestionado por **Project-Planner** para registrar la asignac
 - [x] `(Frontend-UI)` Refactorizar `PlatformHelper.getIcon()` para soportar tintado `color` y `BlendMode.srcIn` en modo monocromático sin desvirtuar logos a todo color.
 - [x] `(Frontend-UI)` Actualizar la tarjeta social en `game_detail_screen.dart` para renderizar logotipos a todo color (`isColor: true`), garantizando visibilidad 100% nítida en previsualización y exportaciones tanto en Claro como Oscuro.
 
+---
+
+## 🎨 10. Selector de Tema en Pantalla de Conexión (`SetupScreen`)
+- [x] `(Frontend-UI)` Incorporar tarjeta interactiva de selección de tema (`[ Oscuro | Claro | Sistema ]`) en `SetupScreen` (`setup_screen.dart`), permitiendo alternar el tema visual directamente al editar la conexión.
+- [x] `(Frontend-UI)` Conectar `ThemeManager.instance` con `AnimatedBuilder` para reactividad inmediata al alternar entre modos Claro, Oscuro y Sistema.
+- [x] `(Frontend-UI)` Añadir `AppBar` con botón de retroceso (`Navigator.canPop`) y título adaptativo cuando la pantalla es invocada desde "Editar Conexión".
+- [x] `(Frontend-UI)` Adaptar el botón de acción para ejecutar `Navigator.pop(true)` al guardar cuando se proviene de Ajustes, preservando el flujo de navegación.
+- [x] `(Frontend-UI)` Añadir restricciones de ancho máximo (`maxWidth: 520`) para visualización centrada y responsive en pantallas de escritorio.
+
+
