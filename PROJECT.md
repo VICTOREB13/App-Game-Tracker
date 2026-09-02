@@ -1,4 +1,4 @@
-# Project: App Game Tracker (v3.1.1)
+# Project: App Game Tracker (v3.1.3)
 
 ## Architecture
 - **Framework & Platform:** Flutter 3.22+ (Windows Desktop x64, Android).

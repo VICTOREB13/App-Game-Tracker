@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,10 +51,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   List<FilterOption> _cachedPlatformOptions = [];
   List<FilterOption> _cachedGenreOptions = [];
 
-  // Dual View & Pagination
+  // Dual View & Pagination & Card Sizing (Estilo Explorador de Windows)
   bool _isGridView = true;
   int _currentPage = 1;
   int _pageSize = 25; // 10, 25, 50, 100, -1 para "Todos"
+  double _gridCardExtent = 220.0; // Rango: 150px (Compacto) a 380px (Enorme)
 
   final List<String> _statusFilters = [
     'Todos',
@@ -75,16 +78,68 @@ class _DashboardScreenState extends State<DashboardScreen>
     final prefs = await SharedPreferences.getInstance();
     final savedGridView = prefs.getBool('preferred_library_view_mode') ?? true;
     final savedPageSize = prefs.getInt('preferred_library_page_size') ?? 25;
+    final savedCardSize = prefs.getDouble('preferred_library_card_size') ?? 220.0;
 
     if (mounted) {
       setState(() {
         _isGridView = savedGridView;
         _pageSize = savedPageSize;
+        _gridCardExtent = savedCardSize;
       });
     }
 
     await _fetchFilterMetadata();
     await _fetchGames();
+  }
+
+  Future<void> _updateGridCardExtent(double newExtent) async {
+    final clamped = newExtent.clamp(140.0, 420.0);
+    setState(() {
+      _gridCardExtent = clamped;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('preferred_library_card_size', clamped);
+  }
+
+  String _getCardSizeLabel(double extent) {
+    if (extent <= 180) return 'Compacto';
+    if (extent <= 250) return 'Normal';
+    if (extent <= 330) return 'Grande';
+    return 'Enorme';
+  }
+
+  PopupMenuItem<double> _buildSizeMenuItem(
+      double value, String label, IconData icon) {
+    final isSelected = (_gridCardExtent - value).abs() < 25;
+    return PopupMenuItem<double>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: isSelected
+                ? const Color(0xFFDC2626)
+                : AppColors.textSecondary(context),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? const Color(0xFFDC2626)
+                  : AppColors.textPrimary(context),
+            ),
+          ),
+          if (isSelected) ...[
+            const Spacer(),
+            const Icon(Icons.check_rounded, size: 14, color: Color(0xFFDC2626)),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -366,6 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final newHours = (game.hoursPlayed ?? 0) + deltaHours;
 
     String finalStatus = game.status;
+    DateTime? finalStartDate = game.startDate;
     DateTime? finalCompleted = game.completedDate;
     if (game.hltbMain != null &&
         game.hltbMain! > 0 &&
@@ -373,11 +429,15 @@ class _DashboardScreenState extends State<DashboardScreen>
         game.status != 'Jugado') {
       finalStatus = 'Jugado';
       finalCompleted ??= DateTime.now();
+    } else if (game.status == 'Por jugar' && newHours >= 1.0) {
+      finalStatus = 'Jugando';
+      finalStartDate ??= DateTime.now();
     }
 
     final updated = game.copyWith(
       hoursPlayed: newHours,
       status: finalStatus,
+      startDate: finalStartDate,
       completedDate: finalCompleted,
       updatedAt: DateTime.now(),
     );
@@ -1147,72 +1207,190 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ],
                       ),
                     ),
+                    if (_isGridView) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface(context),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border(context)),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 2, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_rounded, size: 14),
+                              tooltip: 'Reducir tamaño de tarjetas (Ctrl -)',
+                              splashRadius: 16,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                  minWidth: 26, minHeight: 26),
+                              color: _gridCardExtent > 150
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context)
+                                      .withOpacity(0.3),
+                              onPressed: _gridCardExtent > 150
+                                  ? () => _updateGridCardExtent(
+                                      _gridCardExtent - 35)
+                                  : null,
+                            ),
+                            PopupMenuButton<double>(
+                              tooltip: 'Tamaño de visualización (Estilo Windows)',
+                              color: AppColors.surface(context),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                    color: AppColors.border(context)),
+                              ),
+                              onSelected: _updateGridCardExtent,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.photo_size_select_actual_outlined,
+                                      size: 13,
+                                      color: AppColors.textPrimary(context),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _getCardSizeLabel(_gridCardExtent),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary(context),
+                                      ),
+                                    ),
+                                    Icon(Icons.arrow_drop_down_rounded,
+                                        size: 14,
+                                        color: AppColors.textSecondary(context)),
+                                  ],
+                                ),
+                              ),
+                              itemBuilder: (ctx) => [
+                                _buildSizeMenuItem(
+                                    160.0,
+                                    'Iconos compactos (Pequeño)',
+                                    Icons.view_module_rounded),
+                                _buildSizeMenuItem(
+                                    220.0,
+                                    'Iconos medianos (Normal)',
+                                    Icons.grid_view_rounded),
+                                _buildSizeMenuItem(
+                                    290.0,
+                                    'Iconos grandes',
+                                    Icons.window_rounded),
+                                _buildSizeMenuItem(
+                                    380.0,
+                                    'Iconos muy grandes (Detallado)',
+                                    Icons.crop_portrait_rounded),
+                              ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_rounded, size: 14),
+                              tooltip: 'Aumentar tamaño de tarjetas (Ctrl +)',
+                              splashRadius: 16,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                  minWidth: 26, minHeight: 26),
+                              color: _gridCardExtent < 380
+                                  ? AppColors.textPrimary(context)
+                                  : AppColors.textSecondary(context)
+                                      .withOpacity(0.3),
+                              onPressed: _gridCardExtent < 380
+                                  ? () => _updateGridCardExtent(
+                                      _gridCardExtent + 35)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
 
-          // Main View: GridView / ListView con animación escalonada
+          // Main View: GridView / ListView con animación escalonada y soporte de zoom con Ctrl + Scroll
           Expanded(
-            child: _isLoading
-                ? _buildSkeletonGrid()
-                : RefreshIndicator(
-                    color: const Color(0xFFDC2626),
-                    backgroundColor: AppColors.surface(context),
-                    onRefresh: () => _fetchGames(forceRefresh: true),
-                    child: _filteredGames.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _searchQuery.isNotEmpty
-                                        ? Icons.search_off_rounded
-                                        : Icons.gamepad_outlined,
-                                    size: 64,
-                                    color: const Color(0xFF71717A)
-                                        .withOpacity(0.4),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    _searchQuery.isNotEmpty
-                                        ? 'No se encontraron juegos para "$_searchQuery"'
-                                        : 'No hay juegos con los filtros seleccionados',
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.inter(
-                                      color: const Color(0xFFA1A1AA),
-                                      fontSize: 14,
+            child: Listener(
+              onPointerSignal: (event) {
+                if (event is PointerScrollEvent &&
+                    HardwareKeyboard.instance.isControlPressed &&
+                    _isGridView) {
+                  if (event.scrollDelta.dy < 0) {
+                    _updateGridCardExtent(_gridCardExtent + 25);
+                  } else if (event.scrollDelta.dy > 0) {
+                    _updateGridCardExtent(_gridCardExtent - 25);
+                  }
+                }
+              },
+              child: _isLoading
+                  ? _buildSkeletonGrid()
+                  : RefreshIndicator(
+                      color: const Color(0xFFDC2626),
+                      backgroundColor: AppColors.surface(context),
+                      onRefresh: () => _fetchGames(forceRefresh: true),
+                      child: _filteredGames.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _searchQuery.isNotEmpty
+                                          ? Icons.search_off_rounded
+                                          : Icons.gamepad_outlined,
+                                      size: 64,
+                                      color: const Color(0xFF71717A)
+                                          .withOpacity(0.4),
                                     ),
-                                  ),
-                                  if (_isAnyFilterActive) ...[
-                                    const SizedBox(height: 12),
-                                    OutlinedButton.icon(
-                                      onPressed: _clearAllFilters,
-                                      icon: const Icon(Icons.clear_rounded,
-                                          size: 16),
-                                      label: const Text('Restablecer filtros'),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFFDC2626),
-                                        side: const BorderSide(
-                                            color: Color(0xFFDC2626)),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _searchQuery.isNotEmpty
+                                          ? 'No se encontraron juegos para "$_searchQuery"'
+                                          : 'No hay juegos con los filtros seleccionados',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        color: const Color(0xFFA1A1AA),
+                                        fontSize: 14,
                                       ),
                                     ),
+                                    if (_isAnyFilterActive) ...[
+                                      const SizedBox(height: 12),
+                                      OutlinedButton.icon(
+                                        onPressed: _clearAllFilters,
+                                        icon: const Icon(Icons.clear_rounded,
+                                            size: 16),
+                                        label: const Text('Restablecer filtros'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor:
+                                              const Color(0xFFDC2626),
+                                          side: const BorderSide(
+                                              color: Color(0xFFDC2626)),
+                                        ),
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                          )
-                        : _isGridView
-                            ? GridView.builder(
-                                padding: const EdgeInsets.all(16),
-                                gridDelegate:
-                                    const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 220,
-                                  childAspectRatio: 0.62,
+                            )
+                          : _isGridView
+                              ? GridView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  gridDelegate:
+                                      SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: _gridCardExtent,
+                                    childAspectRatio: 0.62,
+                                    crossAxisSpacing: 14,
+                                    mainAxisSpacing: 14,
+                                  ),
                                   crossAxisSpacing: 14,
                                   mainAxisSpacing: 14,
                                 ),

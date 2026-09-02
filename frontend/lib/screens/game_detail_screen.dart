@@ -297,9 +297,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void _addQuickHours(double delta) {
     final current = double.tryParse(_hoursController.text) ?? 0.0;
     final updated = (current + delta).clamp(0.0, 99999.0);
+    final hltb = double.tryParse(_hltbMainController.text) ?? 0.0;
+
     setState(() {
       _hoursController.text =
           updated % 1 == 0 ? updated.toInt().toString() : updated.toStringAsFixed(1);
+
+      if (hltb > 0 && updated >= hltb && _selectedStatus != 'Jugado') {
+        _selectedStatus = 'Jugado';
+        _completedDate ??= DateTime.now();
+      } else if (_selectedStatus == 'Por jugar' && updated >= 1.0) {
+        _selectedStatus = 'Jugando';
+        _startDate ??= DateTime.now();
+      }
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -348,15 +358,21 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       final hltbComp = double.tryParse(_hltbCompController.text);
 
       String finalStatus = _selectedStatus;
+      DateTime? finalStartDate = _startDate;
       DateTime? finalCompleted = _completedDate;
 
-      // Auto-culminación si horas superan HLTB
+      // 1. Auto-culminación si horas superan HLTB
       if (hltbMain != null &&
           hltbMain > 0 &&
           hours >= hltbMain &&
           _selectedStatus != 'Jugado') {
         finalStatus = 'Jugado';
         finalCompleted ??= DateTime.now();
+      }
+      // 2. Transición a 'Jugando' si estaba 'Por jugar' y alcanza >= 1.0h
+      else if (_selectedStatus == 'Por jugar' && hours >= 1.0) {
+        finalStatus = 'Jugando';
+        finalStartDate ??= DateTime.now();
       }
 
       final updatedGame = widget.game.copyWith(
@@ -375,7 +391,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         link: _linkController.text.trim().isNotEmpty
             ? _linkController.text.trim()
             : null,
-        startDate: _startDate,
+        startDate: finalStartDate,
         completedDate: finalCompleted,
         updatedAt: DateTime.now(),
       );

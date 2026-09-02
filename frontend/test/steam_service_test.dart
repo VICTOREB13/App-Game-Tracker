@@ -225,7 +225,12 @@ void main() {
       expect(bg3.title, equals("Baldur's Gate 3"));
       expect(bg3.hoursPlayed, equals(60.0));
       expect(bg3.hltbMain, equals(50.0));
-      expect(bg3.status, equals('Jugado')); // 60h >= 50h HLTB -> Auto-culminado!
+      expect(bg3.status, equals('Jugado')); // 60h >= 50h HLTB -> Auto-culminado a Jugado!
+
+      final hades = gamesInDb.firstWhere((g) => g.steamId == 1145360);
+      expect(hades.title, equals('Hades'));
+      expect(hades.hoursPlayed, equals(30.0));
+      expect(hades.status, equals('Jugando')); // 30h >= 1.0h sin HLTB superior -> Jugando!
     });
   });
 }

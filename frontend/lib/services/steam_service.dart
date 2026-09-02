@@ -382,6 +382,10 @@ class SteamService {
           autoCulminatedCount++;
           needsUpdate = true;
           details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $hltbMain h)');
+        } else if (matchedGame.status == 'Por jugar' && roundedNewHours >= 1.0) {
+          finalStatus = 'Jugando';
+          finalStartDate ??= DateTime.now();
+          needsUpdate = true;
         }
 
         final updatedGame = matchedGame.copyWith(
@@ -413,8 +417,8 @@ class SteamService {
         final steamCoverUrl =
             'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/$appid/header.jpg';
 
-        final status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
-        final startDate = roundedNewHours > 0 ? DateTime.now() : null;
+        final status = roundedNewHours >= 1.0 ? 'Jugando' : 'Por jugar';
+        final startDate = roundedNewHours >= 1.0 ? DateTime.now() : null;
 
         final newGame = Game(
           title: name,

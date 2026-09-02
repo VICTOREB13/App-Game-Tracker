@@ -1,4 +1,4 @@
-# 🎮 App Game Tracker (v3.1.1)
+# 🎮 App Game Tracker (v3.1.3)
 
 > **Rastreador de Videojuegos y Entretenimiento Personal Local-First para Windows y Android.**  
 > Desarrollado con ❤️ por **[Victor Engineer](https://victorengineer.fyi)**.
@@ -15,7 +15,7 @@
 
 **App Game Tracker** es una aplicación multiplataforma moderna, elegante y de latencia cero diseñada para llevar el registro definitivo de tu biblioteca de videojuegos. 
 
-A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.1.1** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, servicio nativo de HowLongToBeat, selector visual de plataformas, CRUD integral con borrado de campos opcionales, privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
+A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.1.3** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, servicio nativo de HowLongToBeat, selector visual de plataformas, CRUD integral con borrado de campos opcionales, privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
 
 ---
 

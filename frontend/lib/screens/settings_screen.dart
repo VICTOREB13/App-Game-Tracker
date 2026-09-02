@@ -1025,7 +1025,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Gaming Tracker App • v3.1.1',
+                      'Gaming Tracker App • v3.1.3',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
