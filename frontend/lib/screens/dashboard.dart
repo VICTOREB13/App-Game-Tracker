@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,7 +68,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
-    _loadPreferencesAndFetch();
+    unawaited(_loadPreferencesAndFetch());
   }
 
   Future<void> _loadPreferencesAndFetch() async {
@@ -93,8 +94,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     super.dispose();
   }
 
-  Route _buildFluidPageRoute(Widget page) {
-    return PageRouteBuilder(
+  Route<T> _buildFluidPageRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curvedAnimation = CurvedAnimation(
@@ -311,7 +312,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       _searchController.clear();
       _isSearchActive = false;
     });
-    _fetchGames();
+    unawaited(_fetchGames());
   }
 
   Future<void> _syncWithSteam() async {
@@ -333,10 +334,13 @@ class _DashboardScreenState extends State<DashboardScreen>
             label: 'Ajustes',
             textColor: Colors.white,
             onPressed: () {
-              Navigator.push(
+              Navigator.push<void>(
                 context,
                 _buildFluidPageRoute(const SettingsScreen()),
-              ).then((_) => _fetchGames(forceRefresh: true));
+              ).then((_) {
+                if (!mounted) return;
+                unawaited(_fetchGames(forceRefresh: true));
+              });
             },
           ),
         ),
@@ -350,6 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       steamId: steamId,
     );
 
+    if (!mounted) return;
     if (result != null) {
       await _fetchFilterMetadata();
       await _fetchGames();
@@ -448,7 +453,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   void _showQuickActionMenu(Game game) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF121215),
       shape: const RoundedRectangleBorder(
@@ -548,7 +553,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _quickAddHours(game, 1);
+                    unawaited(_quickAddHours(game, 1));
                   },
                 ),
 
@@ -570,13 +575,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    final res = await Navigator.push(
+                    final res = await Navigator.push<bool>(
                       context,
-                      MaterialPageRoute(
+                      MaterialPageRoute<bool>(
                         builder: (_) => GameDetailScreen(game: game),
                       ),
                     );
-                    if (res == true) _fetchGames(forceRefresh: true);
+                    if (!mounted) return;
+                    if (res == true) await _fetchGames(forceRefresh: true);
                   },
                 ),
               ],
@@ -595,7 +601,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ? null
             : () {
                 Navigator.pop(context);
-                _quickChangeStatus(game, status);
+                unawaited(_quickChangeStatus(game, status));
               },
         borderRadius: BorderRadius.circular(8),
         child: Container(
@@ -658,14 +664,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onPressed: () {
                             _searchController.clear();
                             setState(() => _searchQuery = '');
-                            _fetchGames();
+                            unawaited(_fetchGames());
                           },
                         )
                       : null,
                 ),
                 onChanged: (val) {
                   setState(() => _searchQuery = val);
-                  _fetchGames();
+                  unawaited(_fetchGames());
                 },
               )
             : FittedBox(
@@ -740,7 +746,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   _isSearchActive = false;
                   _searchController.clear();
                   _searchQuery = '';
-                  _fetchGames();
+                  unawaited(_fetchGames());
                 } else {
                   _isSearchActive = true;
                 }
@@ -753,7 +759,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 icon: const Icon(Icons.bar_chart_rounded,
                     color: Color(0xFFDC2626)),
                 tooltip: 'Estadísticas',
-                onPressed: () => Navigator.push(
+                onPressed: () => Navigator.push<void>(
                   context,
                   _buildFluidPageRoute(const AnalyticsScreen()),
                 ),
@@ -771,16 +777,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                   if (val == 'theme') {
                     ThemeManager.instance.toggleTheme();
                   } else if (val == 'steam_sync') {
-                    _syncWithSteam();
+                    await _syncWithSteam();
                   } else if (val == 'refresh') {
                     setState(() => _isRefreshing = true);
-                    _fetchGames(forceRefresh: true, userInitiated: true);
+                    await _fetchGames(forceRefresh: true, userInitiated: true);
                   } else if (val == 'settings') {
-                    final result = await Navigator.push(
+                    final result = await Navigator.push<bool>(
                       context,
                       _buildFluidPageRoute(const SettingsScreen()),
                     );
-                    if (result == true) _fetchGames(forceRefresh: true);
+                    if (!mounted) return;
+                    if (result == true) await _fetchGames(forceRefresh: true);
                   }
                 },
                 itemBuilder: (ctx) => [
@@ -891,13 +898,13 @@ class _DashboardScreenState extends State<DashboardScreen>
                     : const Icon(Icons.sync_rounded,
                         color: Color(0xFFDC2626)),
                 tooltip: 'Sincronizar con Steam',
-                onPressed: _isRefreshing ? null : _syncWithSteam,
+                onPressed: _isRefreshing ? null : () => unawaited(_syncWithSteam()),
               ),
               IconButton(
                 icon: const Icon(Icons.bar_chart_rounded,
                     color: Color(0xFFDC2626)),
                 tooltip: 'Estadísticas',
-                onPressed: () => Navigator.push(
+                onPressed: () => Navigator.push<void>(
                   context,
                   _buildFluidPageRoute(const AnalyticsScreen()),
                 ),
@@ -907,11 +914,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                     color: Color(0xFF71717A)),
                 tooltip: 'Configuración',
                 onPressed: () async {
-                  final result = await Navigator.push(
+                  final result = await Navigator.push<bool>(
                     context,
                     _buildFluidPageRoute(const SettingsScreen()),
                   );
-                  if (result == true) _fetchGames(forceRefresh: true);
+                  if (!mounted) return;
+                  if (result == true) await _fetchGames(forceRefresh: true);
                 },
               ),
             ],
@@ -926,15 +934,16 @@ class _DashboardScreenState extends State<DashboardScreen>
               game: _heroGame!,
               pulseAnimation: _pulseController,
               onTap: () async {
-                final res = await Navigator.push(
+                final res = await Navigator.push<bool>(
                   context,
                   _buildFluidPageRoute(
                     GameDetailScreen(game: _heroGame!),
                   ),
                 );
-                if (res == true) _fetchGames(forceRefresh: true);
+                if (!mounted) return;
+                if (res == true) await _fetchGames(forceRefresh: true);
               },
-              onQuickAddHours: () => _quickAddHours(_heroGame!, 1),
+              onQuickAddHours: () => unawaited(_quickAddHours(_heroGame!, 1)),
             ),
 
           // Toolbar de Filtros (Responsive: 2 filas en Mobile, 1 fila en Desktop)
@@ -1230,14 +1239,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     child: GameCardGrid(
                                       game: game,
                                       onTap: () async {
-                                        final res = await Navigator.push(
+                                        final res = await Navigator.push<bool>(
                                           context,
                                           _buildFluidPageRoute(
                                             GameDetailScreen(game: game),
                                           ),
                                         );
+                                        if (!mounted) return;
                                         if (res == true) {
-                                          _fetchGames(forceRefresh: true);
+                                          await _fetchGames(forceRefresh: true);
                                         }
                                       },
                                       onLongPress: () =>
@@ -1275,20 +1285,21 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     child: GameCardList(
                                       game: game,
                                       onTap: () async {
-                                        final res = await Navigator.push(
+                                        final res = await Navigator.push<bool>(
                                           context,
                                           _buildFluidPageRoute(
                                             GameDetailScreen(game: game),
                                           ),
                                         );
+                                        if (!mounted) return;
                                         if (res == true) {
-                                          _fetchGames(forceRefresh: true);
+                                          await _fetchGames(forceRefresh: true);
                                         }
                                       },
                                       onLongPress: () =>
                                           _showQuickActionMenu(game),
                                       onQuickAddHours: () =>
-                                          _quickAddHours(game, 1),
+                                          unawaited(_quickAddHours(game, 1)),
                                     ),
                                   );
                                 },
@@ -1311,11 +1322,12 @@ class _DashboardScreenState extends State<DashboardScreen>
       floatingActionButton: isMobileFilter
           ? FloatingActionButton(
               onPressed: () async {
-                final res = await Navigator.push(
+                final res = await Navigator.push<bool>(
                   context,
                   _buildFluidPageRoute(const SearchScreen()),
                 );
-                if (res == true) _fetchGames(forceRefresh: true);
+                if (!mounted) return;
+                if (res == true) await _fetchGames(forceRefresh: true);
               },
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
@@ -1324,11 +1336,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             )
           : FloatingActionButton.extended(
               onPressed: () async {
-                final res = await Navigator.push(
+                final res = await Navigator.push<bool>(
                   context,
                   _buildFluidPageRoute(const SearchScreen()),
                 );
-                if (res == true) _fetchGames(forceRefresh: true);
+                if (!mounted) return;
+                if (res == true) await _fetchGames(forceRefresh: true);
               },
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
@@ -1379,7 +1392,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         selected: isSelected,
         onSelected: (val) {
           setState(() => _selectedStatusFilter = label);
-          _fetchGames();
+          unawaited(_fetchGames());
         },
         selectedColor: chipColor,
         backgroundColor: isDark
@@ -1414,7 +1427,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           allLabel: 'Todas',
           onSelected: (val) {
             setState(() => _selectedPlatformFilter = val);
-            _fetchGames();
+            unawaited(_fetchGames());
           },
         );
       },
@@ -1486,7 +1499,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           allLabel: 'Todos',
           onSelected: (val) {
             setState(() => _selectedGenreFilter = val);
-            _fetchGames();
+            unawaited(_fetchGames());
           },
         );
       },
@@ -1579,7 +1592,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           onChanged: (val) {
             if (val != null) {
               setState(() => _selectedSort = val);
-              _fetchGames();
+              unawaited(_fetchGames());
             }
           },
         ),
@@ -1635,7 +1648,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
       itemCount: 8,
       itemBuilder: (context, index) {
-        return Container(
+        return DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xFF121215),
             borderRadius: BorderRadius.circular(12),
@@ -1643,9 +1656,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           child: Column(
             children: [
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
+              const Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
                     color: Color(0xFF18181B),
                     borderRadius:
                         BorderRadius.vertical(top: Radius.circular(12)),

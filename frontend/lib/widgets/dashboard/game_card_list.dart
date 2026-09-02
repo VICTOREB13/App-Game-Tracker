@@ -96,7 +96,6 @@ class _GameCardListState extends State<GameCardList> {
                     height: 48,
                     fit: BoxFit.cover,
                     memCacheWidth: 200,
-                    memCacheHeight: 300,
                     cacheWidth: 200,
                   ),
                 ),

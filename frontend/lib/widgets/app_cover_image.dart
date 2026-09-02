@@ -13,9 +13,10 @@ class AppCoverImage extends StatelessWidget {
   final BorderRadius? borderRadius;
   final Widget? placeholder;
   final Widget? errorWidget;
-  final int memCacheWidth;
-  final int memCacheHeight;
-  final int cacheWidth;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
+  final int? cacheWidth;
+  final int? cacheHeight;
 
   const AppCoverImage({
     super.key,
@@ -26,9 +27,10 @@ class AppCoverImage extends StatelessWidget {
     this.borderRadius,
     this.placeholder,
     this.errorWidget,
-    this.memCacheWidth = 400,
-    this.memCacheHeight = 600,
-    this.cacheWidth = 400,
+    this.memCacheWidth = 600,
+    this.memCacheHeight,
+    this.cacheWidth = 600,
+    this.cacheHeight,
   });
 
   @override
@@ -58,6 +60,7 @@ class AppCoverImage extends StatelessWidget {
         height: height,
         fit: fit,
         cacheWidth: cacheWidth,
+        cacheHeight: cacheHeight,
         errorBuilder: (ctx, _, __) =>
             errorWidget ?? _buildDefaultPlaceholder(ctx),
         frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {

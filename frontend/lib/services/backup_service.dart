@@ -95,22 +95,29 @@ class BackupService {
     final decoded = json.decode(content);
     final List<Game> gamesToRestore = [];
 
-    if (decoded is Map<String, dynamic>) {
+    if (decoded is Map<String, dynamic> || decoded is Map) {
+      final map = decoded is Map<String, dynamic>
+          ? decoded
+          : Map<String, dynamic>.from(decoded as Map);
       // 1. Formato Canónico v3.0 (SQLite)
-      if (decoded.containsKey('games') && decoded['games'] is List) {
-        final list = decoded['games'] as List;
+      if (map.containsKey('games') && map['games'] is List) {
+        final list = map['games'] as List<dynamic>;
         for (final item in list) {
           if (item is Map<String, dynamic>) {
             gamesToRestore.add(Game.fromJson(item));
+          } else if (item is Map) {
+            gamesToRestore.add(Game.fromJson(Map<String, dynamic>.from(item)));
           }
         }
       }
       // 2. Formato Heredado v2.x (Notion API Cache)
-      else if (decoded.containsKey('records') && decoded['records'] is List) {
-        final list = decoded['records'] as List;
+      else if (map.containsKey('records') && map['records'] is List) {
+        final list = map['records'] as List<dynamic>;
         for (final item in list) {
           if (item is Map<String, dynamic>) {
             gamesToRestore.add(Game.fromLegacyNotion(item));
+          } else if (item is Map) {
+            gamesToRestore.add(Game.fromLegacyNotion(Map<String, dynamic>.from(item)));
           }
         }
       }
@@ -121,6 +128,13 @@ class BackupService {
             gamesToRestore.add(Game.fromLegacyNotion(item));
           } else {
             gamesToRestore.add(Game.fromJson(item));
+          }
+        } else if (item is Map) {
+          final m = Map<String, dynamic>.from(item);
+          if (m.containsKey('properties')) {
+            gamesToRestore.add(Game.fromLegacyNotion(m));
+          } else {
+            gamesToRestore.add(Game.fromJson(m));
           }
         }
       }

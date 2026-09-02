@@ -2,9 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:tracker_app/models/game.dart';
 import 'package:tracker_app/services/database_service.dart';
 import 'package:tracker_app/services/hltb_service.dart';
 import 'package:tracker_app/services/metadata_service.dart';
@@ -64,7 +62,7 @@ void main() {
           return http.Response(
             json.encode({
               'response': {
-                'players': [
+                'players': <Map<String, dynamic>>[
                   {'personaname': 'GamerVic', 'steamid': '76561198000000000'}
                 ]
               }
@@ -118,7 +116,7 @@ void main() {
             json.encode({
               'response': {
                 'game_count': 2,
-                'games': [
+                'games': <Map<String, dynamic>>[
                   {
                     'appid': 1086940,
                     'name': "Baldur's Gate 3",
@@ -139,7 +137,7 @@ void main() {
         if (path.contains('GetRecentlyPlayedGames')) {
           return http.Response(
             json.encode({
-              'response': {'total_count': 0, 'games': []}
+              'response': {'total_count': 0, 'games': <Map<String, dynamic>>[]}
             }),
             200,
           );
@@ -152,7 +150,7 @@ void main() {
           }
           return http.Response(
             json.encode({
-              'data': [
+              'data': <Map<String, dynamic>>[
                 {
                   'game_id': 1,
                   'game_name': "Baldur's Gate 3",
@@ -171,7 +169,7 @@ void main() {
           return http.Response(
             json.encode({
               'query': {
-                'search': [
+                'search': <Map<String, dynamic>>[
                   {'title': 'Baldur\'s Gate 3'}
                 ]
               }
@@ -184,10 +182,10 @@ void main() {
         if (request.url.host.contains('rawg')) {
           return http.Response(
             json.encode({
-              'results': [
+              'results': <Map<String, dynamic>>[
                 {
                   'background_image': 'https://media.rawg.io/bg.jpg',
-                  'genres': [
+                  'genres': <Map<String, dynamic>>[
                     {'name': 'RPG'}
                   ]
                 }

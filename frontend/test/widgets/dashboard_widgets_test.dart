@@ -106,7 +106,6 @@ void main() {
     testWidgets('PaginationControlBar cambia de página y tamaño de página',
         (WidgetTester tester) async {
       int? changedPage;
-      int? changedPageSize;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -117,7 +116,7 @@ void main() {
               pageSize: 25,
               totalPages: 2,
               onPageChanged: (page) => changedPage = page,
-              onPageSizeChanged: (size) => changedPageSize = size,
+              onPageSizeChanged: (_) {},
             ),
           ),
         ),

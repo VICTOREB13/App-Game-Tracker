@@ -67,10 +67,12 @@ class MetadataService {
         );
 
         if (res.statusCode == 200) {
-          final data = json.decode(res.body);
-          final searchResults = data['query']?['search'] as List?;
+          final data = json.decode(res.body) as Map<String, dynamic>;
+          final queryMap = data['query'] as Map<String, dynamic>?;
+          final searchResults = queryMap?['search'] as List<dynamic>?;
           if (searchResults != null && searchResults.isNotEmpty) {
-            final title = searchResults[0]['title']?.toString() ?? '';
+            final first = searchResults[0] as Map<String, dynamic>?;
+            final title = first?['title']?.toString() ?? '';
             if (title.isNotEmpty) {
               final formattedTitle = Uri.encodeComponent(title.replaceAll(' ', '_'));
               return 'https://$lang.wikipedia.org/wiki/$formattedTitle';
@@ -109,13 +111,13 @@ class MetadataService {
 
       final res = await _httpClient.get(url, timeout: const Duration(seconds: 8));
       if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final results = data['results'] as List?;
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>?;
         if (results != null && results.isNotEmpty) {
-          final match = results[0];
-          final rawGenres = match['genres'] as List? ?? [];
+          final match = results[0] as Map<String, dynamic>;
+          final rawGenres = (match['genres'] as List<dynamic>?) ?? [];
           final genres = rawGenres
-              .map((g) => g['name']?.toString()?.trim() ?? '')
+              .map((g) => (g as Map<String, dynamic>?)?['name']?.toString().trim() ?? '')
               .where((name) => name.isNotEmpty)
               .toList();
 
@@ -163,8 +165,8 @@ class MetadataService {
           // Auto-culminación inmediata si las horas acumuladas superan HLTB
           final hours = game.hoursPlayed ?? 0;
           if (newHltbMain != null &&
-              newHltbMain! > 0 &&
-              hours >= newHltbMain! &&
+              newHltbMain > 0 &&
+              hours >= newHltbMain &&
               game.status != 'Jugado') {
             newStatus = 'Jugado';
             newCompletedDate ??= DateTime.now();
@@ -186,11 +188,13 @@ class MetadataService {
         if (rawgData != null) {
           if ((newCover == null || newCover.isEmpty) &&
               rawgData['cover_url'] != null) {
-            newCover = rawgData['cover_url'];
+            newCover = rawgData['cover_url']?.toString();
             modified = true;
           }
           if (newGenres.isEmpty && (rawgData['genres'] as List).isNotEmpty) {
-            newGenres = List<String>.from(rawgData['genres']);
+            newGenres = (rawgData['genres'] as List<dynamic>)
+                .map((e) => e.toString())
+                .toList();
             modified = true;
           }
         }

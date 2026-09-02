@@ -61,8 +61,6 @@ class HeroSpotlightCard extends StatelessWidget {
                 child: AppCoverImage(
                   coverUrl: game.coverUrl,
                   fit: BoxFit.cover,
-                  memCacheWidth: 400,
-                  memCacheHeight: 600,
                 ),
               ),
             ),
@@ -83,7 +81,6 @@ class HeroSpotlightCard extends StatelessWidget {
                       height: 80,
                       fit: BoxFit.cover,
                       memCacheWidth: 300,
-                      memCacheHeight: 400,
                       cacheWidth: 300,
                     ),
                   ),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import '../models/game.dart';
@@ -43,12 +42,6 @@ class _SearchScreenState extends State<SearchScreen> {
     'Xbox', 'Nintendo Switch', 'Wii U',
     'Nintendo 64', 'Nintendo DS',
     'GOG', 'Epic Games',
-  ];
-
-  final List<String> _availableStatuses = [
-    'Por jugar',
-    'Jugando',
-    'Jugado',
   ];
 
   String _canonicalPlatform(String raw) {
@@ -137,13 +130,13 @@ class _SearchScreenState extends State<SearchScreen> {
       final response = await http.get(Uri.parse(
           'https://api.rawg.io/api/games?key=$_rawgKey&search=$trimmed&page_size=15'));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(response.body) as Map<String, dynamic>;
         setState(() {
-          _searchResults = data['results'] ?? [];
+          _searchResults = (data['results'] as List<dynamic>?) ?? [];
         });
       }
     } catch (e) {
-      debugPrint("Error searching RAWG: $e");
+      debugPrint('Error searching RAWG: $e');
     } finally {
       if (mounted) setState(() => _isSearching = false);
     }
@@ -180,7 +173,7 @@ class _SearchScreenState extends State<SearchScreen> {
     required num hoursPlayed,
     required List<String> genres,
   }) async {
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(
@@ -357,9 +350,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     : ListView.builder(
                         itemCount: _searchResults.length,
                         itemBuilder: (context, index) {
-                          final game = _searchResults[index];
-                          final genreNames = (game['genres'] as List? ?? [])
-                              .map((g) => g['name']?.toString() ?? '')
+                          final game = _searchResults[index] as Map<String, dynamic>;
+                          final genreNames = ((game['genres'] as List<dynamic>?) ?? [])
+                              .map((g) => (g as Map<String, dynamic>?)?['name']?.toString() ?? '')
                               .where((s) => s.isNotEmpty)
                               .take(3)
                               .join(' • ');
@@ -385,7 +378,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                     child: game['background_image'] != null
                                         ? CachedNetworkImage(
                                             imageUrl:
-                                                game['background_image'],
+                                                game['background_image'].toString(),
                                             width: 90,
                                             height: 90,
                                             fit: BoxFit.cover,
@@ -412,7 +405,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            game['name'] ?? '',
+                                            game['name']?.toString() ?? '',
                                             style: GoogleFonts.outfit(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 15,
@@ -424,7 +417,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            game['released'] ?? 'Sin fecha',
+                                            game['released']?.toString() ?? 'Sin fecha',
                                             style: GoogleFonts.inter(
                                               color: AppColors.textSecondary(
                                                   context),
@@ -541,8 +534,9 @@ class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
     // Extraer plataformas detectadas
     if (widget.rawgGame['platforms'] != null &&
         widget.rawgGame['platforms'] is List) {
-      for (final item in widget.rawgGame['platforms']) {
-        final pName = item['platform']?['name']?.toString()?.trim();
+      for (final dynamic item in (widget.rawgGame['platforms'] as List<dynamic>)) {
+        final pMap = item as Map<String, dynamic>?;
+        final pName = (pMap?['platform'] as Map<String, dynamic>?)?['name']?.toString().trim();
         if (pName != null && pName.isNotEmpty) {
           final canonical = widget.canonicalPlatform(pName);
           if (!_detectedPlatforms.contains(canonical)) {
@@ -559,8 +553,9 @@ class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
     // Extraer géneros devueltos por RAWG
     if (widget.rawgGame['genres'] != null &&
         widget.rawgGame['genres'] is List) {
-      for (final g in widget.rawgGame['genres']) {
-        final name = g['name']?.toString()?.trim();
+      for (final dynamic g in (widget.rawgGame['genres'] as List<dynamic>)) {
+        final gMap = g as Map<String, dynamic>?;
+        final name = gMap?['name']?.toString().trim();
         if (name != null && name.isNotEmpty) {
           if (!_selectedGenres.contains(name)) {
             _selectedGenres.add(name);
@@ -604,12 +599,11 @@ class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
                   borderRadius: BorderRadius.circular(10),
                   child: rawgGame['background_image'] != null
                       ? CachedNetworkImage(
-                          imageUrl: rawgGame['background_image'],
+                          imageUrl: rawgGame['background_image'].toString(),
                           width: 60,
                           height: 80,
                           fit: BoxFit.cover,
                           memCacheWidth: 200,
-                          memCacheHeight: 300,
                           placeholder: (_, __) => Container(
                             width: 60,
                             height: 80,
@@ -639,7 +633,7 @@ class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        rawgGame['name'] ?? 'Juego',
+                        rawgGame['name']?.toString() ?? 'Juego',
                         style: GoogleFonts.outfit(
                           color: AppColors.textPrimary(context),
                           fontSize: 18,
@@ -659,7 +653,7 @@ class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
                         ),
                       ),
                       if (rawgGame['playtime'] != null &&
-                          rawgGame['playtime'] > 0) ...[
+                          (rawgGame['playtime'] as num) > 0) ...[
                         const SizedBox(height: 2),
                         Text(
                           'HLTB estimado: ${rawgGame['playtime']}h',

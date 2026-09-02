@@ -161,12 +161,12 @@ class Game {
       'summary': summary,
       'link': link,
       'start_date': startDate != null
-          ? "${startDate!.year.toString().padLeft(4, '0')}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')}"
+          ? '${startDate!.year.toString().padLeft(4, '0')}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')}'
           : null,
       'completed_date': completedDate != null
-          ? "${completedDate!.year.toString().padLeft(4, '0')}-${completedDate!.month.toString().padLeft(2, '0')}-${completedDate!.day.toString().padLeft(2, '0')}"
+          ? '${completedDate!.year.toString().padLeft(4, '0')}-${completedDate!.month.toString().padLeft(2, '0')}-${completedDate!.day.toString().padLeft(2, '0')}'
           : null,
-      'steam_id': steamId != null ? steamId!.toInt() : null,
+      'steam_id': steamId?.toInt(),
       'created_at': createdAt?.toIso8601String() ?? now,
       'updated_at': updatedAt?.toIso8601String() ?? now,
     };
@@ -203,7 +203,7 @@ class Game {
         parsedGenres = (json['genres'] as List).map((e) => e.toString()).toList();
       } else if (json['genres'] is String) {
         try {
-          final decoded = jsonDecode(json['genres']);
+          final decoded = jsonDecode(json['genres'] as String);
           if (decoded is List) {
             parsedGenres = decoded.map((e) => e.toString()).toList();
           }
@@ -248,67 +248,87 @@ class Game {
 
     String extractTitle(dynamic prop) {
       if (prop == null) return 'Sin título';
-      final titleList = prop['title'] as List?;
+      final titleList = (prop as Map<String, dynamic>?)?['title'] as List?;
       if (titleList != null && titleList.isNotEmpty) {
-        return titleList[0]['plain_text'] ?? titleList[0]['text']?['content'] ?? 'Sin título';
+        final first = titleList[0] as Map<String, dynamic>?;
+        return first?['plain_text']?.toString() ??
+            (first?['text'] as Map<String, dynamic>?)?['content']?.toString() ??
+            'Sin título';
       }
       return 'Sin título';
     }
 
     String? extractCover(dynamic prop) {
       if (prop == null) return null;
-      final files = prop['files'] as List?;
+      final files = (prop as Map<String, dynamic>?)?['files'] as List?;
       if (files != null && files.isNotEmpty) {
-        final f = files[0];
-        if (f['type'] == 'external') return f['external']?['url'];
-        if (f['type'] == 'file') return f['file']?['url'];
+        final f = files[0] as Map<String, dynamic>?;
+        if (f != null) {
+          if (f['type'] == 'external') {
+            return (f['external'] as Map<String, dynamic>?)?['url'] as String?;
+          }
+          if (f['type'] == 'file') {
+            return (f['file'] as Map<String, dynamic>?)?['url'] as String?;
+          }
+        }
       }
       return null;
     }
 
     String extractStatus(dynamic prop) {
       if (prop == null) return 'Por jugar';
-      if (prop['status'] != null) return prop['status']['name'] ?? 'Por jugar';
-      if (prop['select'] != null) return prop['select']['name'] ?? 'Por jugar';
+      final p = prop as Map<String, dynamic>?;
+      if (p?['status'] != null) {
+        return (p!['status'] as Map<String, dynamic>?)?['name']?.toString() ?? 'Por jugar';
+      }
+      if (p?['select'] != null) {
+        return (p!['select'] as Map<String, dynamic>?)?['name']?.toString() ?? 'Por jugar';
+      }
       return 'Por jugar';
     }
 
     String? extractSelect(dynamic prop) {
       if (prop == null) return null;
-      return prop['select']?['name'];
+      final p = prop as Map<String, dynamic>?;
+      return (p?['select'] as Map<String, dynamic>?)?['name']?.toString();
     }
 
     num? extractNumber(dynamic prop) {
       if (prop == null) return null;
-      return prop['number'] as num?;
+      return (prop as Map<String, dynamic>?)?['number'] as num?;
     }
 
     List<String> extractMultiSelect(dynamic prop) {
       if (prop == null) return [];
-      final list = prop['multi_select'] as List?;
+      final list = (prop as Map<String, dynamic>?)?['multi_select'] as List?;
       if (list != null) {
-        return list.map((e) => e['name']?.toString() ?? '').where((e) => e.isNotEmpty).toList();
+        return list
+            .map((e) => (e as Map<String, dynamic>?)?['name']?.toString() ?? '')
+            .where((e) => e.isNotEmpty)
+            .toList();
       }
       return [];
     }
 
     String? extractRichText(dynamic prop) {
       if (prop == null) return null;
-      final list = prop['rich_text'] as List?;
+      final list = (prop as Map<String, dynamic>?)?['rich_text'] as List?;
       if (list != null && list.isNotEmpty) {
-        return list.map((e) => e['plain_text'] ?? '').join('');
+        return list
+            .map((e) => (e as Map<String, dynamic>?)?['plain_text']?.toString() ?? '')
+            .join('');
       }
       return null;
     }
 
     String? extractUrl(dynamic prop) {
       if (prop == null) return null;
-      return prop['url']?.toString();
+      return (prop as Map<String, dynamic>?)?['url']?.toString();
     }
 
     DateTime? extractDate(dynamic prop) {
       if (prop == null) return null;
-      final start = prop['date']?['start'];
+      final start = ((prop as Map<String, dynamic>?)?['date'] as Map<String, dynamic>?)?['start'];
       return start != null ? DateTime.tryParse(start.toString()) : null;
     }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -27,8 +28,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadYearGoal();
-    _fetchData();
+    unawaited(_loadYearGoal());
+    unawaited(_fetchData());
   }
 
   Future<void> _loadYearGoal() async {
@@ -123,7 +124,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
 
     if (newGoal != null && newGoal > 0) {
-      _setYearGoal(newGoal);
+      await _setYearGoal(newGoal);
     }
   }
 
@@ -387,7 +388,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   color: AppColors.textSecondary(context),
                                   onPressed: () {
                                     setState(() => _selectedYear--);
-                                    _loadYearGoal();
+                                    unawaited(_loadYearGoal());
                                   },
                                   tooltip: 'Año anterior',
                                   constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
@@ -414,7 +415,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   color: AppColors.textSecondary(context),
                                   onPressed: () {
                                     setState(() => _selectedYear++);
-                                    _loadYearGoal();
+                                    unawaited(_loadYearGoal());
                                   },
                                   tooltip: 'Año siguiente',
                                   constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
@@ -463,7 +464,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 color: AppColors.textSecondary(context),
                                 onPressed: () {
                                   setState(() => _selectedYear--);
-                                  _loadYearGoal();
+                                  unawaited(_loadYearGoal());
                                 },
                                 tooltip: 'Año anterior',
                                 constraints: const BoxConstraints(
@@ -494,7 +495,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 color: AppColors.textSecondary(context),
                                 onPressed: () {
                                   setState(() => _selectedYear++);
-                                  _loadYearGoal();
+                                  unawaited(_loadYearGoal());
                                 },
                                 tooltip: 'Año siguiente',
                                 constraints: const BoxConstraints(

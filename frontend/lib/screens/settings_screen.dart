@@ -68,30 +68,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveRawgKey() async {
     await SecureStorageService.instance.setRawgKey(_rawgKeyController.text.trim());
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('RAWG API Key guardada con éxito'),
-          backgroundColor: Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('RAWG API Key guardada con éxito'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _saveSteamSettings() async {
     await SecureStorageService.instance.setSteamApiKey(_steamKeyController.text.trim());
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('steam_user_id', _steamIdController.text.trim());
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Credenciales de Steam guardadas con éxito'),
-          backgroundColor: Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Credenciales de Steam guardadas con éxito'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _testSteamConnection() async {
@@ -113,18 +111,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final isValid = await SteamService.instance.validateCredentials(key, id);
 
-    if (mounted) {
-      setState(() => _isTestingSteam = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isValid
-              ? '✅ Conexión con Steam validada exitosamente'
-              : '❌ No se pudo conectar con Steam. Verifica tu API Key y SteamID.'),
-          backgroundColor: isValid ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+    setState(() => _isTestingSteam = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isValid
+            ? '✅ Conexión con Steam validada exitosamente'
+            : '❌ No se pudo conectar con Steam. Verifica tu API Key y SteamID.'),
+        backgroundColor: isValid ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _resolveSteamVanity() async {
@@ -143,30 +140,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final resolved = await SteamService.instance.resolveVanityUrl(key, idOrVanity);
+    if (!mounted) return;
     if (resolved != null) {
       setState(() {
         _steamIdController.text = resolved;
       });
       await _saveSteamSettings();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ SteamID64 detectado: $resolved'),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ SteamID64 detectado: $resolved'),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo resolver el nombre de usuario de Steam'),
-            backgroundColor: Color(0xFFDC2626),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo resolver el nombre de usuario de Steam'),
+          backgroundColor: Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -191,57 +186,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final res = await SteamService.instance.syncWithDatabase(apiKey: key, steamId: id);
       await _loadSettings();
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.surface(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: AppColors.border(context)),
-            ),
-            title: Row(
-              children: [
-                const Icon(Icons.check_circle_outline_rounded,
-                    color: Color(0xFF10B981), size: 22),
-                const SizedBox(width: 10),
-                Text(
-                  'Sincronización con Steam',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary(context),
-                  ),
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: AppColors.border(context)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle_outline_rounded,
+                  color: Color(0xFF10B981), size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'Sincronización con Steam',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(context),
                 ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Resumen:', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                const SizedBox(height: 8),
-                Text('🎮 Juegos encontrados: ${res.totalFound}', style: GoogleFonts.inter(fontSize: 12)),
-                Text('🔄 Actualizados: ${res.updatedCount}', style: GoogleFonts.inter(fontSize: 12)),
-                Text('✨ Creados: ${res.createdCount}', style: GoogleFonts.inter(fontSize: 12)),
-                if (res.familySharingCount > 0)
-                  Text('👨‍👩‍👧‍👦 Family Sharing: ${res.familySharingCount}', style: GoogleFonts.inter(fontSize: 12)),
-                if (res.autoCulminatedCount > 0)
-                  Text('🏆 Auto-culminados por HLTB: ${res.autoCulminatedCount}', style: GoogleFonts.inter(fontSize: 12)),
-              ],
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Aceptar'),
               ),
             ],
           ),
-        );
-      }
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Resumen:', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 8),
+              Text('🎮 Juegos encontrados: ${res.totalFound}', style: GoogleFonts.inter(fontSize: 12)),
+              Text('🔄 Actualizados: ${res.updatedCount}', style: GoogleFonts.inter(fontSize: 12)),
+              Text('✨ Creados: ${res.createdCount}', style: GoogleFonts.inter(fontSize: 12)),
+              if (res.familySharingCount > 0)
+                Text('👨‍👩‍👧‍👦 Family Sharing: ${res.familySharingCount}', style: GoogleFonts.inter(fontSize: 12)),
+              if (res.autoCulminatedCount > 0)
+                Text('🏆 Auto-culminados por HLTB: ${res.autoCulminatedCount}', style: GoogleFonts.inter(fontSize: 12)),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -267,15 +261,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .toList();
 
     if (pending.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Todos los juegos ya tienen metadatos de HowLongToBeat'),
-            backgroundColor: Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Todos los juegos ya tienen metadatos de HowLongToBeat'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -321,46 +314,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
         debugPrint('Error enriqueciendo HLTB (${game.title}): $e');
       }
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
     }
 
     await _loadSettings();
 
-    if (mounted) {
-      setState(() => _isSyncingHltb = false);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface(context),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
-              const SizedBox(width: 10),
-              Text('HowLongToBeat Sincronizado',
-                  style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold, fontSize: 16)),
-            ],
-          ),
-          content: Text(
-            'Se enriquecieron $enrichedCount videojuegos con duración de Campaña y Completista.\n'
-            '${autoCulminatedCount > 0 ? "🏆 $autoCulminatedCount juegos auto-culminados a 'Jugado'." : ""}',
-            style: GoogleFonts.inter(fontSize: 13, height: 1.4),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Entendido'),
-            ),
+    if (!mounted) return;
+    setState(() => _isSyncingHltb = false);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface(context),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
+            const SizedBox(width: 10),
+            Text('HowLongToBeat Sincronizado',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-      );
-    }
+        content: Text(
+          'Se enriquecieron $enrichedCount videojuegos con duración de Campaña y Completista.\n'
+          '${autoCulminatedCount > 0 ? "🏆 $autoCulminatedCount juegos auto-culminados a 'Jugado'." : ""}',
+          style: GoogleFonts.inter(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _syncAllMetadata() async {
@@ -376,16 +368,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         .toList();
 
     if (pending.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Todos los juegos ya tienen géneros, portada y enlace de Wikipedia'),
-            backgroundColor: Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Todos los juegos ya tienen géneros, portada y enlace de Wikipedia'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -425,13 +416,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (newGenres.isEmpty &&
                 rawgData['genres'] != null &&
                 (rawgData['genres'] as List).isNotEmpty) {
-              newGenres = List<String>.from(rawgData['genres']);
+              newGenres = (rawgData['genres'] as List<dynamic>)
+                  .map((e) => e.toString())
+                  .toList();
               genresUpdated++;
               modified = true;
             }
             if ((newCover == null || newCover.isEmpty) &&
                 rawgData['cover_url'] != null) {
-              newCover = rawgData['cover_url'];
+              newCover = rawgData['cover_url']?.toString();
               coversUpdated++;
               modified = true;
             }
@@ -449,62 +442,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await db.updateGame(updated);
       }
 
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
     }
 
     await _loadSettings();
 
-    if (mounted) {
-      setState(() => _isSyncingMetadata = false);
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surface(context),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              const Icon(Icons.auto_awesome_rounded, color: Color(0xFFDC2626)),
-              const SizedBox(width: 10),
-              Text('Metadatos Sincronizados',
-                  style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold, fontSize: 16)),
-            ],
-          ),
-          content: Text(
-            'Se completaron los siguientes metadatos en tu biblioteca:\n\n'
-            '• 🏷️ Géneros RAWG asignados: $genresUpdated juegos\n'
-            '• 🌐 Enlaces de Wikipedia: $wikiUpdated juegos\n'
-            '• 🖼️ Portadas HD asignadas: $coversUpdated juegos',
-            style: GoogleFonts.inter(fontSize: 13, height: 1.5),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Entendido'),
-            ),
+    if (!mounted) return;
+    setState(() => _isSyncingMetadata = false);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface(context),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.auto_awesome_rounded, color: Color(0xFFDC2626)),
+            const SizedBox(width: 10),
+            Text('Metadatos Sincronizados',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
-      );
-    }
+        content: Text(
+          'Se completaron los siguientes metadatos en tu biblioteca:\n\n'
+          '• 🏷️ Géneros RAWG asignados: $genresUpdated juegos\n'
+          '• 🌐 Enlaces de Wikipedia: $wikiUpdated juegos\n'
+          '• 🖼️ Portadas HD asignadas: $coversUpdated juegos',
+          style: GoogleFonts.inter(fontSize: 13, height: 1.5),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _optimizeDatabase() async {
     await DatabaseService.instance.vacuum();
     await _loadSettings();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Base de datos SQLite optimizada'),
-          backgroundColor: Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Base de datos SQLite optimizada'),
+        backgroundColor: Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -1034,7 +1025,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Gaming Tracker App • v3.1.0',
+                      'Gaming Tracker App • v3.1.1',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
@@ -1153,7 +1144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => _ImportBackupDialog(
         availableBackups: availableBackups,
@@ -1280,10 +1271,12 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
                         allowedExtensions: ['json'],
                       );
                       if (result != null && result.files.single.path != null) {
+                        if (!context.mounted) return;
                         Navigator.pop(context);
                         await widget.onImportFile(File(result.files.single.path!));
                       }
                     } catch (e) {
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content: Text('Error: $e'),
@@ -1321,6 +1314,7 @@ class _ImportBackupDialogState extends State<_ImportBackupDialog> {
                       if (await alt.exists()) {
                         await widget.onImportFile(alt);
                       } else {
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content:

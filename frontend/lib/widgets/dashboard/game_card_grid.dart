@@ -119,9 +119,6 @@ class _GameCardGridState extends State<GameCardGrid> {
                             child: AppCoverImage(
                               coverUrl: game.coverUrl,
                               fit: BoxFit.cover,
-                              memCacheWidth: 400,
-                              memCacheHeight: 600,
-                              cacheWidth: 400,
                             ),
                           ),
                         ),

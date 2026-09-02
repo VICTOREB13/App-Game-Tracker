@@ -409,7 +409,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Future<void> _deleteGame() async {
-    final bool confirm = await showDialog(
+    final bool confirm = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.surface(context),
@@ -448,7 +448,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (!confirm) return;
     try {
       await DatabaseService.instance.deleteGame(widget.game.id);
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1379,7 +1380,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final isCurrentDark = Theme.of(context).brightness == Brightness.dark;
     bool cardIsDark = isCurrentDark;
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {

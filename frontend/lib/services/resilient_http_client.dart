@@ -92,7 +92,7 @@ class ResilientHttpClient {
             '[ResilientHttpClient] $method ${url.host}${url.path} retornó ${response.statusCode}. '
             'Reintentando ($attempt/$maxRetries) en ${delay.inMilliseconds}ms...',
           );
-          await Future.delayed(delay);
+          await Future<void>.delayed(delay);
           continue;
         }
 
@@ -104,7 +104,7 @@ class ResilientHttpClient {
             '[ResilientHttpClient] Timeout en $method $url. '
             'Reintentando ($attempt/$maxRetries) en ${delay.inMilliseconds}ms...',
           );
-          await Future.delayed(delay);
+          await Future<void>.delayed(delay);
           continue;
         }
         rethrow;
@@ -115,7 +115,7 @@ class ResilientHttpClient {
             '[ResilientHttpClient] SocketException en $method $url: $e. '
             'Reintentando ($attempt/$maxRetries) en ${delay.inMilliseconds}ms...',
           );
-          await Future.delayed(delay);
+          await Future<void>.delayed(delay);
           continue;
         }
         rethrow;
@@ -126,7 +126,7 @@ class ResilientHttpClient {
             '[ResilientHttpClient] ClientException en $method $url: $e. '
             'Reintentando ($attempt/$maxRetries) en ${delay.inMilliseconds}ms...',
           );
-          await Future.delayed(delay);
+          await Future<void>.delayed(delay);
           continue;
         }
         rethrow;

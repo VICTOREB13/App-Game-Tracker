@@ -106,8 +106,9 @@ class SteamService {
       final res = await _httpClient.get(url, timeout: const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        final players = data['response']?['players'] as List?;
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final responseMap = data['response'] as Map<String, dynamic>?;
+        final players = responseMap?['players'] as List<dynamic>?;
         return players != null && players.isNotEmpty;
       }
       return false;
@@ -143,9 +144,10 @@ class SteamService {
       final res = await _httpClient.get(url, timeout: const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
-        final data = json.decode(res.body);
-        if (data['response']?['success'] == 1) {
-          return data['response']?['steamid']?.toString();
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final responseMap = data['response'] as Map<String, dynamic>?;
+        if (responseMap?['success'] == 1) {
+          return responseMap?['steamid']?.toString();
         }
       }
       return null;
@@ -180,12 +182,14 @@ class SteamService {
       );
       final r = await _httpClient.get(ownedUrl, timeout: const Duration(seconds: 15));
       if (r.statusCode == 200) {
-        final data = json.decode(r.body);
-        final list = data['response']?['games'] as List? ?? [];
-        for (final g in list) {
-          final aid = g['appid'] as int?;
+        final data = json.decode(r.body) as Map<String, dynamic>;
+        final responseMap = data['response'] as Map<String, dynamic>?;
+        final list = (responseMap?['games'] as List<dynamic>?) ?? [];
+        for (final dynamic g in list) {
+          final gMap = g as Map<String, dynamic>;
+          final aid = gMap['appid'] as int?;
           if (aid != null) {
-            games[aid] = Map<String, dynamic>.from(g);
+            games[aid] = Map<String, dynamic>.from(gMap);
           }
         }
       }
@@ -206,22 +210,24 @@ class SteamService {
       );
       final r = await _httpClient.get(recentUrl, timeout: const Duration(seconds: 12));
       if (r.statusCode == 200) {
-        final data = json.decode(r.body);
-        final recentList = data['response']?['games'] as List? ?? [];
+        final data = json.decode(r.body) as Map<String, dynamic>;
+        final responseMap = data['response'] as Map<String, dynamic>?;
+        final recentList = (responseMap?['games'] as List<dynamic>?) ?? [];
 
-        for (final g in recentList) {
-          final aid = g['appid'] as int?;
+        for (final dynamic g in recentList) {
+          final gMap = g as Map<String, dynamic>;
+          final aid = gMap['appid'] as int?;
           if (aid == null) continue;
 
           if (!games.containsKey(aid)) {
             // Este juego NO está en propios -> es Family Sharing
-            final gMap = Map<String, dynamic>.from(g);
-            gMap['is_family_sharing'] = true;
-            games[aid] = gMap;
+            final newGMap = Map<String, dynamic>.from(gMap);
+            newGMap['is_family_sharing'] = true;
+            games[aid] = newGMap;
           } else {
             // Si el tiempo reciente es mayor, refrescarlo
-            final existingMinutes = games[aid]!['playtime_forever'] ?? 0;
-            final recentMinutes = g['playtime_forever'] ?? 0;
+            final existingMinutes = (games[aid]!['playtime_forever'] as num?)?.toInt() ?? 0;
+            final recentMinutes = (gMap['playtime_forever'] as num?)?.toInt() ?? 0;
             if (recentMinutes > existingMinutes) {
               games[aid]!['playtime_forever'] = recentMinutes;
             }
@@ -489,7 +495,7 @@ class SteamService {
           ));
 
           // Delay de 300 ms entre llamadas para proteger rate limits
-          await Future.delayed(const Duration(milliseconds: 300));
+          await Future<void>.delayed(const Duration(milliseconds: 300));
         }
       }
 
@@ -587,12 +593,12 @@ class SteamService {
       try {
         final rawgData = await MetadataService.instance.searchRawg(game.title, rawgKey);
         if (rawgData != null) {
-          if (rawgData['cover_url'] != null && (rawgData['cover_url'] as String).isNotEmpty) {
-            coverUrl = rawgData['cover_url'];
+          if (rawgData['cover_url'] != null && rawgData['cover_url'].toString().isNotEmpty) {
+            coverUrl = rawgData['cover_url']?.toString();
             modified = true;
           }
-          if (genres.isEmpty && rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
-            genres = List<String>.from(rawgData['genres']);
+          if (genres.isEmpty && rawgData['genres'] != null && (rawgData['genres'] as List<dynamic>).isNotEmpty) {
+            genres = (rawgData['genres'] as List<dynamic>).map((e) => e.toString()).toList();
             modified = true;
           }
         }
