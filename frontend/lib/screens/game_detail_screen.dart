@@ -653,7 +653,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 const SizedBox(height: 24),
 
                 // Hours Played & Quick Action Buttons
-                _buildSectionHeader('Tiempo de Juego'),
+                _buildSectionHeader('Horas Jugadas'),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -665,7 +665,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             decimal: true),
                         onChanged: (val) => setState(() {}),
                         decoration: InputDecoration(
-                          labelText: 'Horas Jugadas',
                           prefixIcon: Icon(Icons.timer_outlined,
                               color: AppColors.textSecondary(context)),
                         ),
