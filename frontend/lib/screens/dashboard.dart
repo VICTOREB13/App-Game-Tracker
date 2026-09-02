@@ -1480,7 +1480,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   );
                                 },
                               ),
-                  ),
+                    ),
+            ),
           ),
 
           // Barra de Paginación Desacoplada
