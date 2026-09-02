@@ -1609,7 +1609,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           );
         },
       ),
-    );
+    ));
   }
 
   Widget _buildSocialCardPreview({required bool isDark}) {
