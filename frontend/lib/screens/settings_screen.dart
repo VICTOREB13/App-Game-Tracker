@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../services/database_service.dart';
+import '../services/secure_storage_service.dart';
 import '../services/steam_service.dart';
 import '../services/theme_manager.dart';
 import '../services/backup_service.dart';
@@ -50,10 +51,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final count = await DatabaseService.instance.getGameCount();
     final hours = await DatabaseService.instance.getTotalHours();
     final path = await DatabaseService.instance.getDatabasePath();
+    final rawgKey = await SecureStorageService.instance.getRawgKey();
+    final steamKey = await SecureStorageService.instance.getSteamApiKey();
+
+    if (!mounted) return;
 
     setState(() {
-      _rawgKeyController.text = prefs.getString('rawg_key') ?? '';
-      _steamKeyController.text = prefs.getString('steam_api_key') ?? '';
+      _rawgKeyController.text = rawgKey ?? '';
+      _steamKeyController.text = steamKey ?? '';
       _steamIdController.text = prefs.getString('steam_user_id') ?? '';
       _gameCount = count;
       _totalHours = hours;
@@ -62,8 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveRawgKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('rawg_key', _rawgKeyController.text.trim());
+    await SecureStorageService.instance.setRawgKey(_rawgKeyController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -76,8 +80,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveSteamSettings() async {
+    await SecureStorageService.instance.setSteamApiKey(_steamKeyController.text.trim());
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('steam_api_key', _steamKeyController.text.trim());
     await prefs.setString('steam_user_id', _steamIdController.text.trim());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1030,7 +1034,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Gaming Tracker App • v3.0.6',
+                      'Gaming Tracker App • v3.1.0',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: AppColors.textSecondary(context),
@@ -1146,208 +1150,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _showImportDialog() async {
     final availableBackups = await BackupService.getAvailableBackups();
-    final textController = TextEditingController();
 
     if (!mounted) return;
 
     showDialog(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface(context),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              const Icon(Icons.restore_page_rounded,
-                  color: Color(0xFFDC2626), size: 22),
-              const SizedBox(width: 10),
-              Text(
-                'Restaurar Respaldo',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: AppColors.textPrimary(context),
-                ),
-              ),
-            ],
-          ),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Botón directo para seleccionar archivo mediante FilePicker
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final result = await FilePicker.platform.pickFiles(
-                            type: FileType.custom,
-                            allowedExtensions: ['json'],
-                          );
-                          if (result != null && result.files.single.path != null) {
-                            Navigator.pop(ctx);
-                            await _processFileImport(File(result.files.single.path!));
-                          }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFDC2626)),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.folder_open_rounded, size: 18),
-                      label: Text(
-                        'Elegir archivo JSON (Explorador)',
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFDC2626),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Botón para cargar datos de prueba ficticios
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        final sampleFile = File('sample_games_library.json');
-                        if (await sampleFile.exists()) {
-                          await _processFileImport(sampleFile);
-                        } else {
-                          // Buscar en Downloads o directorio actual
-                          final alt = File('..\\sample_games_library.json');
-                          if (await alt.exists()) {
-                            await _processFileImport(alt);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('sample_games_library.json no encontrado'), backgroundColor: Color(0xFFDC2626)),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.science_outlined, size: 16, color: Color(0xFFDC2626)),
-                      label: Text(
-                        'Cargar Datos de Prueba (sample_games_library.json)',
-                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textPrimary(context)),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.border(context)),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  if (availableBackups.isNotEmpty) ...[
-                    Text(
-                      'Respaldos en Descargas:',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary(context),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ...availableBackups.take(3).map((file) {
-                      final name = file.path.split(Platform.pathSeparator).last;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: InkWell(
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            await _processFileImport(file);
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle(context),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.border(context)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.insert_drive_file_outlined, size: 16, color: Color(0xFFDC2626)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    name,
-                                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimary(context)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Color(0xFFA1A1AA)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                  ],
-
-                  Text(
-                    'O pega la ruta o texto JSON:',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: textController,
-                    maxLines: 2,
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textPrimary(context)),
-                    decoration: InputDecoration(
-                      hintText: 'C:\\ruta\\backup.json o {"games": [...]}',
-                      hintStyle: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary(context)),
-                      filled: true,
-                      fillColor: AppColors.surfaceSubtle(context),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                      contentPadding: const EdgeInsets.all(10),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancelar', style: GoogleFonts.inter(color: AppColors.textSecondary(context))),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final input = textController.text.trim();
-                if (input.isEmpty) return;
-                Navigator.pop(ctx);
-                if (input.startsWith('{') || input.startsWith('[')) {
-                  await _processJsonStringImport(input);
-                } else {
-                  await _processFileImport(File(input));
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Restaurar'),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => _ImportBackupDialog(
+        availableBackups: availableBackups,
+        onImportFile: _processFileImport,
+        onImportJsonString: _processJsonStringImport,
+      ),
     );
   }
 
@@ -1399,3 +1211,251 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 }
+
+class _ImportBackupDialog extends StatefulWidget {
+  final List<File> availableBackups;
+  final Future<void> Function(File file) onImportFile;
+  final Future<void> Function(String jsonStr) onImportJsonString;
+
+  const _ImportBackupDialog({
+    required this.availableBackups,
+    required this.onImportFile,
+    required this.onImportJsonString,
+  });
+
+  @override
+  State<_ImportBackupDialog> createState() => _ImportBackupDialogState();
+}
+
+class _ImportBackupDialogState extends State<_ImportBackupDialog> {
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface(context),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.restore_page_rounded,
+              color: Color(0xFFDC2626), size: 22),
+          const SizedBox(width: 10),
+          Text(
+            'Restaurar Respaldo',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: AppColors.textPrimary(context),
+            ),
+          ),
+        ],
+      ),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Botón directo para seleccionar archivo mediante FilePicker
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: ['json'],
+                      );
+                      if (result != null && result.files.single.path != null) {
+                        Navigator.pop(context);
+                        await widget.onImportFile(File(result.files.single.path!));
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: const Color(0xFFDC2626)),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.folder_open_rounded, size: 18),
+                  label: Text(
+                    'Elegir archivo JSON (Explorador)',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Botón para cargar datos de prueba ficticios
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final sampleFile = File('sample_games_library.json');
+                    if (await sampleFile.exists()) {
+                      await widget.onImportFile(sampleFile);
+                    } else {
+                      final alt = File('..\\sample_games_library.json');
+                      if (await alt.exists()) {
+                        await widget.onImportFile(alt);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content:
+                                  Text('sample_games_library.json no encontrado'),
+                              backgroundColor: Color(0xFFDC2626)),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.science_outlined,
+                      size: 16, color: Color(0xFFDC2626)),
+                  label: Text(
+                    'Cargar Datos de Prueba (sample_games_library.json)',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: AppColors.textPrimary(context)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.border(context)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              if (widget.availableBackups.isNotEmpty) ...[
+                Text(
+                  'Respaldos en Descargas:',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...widget.availableBackups.take(3).map((file) {
+                  final name = file.path.split(Platform.pathSeparator).last;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await widget.onImportFile(file);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceSubtle(context),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border(context)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.insert_drive_file_outlined,
+                                size: 16, color: Color(0xFFDC2626)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: AppColors.textPrimary(context)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 10, color: Color(0xFFA1A1AA)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 12),
+              ],
+
+              Text(
+                'O pega la ruta o texto JSON:',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary(context),
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _textController,
+                maxLines: 2,
+                style: GoogleFonts.inter(
+                    fontSize: 11, color: AppColors.textPrimary(context)),
+                decoration: InputDecoration(
+                  hintText: 'C:\\ruta\\backup.json o {"games": [...]}',
+                  hintStyle: GoogleFonts.inter(
+                      fontSize: 11, color: AppColors.textSecondary(context)),
+                  filled: true,
+                  fillColor: AppColors.surfaceSubtle(context),
+                  border:
+                      OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.all(10),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancelar',
+              style:
+                  GoogleFonts.inter(color: AppColors.textSecondary(context))),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final input = _textController.text.trim();
+            if (input.isEmpty) return;
+            Navigator.pop(context);
+            if (input.startsWith('{') || input.startsWith('[')) {
+              await widget.onImportJsonString(input);
+            } else {
+              await widget.onImportFile(File(input));
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFDC2626),
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Restaurar'),
+        ),
+      ],
+    );
+  }
+}
+

@@ -1,43 +1,45 @@
 ---
 tipo: architecture
 proyecto: App_Game_Tracker
-version: v3.0.5
+version: v3.1.0
 estado: activo
-fecha: 2026-08-27
-tags: [arquitectura, flutter, sqlite-local, steam-api, howlongtobeat, rawg-api, wikipedia-api, theme-architecture, offline-first, pagination, gamification, backup-service, mobile-responsive, permanent-signing, victor-engineer, open-source, v3.0.5]
+fecha: 2026-09-01
+tags: [arquitectura, flutter, sqlite-local, wal-mode, resilient-http-client, steam-api, howlongtobeat, rawg-api, wikipedia-api, theme-architecture, offline-first, pagination, gamification, backup-service, scoped-storage, permanent-signing, victor-engineer, open-source, v3.1.0]
 ---
 
-# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v3.0.5)
+# 🏛️ Arquitectura del Sistema: Rastreador de Entretenimiento Personal (v3.1.0)
 
 Documento maestro de arquitectura técnica del sistema, stack tecnológico, topología de componentes y patrones de diseño implementados bajo los estándares de **Victor Engineer** ([victorengineer.fyi](https://victorengineer.fyi)).
 
 ---
 
-## 🛠️ Stack Tecnológico (v3.0.5 Local-First)
+## 🛠️ Stack Tecnológico (v3.1.0 Local-First & Resiliente)
 
 - **Frontend & Core:** Flutter 3.22+ / Dart SDK (`>= 3.2.0 < 4.0.0`).
-- **Plataformas Soportadas:** Windows Desktop (x64 nativo) y Android (APK Fat / AAB).
-- **Base de Datos Principal:** **SQLite 3 Local** (`sqflite: ^2.3.2` en Android y `sqflite_common_ffi: ^2.3.2+1` en Windows Desktop). Cero latencia (0 ms), sin límites de llamadas ni dependencia de servidores en la nube.
-- **Sincronización Steam:** **Steam Web API** (`IPlayerService`, `ISteamUser`) para sincronizar biblioteca oficial, Family Sharing y horas jugadas.
-- **Servicio Nativo de Duración:** **HowLongToBeat Internal API** (`HltbService`) con cliente HTTP directo y rotación transparente de tokens de seguridad.
+- **Plataformas Soportadas:** Windows Desktop (x64 nativo) y Android (APK Fat / AAB con Scoped Storage).
+- **Base de Datos Principal:** **SQLite 3 Local (WAL Mode)** (`sqflite: ^2.3.2` en Android y `sqflite_common_ffi: ^2.3.2+1` en Windows Desktop).
+  - Configurado con `PRAGMA journal_mode = WAL;`, `PRAGMA synchronous = NORMAL;` y `PRAGMA foreign_keys = ON;`.
+  - Memoización asíncrona `_initFuture` para eliminación total de condiciones de carrera (`database is locked`).
+  - Índices B-Tree optimizados para consultas y ordenamientos en < 2 ms.
+- **Capa de Red Resiliente:** `ResilientHttpClient` con pool persistente de conexiones, timeouts defensivos y reintentos con retroceso exponencial (*exponential backoff*) ante códigos HTTP 429/500/502/503/504.
+- **Sincronización Steam Desacoplada:** Sincronización en dos fases (`SteamService`):
+  - **Fase 1 (Core Batch):** Inserción/actualización atómica en lote mediante `DatabaseService.batchUpsertGames` (< 1 seg).
+  - **Fase 2 (Enriquecimiento en Cola):** Worker pool de concurrencia controlada (2 workers, delay de 300 ms entre peticiones) para HLTB, Wikipedia y RAWG. Emisión de progreso continuo tipado (`SyncProgress`).
+- **Servicio Nativo de Duración:** **HowLongToBeat Internal API** (`HltbService`) con cliente resiliente y rotación de tokens protegida por mutex asíncrono.
 - **Servicios de Enriquecimiento:**
-  - **RAWG Video Games Database API:** Búsqueda, carátulas HD y catálogo de más de 500k juegos con todos los géneros sin límites.
-  - **Wikipedia Wikimedia API:** Consulta cruzada bilingüe (`es`/`en`) con sanitización de títulos y cabeceras oficiales.
-- **Capa de Persistencia & Configuración:** SQLite para entidades de juego y `shared_preferences` para preferencias de usuario (claves de API, tema, metas anuales).
-- **Capa de Respaldos:** `BackupService` con serialización/deserialización JSON de biblioteca completa y metadatos de configuración.
-- **Seguridad & Firma Android:** `release.keystore` permanente (RSA 2048 / SHA-256) con validez hasta 2054 y versionado dinámico inyectado en CI/CD.
-- **Licencia & Distribución:** Open Source bajo licencia MIT con releases automáticos en GitHub Actions.
+  - **RAWG Video Games Database API:** Búsqueda, carátulas HD y catálogo con todos los géneros sin límites.
+  - **Wikipedia Wikimedia API:** Consulta cruzada bilingüe (`es`/`en`) con codificación canónica `Uri.https()`.
+- **Capa de Persistencia & Configuración:** SQLite para entidades de juego, `flutter_secure_storage: ^9.2.2` para almacenamiento seguro y cifrado de claves API (Steam, RAWG, Notion), y `shared_preferences` para preferencias de usuario generales (tema, vista, metas anuales).
+- **Capa de Respaldos Dinámicos:** `BackupService` con resolución dinámica de rutas mediante `path_provider` y `file_picker`, compatible con Scoped Storage en Android 10+ y carpetas de usuario en Windows.
 - **Diseño & Identidad de Marca:** Sistema oficial **Victor Engineer**:
   - **Acento Primario:** Rojo Carmesí `#DC2626`.
   - **Tipografía:** Google Fonts `Outfit` (titulares, marcas, métricas) + `Inter` (cuerpo de texto, datos y tablas).
   - **Tema Oscuro (Obsidian Zinc):** `#09090B` fondo, `#121215` tarjetas, `#27272A` bordes.
   - **Tema Claro (Crisp Zinc):** `#FAFAFA` fondo, `#FFFFFF` tarjetas, `#E4E4E7` bordes, `#09090B` texto.
-- **Exportación Gráfica:** `RepaintBoundary` con renderizado a 2.5x pixel ratio para generación de tarjetas PNG.
-- **Dependencias Optimizadas:** Cero dependencias muertas; eliminadas librerías huérfanas (`dio`, `flutter_staggered_grid_view`).
 
 ---
 
-## 📐 Diagrama de Arquitectura Multicapa (v3.0.5)
+## 📐 Diagrama de Arquitectura Multicapa (v3.1.0)
 
 ```mermaid
 graph TD
@@ -67,15 +69,20 @@ graph TD
         GameModel["Modelo Game (Patrón Sentinel copyWith, Límites Defensivos, toSqliteMap)"]
         PlatformHlp["PlatformHelper (Logos Vectoriales Oficiales & Paletas de Fabricante)"]
         StringNorm["StringNormalizer (Fuzzy Similarity > 0.90 & Clean Title)"]
-        BackupSvc["BackupService (Exportación / Importación JSON de Biblioteca)"]
+        BackupSvc["BackupService (Scoped Storage, JSON Export / Import)"]
     end
 
-    subgraph Data["Capa de Datos Local-First & Red"]
-        DatabaseSvc["DatabaseService (Singleton SQLite: B-Tree Indexes, CRUD, Vacuum)"]
-        SteamSvc["SteamService (Dual Sync, 30-min Noise Filter, Family Sharing & HLTB Auto-Complete)"]
-        HltbSvc["HltbService (Native HowLongToBeat Client: Tokens & Campaign/100% Extraction)"]
-        MetadataSvc["MetadataService (RAWG Genres/Covers & Wikipedia Wikimedia Engine)"]
-        LocalStorage["SharedPreferences (Claves API, Metas Anuales, Preferencias)"]
+    subgraph Network["Capa de Red Resiliente"]
+        ResilientHttp["ResilientHttpClient (Pool, Exponential Backoff, Rate-Limit 429/500 Retries)"]
+    end
+
+    subgraph Data["Capa de Datos Local-First & Concurrencia"]
+        DatabaseSvc["DatabaseService (Singleton SQLite: WAL Mode, _initFuture Memoization, B-Tree Indexes v2, batchUpsertGames)"]
+        SteamSvc["SteamService (2-Phase Sync: Phase 1 Batch Insert + Phase 2 Worker Queue Pool)"]
+        HltbSvc["HltbService (Native Client: Mutex Token Cache & Extraction)"]
+        MetadataSvc["MetadataService (RAWG Genres/Covers & Wikipedia Engine)"]
+        SecureStorage["SecureStorageService (DPAPI / Keystore / Keychain: Claves Cifradas)"]
+        LocalStorage["SharedPreferences (Metas Anuales, Preferencias UI)"]
     end
 
     subgraph CloudAPIs["Servicios Externos (On-Demand)"]
@@ -119,15 +126,19 @@ graph TD
     AppBar --> SteamSvc
     Settings --> SteamSvc
 
-    SteamSvc --> SteamAPI
+    SteamSvc --> ResilientHttp
+    HltbSvc --> ResilientHttp
+    MetadataSvc --> ResilientHttp
+
+    ResilientHttp --> SteamAPI
+    ResilientHttp --> HLTBCloud
+    ResilientHttp --> RAWGCloud
+    ResilientHttp --> WikiCloud
+
     SteamSvc --> StringNorm
     SteamSvc --> HltbSvc
     SteamSvc --> MetadataSvc
     SteamSvc --> DatabaseSvc
-
-    HltbSvc --> HLTBCloud
-    MetadataSvc --> RAWGCloud
-    MetadataSvc --> WikiCloud
 
     Presentation --> DatabaseSvc
     DatabaseSvc --> GameModel
@@ -140,7 +151,7 @@ graph TD
 ## 🧩 Patrones de Diseño Arquitectónicos Implementados
 
 ### 1. Patrón Sentinel para Soporte Completo de `NULL` en `copyWith`
-Para permitir el borrado o vaciado explícito de propiedades opcionales (`link`, `coverUrl`, `summary`, `rating`, `startDate`, `completedDate`) sin que el operador `??` restaure accidentalmente los valores antiguos, el modelo `Game` implementa el patrón **Sentinel**:
+Para permitir el borrado o vaciado explícito de propiedades opcionales (`link`, `coverUrl`, `summary`, `rating`, `hoursPlayed`, `genres`, `startDate`, `completedDate`, `steamId`, `createdAt`, `updatedAt`) sin que el operador `??` restaure accidentalmente los valores antiguos, el modelo `Game` implementa el patrón **Sentinel**:
 ```dart
 static const Object _sentinel = Object();
 
@@ -148,32 +159,36 @@ Game copyWith({
   String? id,
   String? title,
   Object? coverUrl = _sentinel,
+  String? status,
+  Object? platform = _sentinel,
+  Object? hoursPlayed = _sentinel,
+  Object? genres = _sentinel,
+  Object? rating = _sentinel,
+  Object? hltbMain = _sentinel,
+  Object? hltbCompletionist = _sentinel,
   Object? summary = _sentinel,
   Object? link = _sentinel,
-  Object? rating = _sentinel,
-  ...
+  Object? startDate = _sentinel,
+  Object? completedDate = _sentinel,
+  Object? steamId = _sentinel,
+  Object? createdAt = _sentinel,
+  Object? updatedAt = _sentinel,
 }) {
-  return Game(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    coverUrl: identical(coverUrl, _sentinel) ? this.coverUrl : (coverUrl as String?),
-    summary: identical(summary, _sentinel) ? this.summary : (summary as String?),
-    link: identical(link, _sentinel) ? this.link : (link as String?),
-    rating: identical(rating, _sentinel) ? this.rating : (rating as String?),
-    ...
-  );
+  ...
 }
 ```
 
-### 2. Límites Defensivos de Memoria (Defensive Resource Clamping)
-El modelo `Game` valida de forma transparente las entradas para garantizar que datasets masivos o respuestas de APIs de terceros nunca degraden el heap de memoria ni la base de datos:
-- Título: truncado a 255 caracteres.
-- Resumen/Notas: truncado a 2000 caracteres.
-- URLs (portadas y enlaces): truncadas a 2048 caracteres.
-- Géneros: máximo 20 géneros por juego, truncados a 50 caracteres cada uno.
-- Horas jugadas y HLTB: clamped entre 0.0 y 99,999.0 horas.
+### 2. Concurrencia SQLite: WAL Mode y Memoización Asíncrona
+Para soportar lecturas y escrituras simultáneas de alto rendimiento sin bloqueos:
+- **WAL Mode (Write-Ahead Logging):** Lectores no bloquean escritores y escritores no bloquean lectores.
+- **Memoización con `Future<Database>? _initFuture`:** Garantiza que múltiples llamadas concurrentes compartan la misma promesa de apertura sin disparar errores de `database is locked`.
+- **Transacciones en Lote (`batchUpsertGames`):** Inserción masiva de cientos de registros dentro de una sola transacción atómica `db.transaction(...)` en < 50 ms.
 
-### 3. Selector Visual de Plataformas con Detección Automática
-- Al cargar los metadatos de RAWG, el sistema extrae las plataformas oficiales del juego (`rawgGame['platforms']`) y las normaliza mediante `_canonicalPlatform`.
-- Se representan en pantalla mediante chips visuales con logotipos vectoriales oficiales provistos por `PlatformHelper`.
-- Si el usuario requiere una plataforma alternativa (emuladores, GOG, Epic), el selector conmuta instantáneamente al catálogo global.
+### 3. Red Resiliente con Reintentos y Retroceso Exponencial (`ResilientHttpClient`)
+- Pool persistente de conexiones reutilizables.
+- Timeouts configurables por petición.
+- Reintentos automáticos ante saturación (429) o fallos transitorios de red (500, 502, 503, 504) con cálculo de retardo exponencial `initialDelay * (multiplier ^ attempt)` y lectura del encabezado `Retry-After`.
+
+### 4. Sincronización en Dos Fases con Worker Pool
+- **Fase 1 (Core Inmediate):** Importación rápida (< 1s) e inserción en lote de datos directos de Steam.
+- **Fase 2 (Enriquecimiento en Segundo Plano):** Worker pool con 2 workers en paralelo y retardo de 300 ms entre llamadas para evitar bloqueos por límite de tasa (rate limiting).

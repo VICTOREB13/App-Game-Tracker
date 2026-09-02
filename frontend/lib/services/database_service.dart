@@ -11,6 +11,7 @@ import '../models/game.dart';
 class DatabaseService {
   static DatabaseService? _instance;
   static Database? _database;
+  static Future<Database>? _initFuture;
 
   DatabaseService._();
 
@@ -19,11 +20,23 @@ class DatabaseService {
     return _instance!;
   }
 
-  /// Inicializa el motor SQLite adecuado según el sistema operativo
+  /// Inicializa el motor SQLite adecuado según el sistema operativo con memoización
+  /// para prevenir condiciones de carrera y aperturas simultáneas de la base de datos.
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+    if (_database != null && _database!.isOpen) {
+      return _database!;
+    }
+    if (_initFuture != null) {
+      return await _initFuture!;
+    }
+    _initFuture = _initDatabase();
+    try {
+      _database = await _initFuture!;
+      return _database!;
+    } catch (e) {
+      _initFuture = null;
+      rethrow;
+    }
   }
 
   Future<void> init() async {
@@ -42,8 +55,14 @@ class DatabaseService {
 
     return await openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA journal_mode = WAL;');
+        await db.execute('PRAGMA synchronous = NORMAL;');
+        await db.execute('PRAGMA foreign_keys = ON;');
+      },
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -70,11 +89,26 @@ class DatabaseService {
       )
     ''');
 
-    // Índices B-Tree para búsquedas y ordenamientos en < 2 ms
-    await db.execute('CREATE INDEX idx_games_steam_id ON games(steam_id)');
-    await db.execute('CREATE INDEX idx_games_status ON games(status)');
-    await db.execute('CREATE INDEX idx_games_platform ON games(platform)');
-    await db.execute('CREATE INDEX idx_games_title ON games(title)');
+    await _createIndices(db);
+  }
+
+  Future<void> _createIndices(DatabaseExecutor db) async {
+    // Índices B-Tree para búsquedas, filtros y ordenamientos en < 2 ms
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_steam_id ON games(steam_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_platform ON games(platform);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_title ON games(title);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_title_nocase ON games(title COLLATE NOCASE);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_updated_at ON games(updated_at DESC);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_hours_played ON games(hours_played DESC);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_rating ON games(rating DESC, hours_played DESC);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_games_status_updated ON games(status, updated_at DESC);');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createIndices(db);
+    }
   }
 
   /// Obtiene la ruta física del archivo SQLite en disco
@@ -83,13 +117,15 @@ class DatabaseService {
     return p.join(directory.path, 'app_game_tracker.db');
   }
 
-  /// Recupera todos los juegos con soporte para filtros y ordenamientos
+  /// Recupera todos los juegos con soporte para filtros, ordenamientos y paginación SQL
   Future<List<Game>> getAllGames({
     String? status,
     String? platform,
     String? genre,
     String? search,
     String sortBy = 'Recientes',
+    int? limit,
+    int? offset,
   }) async {
     final db = await database;
 
@@ -140,6 +176,8 @@ class DatabaseService {
       where: whereClause,
       whereArgs: whereArgs.isNotEmpty ? whereArgs : null,
       orderBy: orderBy,
+      limit: limit,
+      offset: offset,
     );
 
     List<Game> games = records.map((m) => Game.fromSqliteMap(m)).toList();
@@ -211,20 +249,21 @@ class DatabaseService {
     );
   }
 
-  /// Inserta o actualiza un lote de juegos en una sola transacción rápida
+  /// Inserta o actualiza un lote de juegos en una sola transacción atómica rápida
   Future<void> batchUpsertGames(List<Game> games) async {
+    if (games.isEmpty) return;
     final db = await database;
-    final batch = db.batch();
-
-    for (final game in games) {
-      batch.insert(
-        'games',
-        game.toSqliteMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
-    }
-
-    await batch.commit(noResult: true);
+    await db.transaction((txn) async {
+      final batch = txn.batch();
+      for (final game in games) {
+        batch.insert(
+          'games',
+          game.toSqliteMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
   }
 
   /// Retorna el conteo total de títulos almacenados
@@ -254,5 +293,22 @@ class DatabaseService {
   Future<void> clearAllGames() async {
     final db = await database;
     await db.delete('games');
+  }
+
+  /// Cierra la base de datos y reinicia los futuros de inicialización (útil para pruebas)
+  @visibleForTesting
+  Future<void> closeForTesting() async {
+    if (_database != null && _database!.isOpen) {
+      await _database!.close();
+    }
+    _database = null;
+    _initFuture = null;
+  }
+
+  /// Inyecta una base de datos abierta para pruebas unitarias
+  @visibleForTesting
+  void setDatabaseForTesting(Database testDb) {
+    _database = testDb;
+    _initFuture = Future.value(testDb);
   }
 }

@@ -40,4 +40,5 @@ scratch/
 .env.*
 *.key
 *.pem
-!frontend/assets/keystore/release.keystore
+*.keystore
+*.jks

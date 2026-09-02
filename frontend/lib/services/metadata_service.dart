@@ -1,21 +1,28 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/game.dart';
 import 'database_service.dart';
 import 'hltb_service.dart';
+import 'resilient_http_client.dart';
 
 /// Servicio de enriquecimiento automático de metadatos (RAWG, Wikipedia y HLTB)
 /// Replicación de `rellenar_metadata()` de `games.py`.
 class MetadataService {
   static MetadataService? _instance;
+  ResilientHttpClient _httpClient;
 
-  MetadataService._();
+  MetadataService._({ResilientHttpClient? httpClient})
+      : _httpClient = httpClient ?? ResilientHttpClient.instance;
 
   static MetadataService get instance {
     _instance ??= MetadataService._();
     return _instance!;
+  }
+
+  @visibleForTesting
+  void setHttpClientForTesting(ResilientHttpClient client) {
+    _httpClient = client;
   }
 
   /// Busca el enlace enciclopédico oficial en Wikipedia (probando español e inglés)
@@ -50,13 +57,14 @@ class MetadataService {
           },
         );
 
-        final res = await http.get(
+        final res = await _httpClient.get(
           url,
           headers: {
             'User-Agent':
                 'GameTracker/3.0 (victorengineer.fyi; contact@victorengineer.fyi)'
           },
-        ).timeout(const Duration(seconds: 5));
+          timeout: const Duration(seconds: 5),
+        );
 
         if (res.statusCode == 200) {
           final data = json.decode(res.body);
@@ -99,7 +107,7 @@ class MetadataService {
         },
       );
 
-      final res = await http.get(url).timeout(const Duration(seconds: 8));
+      final res = await _httpClient.get(url, timeout: const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
         final results = data['results'] as List?;

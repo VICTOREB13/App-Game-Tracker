@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
+import 'resilient_http_client.dart';
 import 'string_normalizer.dart';
 
 /// Modelo de resultados de tiempo de juego de HowLongToBeat
@@ -29,12 +29,19 @@ class HltbResult {
 /// de HowLongToBeat (HLTB) sin requerir APIs de terceros.
 class HltbService {
   static HltbService? _instance;
+  ResilientHttpClient _httpClient;
 
-  HltbService._();
+  HltbService._({ResilientHttpClient? httpClient})
+      : _httpClient = httpClient ?? ResilientHttpClient.instance;
 
   static HltbService get instance {
     _instance ??= HltbService._();
     return _instance!;
+  }
+
+  @visibleForTesting
+  void setHttpClientForTesting(ResilientHttpClient client) {
+    _httpClient = client;
   }
 
   // Caché de tokens de sesión para HLTB (válidos por 10 minutos)
@@ -42,6 +49,7 @@ class HltbService {
   String? _hpKey;
   String? _hpVal;
   DateTime? _tokenFetchedAt;
+  Future<bool>? _authFuture;
 
   static const _baseHeaders = {
     'User-Agent':
@@ -51,6 +59,7 @@ class HltbService {
   };
 
   /// Obtiene o refresca los tokens de seguridad requeridos por HowLongToBeat
+  /// protegido con memoización/mutex asíncrono para prevenir múltiples llamadas concurrentes
   Future<bool> _ensureAuthToken({bool forceRefresh = false}) async {
     if (!forceRefresh &&
         _token != null &&
@@ -59,14 +68,33 @@ class HltbService {
       return true;
     }
 
+    if (_authFuture != null) {
+      return await _authFuture!;
+    }
+
+    _authFuture = _fetchAuthToken();
+    try {
+      final success = await _authFuture!;
+      return success;
+    } finally {
+      _authFuture = null;
+    }
+  }
+
+  Future<bool> _fetchAuthToken() async {
     try {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final initUri = Uri.parse(
-          'https://howlongtobeat.com/api/search/site/init?t=$timestamp');
+      final initUri = Uri.https(
+        'howlongtobeat.com',
+        '/api/search/site/init',
+        {'t': timestamp.toString()},
+      );
 
-      final res = await http
-          .get(initUri, headers: _baseHeaders)
-          .timeout(const Duration(seconds: 8));
+      final res = await _httpClient.get(
+        initUri,
+        headers: _baseHeaders,
+        timeout: const Duration(seconds: 8),
+      );
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body) as Map<String, dynamic>;
@@ -161,14 +189,13 @@ class HltbService {
       });
 
     try {
-      final searchUri = Uri.parse('https://howlongtobeat.com/api/search/site');
-      final res = await http
-          .post(
-            searchUri,
-            headers: searchHeaders,
-            body: json.encode(searchPayload),
-          )
-          .timeout(const Duration(seconds: 10));
+      final searchUri = Uri.https('howlongtobeat.com', '/api/search/site');
+      final res = await _httpClient.post(
+        searchUri,
+        headers: searchHeaders,
+        body: json.encode(searchPayload),
+        timeout: const Duration(seconds: 10),
+      );
 
       if (res.statusCode == 403 && retryOn403) {
         // Token expirado en el servidor; refrescar forzosamente y reintentar

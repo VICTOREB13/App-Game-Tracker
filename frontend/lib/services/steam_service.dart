@@ -1,13 +1,44 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game.dart';
 import 'database_service.dart';
-import 'string_normalizer.dart';
 import 'hltb_service.dart';
 import 'metadata_service.dart';
+import 'resilient_http_client.dart';
+import 'secure_storage_service.dart';
+import 'string_normalizer.dart';
+
+/// Fases del proceso de sincronización con Steam
+enum SyncPhase {
+  fetching,
+  savingCore,
+  enriching,
+  completed,
+}
+
+/// Estado de progreso tipado para seguimiento en tiempo real
+class SyncProgress {
+  final SyncPhase phase;
+  final int total;
+  final int current;
+  final String? currentGameTitle;
+  final String message;
+
+  const SyncProgress({
+    required this.phase,
+    this.total = 0,
+    this.current = 0,
+    this.currentGameTitle,
+    required this.message,
+  });
+
+  double get progressPercentage =>
+      total > 0 ? (current / total).clamp(0.0, 1.0) : 0.0;
+
+  @override
+  String toString() => 'SyncProgress($phase: $current/$total - $message)';
+}
 
 /// Resumen estructurado del resultado de la sincronización con Steam
 class SteamSyncResult {
@@ -36,15 +67,24 @@ class SteamSyncResult {
 }
 
 /// Servicio nativo de integración con Steam Web API.
-/// Replicación integral al 100% de la lógica de sincronización de `games.py`.
+/// Implementa arquitectura desacoplada en dos fases:
+/// - Fase 1: Importación rápida y persistencia en lote (< 1 seg).
+/// - Fase 2: Cola en segundo plano para enriquecimiento (HLTB, RAWG, Wikipedia) con pool de concurrencia controlado.
 class SteamService {
   static SteamService? _instance;
+  ResilientHttpClient _httpClient;
 
-  SteamService._();
+  SteamService._({ResilientHttpClient? httpClient})
+      : _httpClient = httpClient ?? ResilientHttpClient.instance;
 
   static SteamService get instance {
     _instance ??= SteamService._();
     return _instance!;
+  }
+
+  @visibleForTesting
+  void setHttpClientForTesting(ResilientHttpClient client) {
+    _httpClient = client;
   }
 
   /// Valida si la API Key y SteamID son legítimos consultando el perfil del jugador
@@ -54,9 +94,16 @@ class SteamService {
       final cleanId = steamId.trim();
       if (cleanKey.isEmpty || cleanId.isEmpty) return false;
 
-      final url = Uri.parse(
-          'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=$cleanKey&steamids=$cleanId');
-      final res = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.https(
+        'api.steampowered.com',
+        '/ISteamUser/GetPlayerSummaries/v0002/',
+        {
+          'key': cleanKey,
+          'steamids': cleanId,
+        },
+      );
+
+      final res = await _httpClient.get(url, timeout: const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
@@ -84,9 +131,16 @@ class SteamService {
         return cleanVanity;
       }
 
-      final url = Uri.parse(
-          'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=${apiKey.trim()}&vanityurl=$cleanVanity');
-      final res = await http.get(url).timeout(const Duration(seconds: 10));
+      final url = Uri.https(
+        'api.steampowered.com',
+        '/ISteamUser/ResolveVanityURL/v0001/',
+        {
+          'key': apiKey.trim(),
+          'vanityurl': cleanVanity,
+        },
+      );
+
+      final res = await _httpClient.get(url, timeout: const Duration(seconds: 10));
 
       if (res.statusCode == 200) {
         final data = json.decode(res.body);
@@ -113,12 +167,18 @@ class SteamService {
 
     // 1. Consulta de Juegos Propios (GetOwnedGames)
     try {
-      final ownedUrl = Uri.parse(
-        'https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/'
-        '?key=$cleanKey&steamid=$cleanId&format=json'
-        '&include_appinfo=true&include_played_free_games=true',
+      final ownedUrl = Uri.https(
+        'api.steampowered.com',
+        '/IPlayerService/GetOwnedGames/v0001/',
+        {
+          'key': cleanKey,
+          'steamid': cleanId,
+          'format': 'json',
+          'include_appinfo': 'true',
+          'include_played_free_games': 'true',
+        },
       );
-      final r = await http.get(ownedUrl).timeout(const Duration(seconds: 15));
+      final r = await _httpClient.get(ownedUrl, timeout: const Duration(seconds: 15));
       if (r.statusCode == 200) {
         final data = json.decode(r.body);
         final list = data['response']?['games'] as List? ?? [];
@@ -135,11 +195,16 @@ class SteamService {
 
     // 2. Consulta de Juegos Recientes / Family Sharing (GetRecentlyPlayedGames)
     try {
-      final recentUrl = Uri.parse(
-        'https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/'
-        '?key=$cleanKey&steamid=$cleanId&format=json',
+      final recentUrl = Uri.https(
+        'api.steampowered.com',
+        '/IPlayerService/GetRecentlyPlayedGames/v0001/',
+        {
+          'key': cleanKey,
+          'steamid': cleanId,
+          'format': 'json',
+        },
       );
-      final r = await http.get(recentUrl).timeout(const Duration(seconds: 12));
+      final r = await _httpClient.get(recentUrl, timeout: const Duration(seconds: 12));
       if (r.statusCode == 200) {
         final data = json.decode(r.body);
         final recentList = data['response']?['games'] as List? ?? [];
@@ -171,21 +236,28 @@ class SteamService {
   }
 
   /// Sincroniza la biblioteca de Steam con la base de datos local SQLite.
-  /// Implementa exactamente las reglas de negocio de `games.py`:
-  /// - Filtro < 0.5 horas (omite juegos con menos de 30 minutos).
-  /// - Estrategia tri-fase de matching (Steam ID -> Nombre limpio -> Fuzzy > 0.9).
-  /// - Creación: horas > 1 ? 'Jugado' : 'Por Jugar', fecha_inicio = hoy.
-  /// - Actualización: horas, fecha inicio y Auto-Culminación por HLTB.
+  /// Desacoplado en dos fases:
+  /// - Fase 1: Importación rápida y persistencia en lote con `batchUpsertGames` (< 1 seg).
+  /// - Fase 2: Cola en segundo plano para enriquecimiento (HLTB, RAWG, Wikipedia) con pool de concurrencia controlado (2 workers y delay de 300 ms).
   Future<SteamSyncResult> syncWithDatabase({
     required String apiKey,
     required String steamId,
     bool importUnder30Min = false,
+    void Function(SyncProgress progress)? onProgress,
+    bool Function()? isCancelled,
   }) async {
+    onProgress?.call(const SyncProgress(
+      phase: SyncPhase.fetching,
+      total: 0,
+      current: 0,
+      message: 'Consultando biblioteca de Steam...',
+    ));
+
     final steamGames = await fetchSteamGames(apiKey: apiKey, steamId: steamId);
     final db = DatabaseService.instance;
     final allDbGames = await db.getAllGames();
 
-    // Índices auxiliares en memoria para búsqueda inmediata
+    // Índices auxiliares en memoria para matching inmediato
     final Map<int, Game> gamesBySteamId = {};
     final Map<String, Game> gamesByCleanTitle = {};
 
@@ -209,10 +281,19 @@ class SteamService {
     // Constante de estados finales que no se auto-degradan
     const estadosFinales = ['Jugado'];
 
-    final prefs = await SharedPreferences.getInstance();
-    final rawgKey = prefs.getString('rawg_api_key') ?? '';
+    final rawgKey = await SecureStorageService.instance.getRawgKey() ?? '';
 
+    // Lista de juegos a persistir en lote en Fase 1
+    final List<Game> coreGamesToUpsert = [];
+    // Lista de juegos que requerirán enriquecimiento en Fase 2
+    final List<Game> gamesToEnrich = [];
+
+    // ==========================================
+    // FASE 1: Importación Core y Lote Atómico
+    // ==========================================
     for (final entry in steamGames.entries) {
+      if (isCancelled != null && isCancelled()) break;
+
       final appid = entry.key;
       final g = entry.value;
       final name = g['name']?.toString() ?? 'Steam App $appid';
@@ -255,7 +336,7 @@ class SteamService {
       final roundedNewHours = double.parse(hours.toStringAsFixed(1));
 
       if (matchedGame != null) {
-        // --- JUEGO EXISTENTE: ACTUALIZAR SOLO SI CAMBIÓ ---
+        // --- JUEGO EXISTENTE: ACTUALIZAR DATOS CORE ---
         bool needsUpdate = false;
         final currentHours = matchedGame.hoursPlayed?.toDouble() ?? 0.0;
         final roundedCurrentHours = double.parse(currentHours.toStringAsFixed(1));
@@ -265,8 +346,6 @@ class SteamService {
         DateTime? finalCompletedDate = matchedGame.completedDate;
         String finalStatus = matchedGame.status;
         num? finalSteamId = matchedGame.steamId ?? appid;
-        num? finalHltbMain = matchedGame.hltbMain;
-        num? finalHltbComp = matchedGame.hltbCompletionist;
 
         // 1. Horas jugadas
         if (roundedNewHours != roundedCurrentHours) {
@@ -286,27 +365,8 @@ class SteamService {
           needsUpdate = true;
         }
 
-        // 4. HLTB: si faltan los metadatos de duración, consultarlos en HowLongToBeat
-        if (finalHltbMain == null || finalHltbMain == 0) {
-          try {
-            final hltbData = await HltbService.instance.searchHltb(matchedGame.title);
-            if (hltbData != null) {
-              if (hltbData.mainStory != null) {
-                finalHltbMain = hltbData.mainStory;
-                needsUpdate = true;
-              }
-              if (hltbData.completionist != null) {
-                finalHltbComp = hltbData.completionist;
-                needsUpdate = true;
-              }
-            }
-          } catch (e) {
-            debugPrint('Error buscando HLTB para ${matchedGame.title}: $e');
-          }
-        }
-
-        // 5. Auto-Culminación por HLTB
-        final hltbMain = finalHltbMain?.toDouble();
+        // 4. Auto-Culminación inmediata si ya tenía HLTB cargado
+        final hltbMain = matchedGame.hltbMain?.toDouble();
         if (hltbMain != null &&
             hltbMain > 0 &&
             roundedNewHours >= hltbMain &&
@@ -318,137 +378,137 @@ class SteamService {
           details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $hltbMain h)');
         }
 
-        // 6. Wikipedia: si no tiene link, buscarlo
-        String? finalLink = matchedGame.link;
-        if (finalLink == null || finalLink.trim().isEmpty) {
-          try {
-            final wikiUrl = await MetadataService.instance.searchWikipedia(matchedGame.title);
-            if (wikiUrl != null && wikiUrl.isNotEmpty) {
-              finalLink = wikiUrl;
-              needsUpdate = true;
-            }
-          } catch (_) {}
-        }
-
-        // 7. Géneros RAWG: si no tiene géneros y hay clave de RAWG
-        List<String> finalGenres = List.from(matchedGame.genres);
-        if (finalGenres.isEmpty && rawgKey.isNotEmpty) {
-          try {
-            final rawgData = await MetadataService.instance.searchRawg(matchedGame.title, rawgKey);
-            if (rawgData != null && rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
-              finalGenres = List<String>.from(rawgData['genres']);
-              needsUpdate = true;
-            }
-          } catch (_) {}
-        }
+        final updatedGame = matchedGame.copyWith(
+          hoursPlayed: finalHours,
+          steamId: finalSteamId,
+          startDate: finalStartDate,
+          completedDate: finalCompletedDate,
+          status: finalStatus,
+          updatedAt: DateTime.now(),
+        );
 
         if (needsUpdate) {
-          final updated = matchedGame.copyWith(
-            hoursPlayed: finalHours,
-            steamId: finalSteamId,
-            startDate: finalStartDate,
-            completedDate: finalCompletedDate,
-            status: finalStatus,
-            hltbMain: finalHltbMain,
-            hltbCompletionist: finalHltbComp,
-            link: finalLink,
-            genres: finalGenres,
-            updatedAt: DateTime.now(),
-          );
-          await db.updateGame(updated);
+          coreGamesToUpsert.add(updatedGame);
           updatedCount++;
-          // Refrescar referencias en memoria
-          gamesBySteamId[appid] = updated;
-          gamesByCleanTitle[cleanSteamName] = updated;
+          gamesBySteamId[appid] = updatedGame;
+          gamesByCleanTitle[cleanSteamName] = updatedGame;
+        }
+
+        // Evaluar si requiere enriquecimiento en Fase 2
+        final needsEnrichment = (updatedGame.hltbMain == null || updatedGame.hltbMain == 0) ||
+            (updatedGame.link == null || updatedGame.link!.isEmpty) ||
+            (updatedGame.genres.isEmpty && rawgKey.isNotEmpty);
+
+        if (needsEnrichment) {
+          gamesToEnrich.add(updatedGame);
         }
       } else {
-        // --- JUEGO NUEVO: CREAR EN SQLITE ---
-        // Portada oficial de Steam CDN como fallback
+        // --- JUEGO NUEVO: CREAR CON METADATOS BÁSICOS ---
         final steamCoverUrl =
             'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/$appid/header.jpg';
 
-        // Consultar HowLongToBeat para el nuevo juego
-        num? newHltbMain;
-        num? newHltbComp;
-        try {
-          final hltbData = await HltbService.instance.searchHltb(name);
-          if (hltbData != null) {
-            newHltbMain = hltbData.mainStory;
-            newHltbComp = hltbData.completionist;
-          }
-        } catch (e) {
-          debugPrint('Error buscando HLTB para juego nuevo $name: $e');
-        }
-
-        // Consultar Wikipedia para enlace oficial
-        String? newLink;
-        try {
-          newLink = await MetadataService.instance.searchWikipedia(name);
-        } catch (e) {
-          debugPrint('Error buscando Wikipedia para juego nuevo $name: $e');
-        }
-
-        // Consultar RAWG para géneros y portada HD (si hay clave de RAWG configurada)
-        List<String> newGenres = [];
-        String finalCover = steamCoverUrl;
-        if (rawgKey.isNotEmpty) {
-          try {
-            final rawgData = await MetadataService.instance.searchRawg(name, rawgKey);
-            if (rawgData != null) {
-              if (rawgData['cover_url'] != null && (rawgData['cover_url'] as String).isNotEmpty) {
-                finalCover = rawgData['cover_url'];
-              }
-              if (rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
-                newGenres = List<String>.from(rawgData['genres']);
-              }
-            }
-          } catch (e) {
-            debugPrint('Error buscando RAWG para juego nuevo $name: $e');
-          }
-        }
-
-        // Regla: si horas > 1h -> "Jugado", sino "Por Jugar"
-        String status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
-        DateTime? completedDate;
-
-        // Auto-culminar si horas >= HLTB historia principal
-        if (newHltbMain != null &&
-            newHltbMain > 0 &&
-            roundedNewHours >= newHltbMain) {
-          status = 'Jugado';
-          completedDate = DateTime.now();
-          autoCulminatedCount++;
-          details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $newHltbMain h)');
-        }
-
+        final status = roundedNewHours > 1.0 ? 'Jugado' : 'Por jugar';
         final startDate = roundedNewHours > 0 ? DateTime.now() : null;
 
         final newGame = Game(
           title: name,
-          coverUrl: finalCover,
+          coverUrl: steamCoverUrl,
           status: status,
           platform: 'PC',
           hoursPlayed: roundedNewHours,
           steamId: appid,
-          genres: newGenres,
-          hltbMain: newHltbMain,
-          hltbCompletionist: newHltbComp,
-          link: newLink,
           startDate: startDate,
-          completedDate: completedDate,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        await db.insertGame(newGame);
+        coreGamesToUpsert.add(newGame);
         createdCount++;
         details.add('✨ Creado desde Steam: $name ($roundedNewHours h)');
 
-        // Añadir a índices en memoria
         gamesBySteamId[appid] = newGame;
         gamesByCleanTitle[cleanSteamName] = newGame;
+        gamesToEnrich.add(newGame);
       }
     }
+
+    // Persistencia atómica ultrarrápida de Fase 1
+    if (coreGamesToUpsert.isNotEmpty) {
+      onProgress?.call(SyncProgress(
+        phase: SyncPhase.savingCore,
+        total: coreGamesToUpsert.length,
+        current: coreGamesToUpsert.length,
+        message: 'Guardando ${coreGamesToUpsert.length} juegos en SQLite...',
+      ));
+      await db.batchUpsertGames(coreGamesToUpsert);
+    }
+
+    // ==========================================
+    // FASE 2: Cola de Enriquecimiento en Segundo Plano
+    // Pool de 2 Workers con Delay de 300 ms
+    // ==========================================
+    final totalToEnrich = gamesToEnrich.length;
+    int enrichedProcessed = 0;
+
+    if (totalToEnrich > 0) {
+      onProgress?.call(SyncProgress(
+        phase: SyncPhase.enriching,
+        total: totalToEnrich,
+        current: 0,
+        message: 'Iniciando enriquecimiento de metadatos (HLTB, RAWG, Wikipedia)...',
+      ));
+
+      Future<void> enrichWorker(List<Game> chunk) async {
+        for (final game in chunk) {
+          if (isCancelled != null && isCancelled()) break;
+
+          try {
+            final enriched = await _enrichSingleGame(
+              game,
+              rawgKey,
+              details,
+              (culminated) {
+                if (culminated) autoCulminatedCount++;
+              },
+            );
+
+            if (enriched != null) {
+              await db.updateGame(enriched);
+            }
+          } catch (e) {
+            debugPrint('Error enriqueciendo ${game.title}: $e');
+          }
+
+          enrichedProcessed++;
+          onProgress?.call(SyncProgress(
+            phase: SyncPhase.enriching,
+            total: totalToEnrich,
+            current: enrichedProcessed,
+            currentGameTitle: game.title,
+            message: 'Enriqueciendo: ${game.title} ($enrichedProcessed/$totalToEnrich)',
+          ));
+
+          // Delay de 300 ms entre llamadas para proteger rate limits
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
+      }
+
+      final mid = (totalToEnrich / 2).ceil();
+      final chunk1 = gamesToEnrich.sublist(0, mid);
+      final chunk2 = gamesToEnrich.sublist(mid);
+
+      await Future.wait([
+        enrichWorker(chunk1),
+        if (chunk2.isNotEmpty) enrichWorker(chunk2),
+      ]);
+    }
+
+    onProgress?.call(SyncProgress(
+      phase: SyncPhase.completed,
+      total: processedCount,
+      current: processedCount,
+      message: 'Sincronización con Steam completada.',
+    ));
 
     return SteamSyncResult(
       totalFound: steamGames.length,
@@ -459,5 +519,101 @@ class SteamService {
       autoCulminatedCount: autoCulminatedCount,
       details: details,
     );
+  }
+
+  /// Enriquece un solo juego con HLTB, RAWG y Wikipedia
+  Future<Game?> _enrichSingleGame(
+    Game game,
+    String rawgKey,
+    List<String> details,
+    void Function(bool autoCulminated) onAutoCulminate,
+  ) async {
+    bool modified = false;
+    num? hltbMain = game.hltbMain;
+    num? hltbComp = game.hltbCompletionist;
+    String? link = game.link;
+    String? coverUrl = game.coverUrl;
+    List<String> genres = List.from(game.genres);
+    String status = game.status;
+    DateTime? completedDate = game.completedDate;
+
+    // 1. HLTB
+    if (hltbMain == null || hltbMain == 0) {
+      try {
+        final hltbData = await HltbService.instance.searchHltb(game.title);
+        if (hltbData != null) {
+          if (hltbData.mainStory != null) {
+            hltbMain = hltbData.mainStory;
+            modified = true;
+          }
+          if (hltbData.completionist != null) {
+            hltbComp = hltbData.completionist;
+            modified = true;
+          }
+
+          // Auto-culminación si las horas superan HLTB
+          final hours = game.hoursPlayed?.toDouble() ?? 0.0;
+          if (hltbMain != null &&
+              hltbMain > 0 &&
+              hours >= hltbMain &&
+              status != 'Jugado') {
+            status = 'Jugado';
+            completedDate ??= DateTime.now();
+            modified = true;
+            onAutoCulminate(true);
+            details.add('🏆 Auto-culminado por HLTB: ${game.title} ($hours h >= $hltbMain h)');
+          }
+        }
+      } catch (e) {
+        debugPrint('Error HLTB en enriquecimiento de ${game.title}: $e');
+      }
+    }
+
+    // 2. Wikipedia
+    if (link == null || link.trim().isEmpty) {
+      try {
+        final wikiUrl = await MetadataService.instance.searchWikipedia(game.title);
+        if (wikiUrl != null && wikiUrl.isNotEmpty) {
+          link = wikiUrl;
+          modified = true;
+        }
+      } catch (e) {
+        debugPrint('Error Wikipedia en enriquecimiento de ${game.title}: $e');
+      }
+    }
+
+    // 3. RAWG
+    if (rawgKey.isNotEmpty && (genres.isEmpty || coverUrl == null || coverUrl.contains('fastly.steamstatic.com'))) {
+      try {
+        final rawgData = await MetadataService.instance.searchRawg(game.title, rawgKey);
+        if (rawgData != null) {
+          if (rawgData['cover_url'] != null && (rawgData['cover_url'] as String).isNotEmpty) {
+            coverUrl = rawgData['cover_url'];
+            modified = true;
+          }
+          if (genres.isEmpty && rawgData['genres'] != null && (rawgData['genres'] as List).isNotEmpty) {
+            genres = List<String>.from(rawgData['genres']);
+            modified = true;
+          }
+        }
+      } catch (e) {
+        debugPrint('Error RAWG en enriquecimiento de ${game.title}: $e');
+      }
+    }
+
+    if (modified) {
+      return game.copyWith(
+        hltbMain: hltbMain,
+        hltbCompletionist: hltbComp,
+        link: link,
+        coverUrl: coverUrl,
+        genres: genres,
+        status: status,
+        completedDate: completedDate,
+        updatedAt: DateTime.now(),
+      );
+    }
+
+    return null;
   }
 }

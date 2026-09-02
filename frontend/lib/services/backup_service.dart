@@ -1,28 +1,43 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/game.dart';
 import 'database_service.dart';
 
+/// Servicio de exportación e importación de respaldos JSON multiplataforma.
+/// Utiliza resolución dinámica de almacenamiento seguro (Scoped Storage en Android 10+
+/// y directorios estándar del usuario en Windows Desktop).
 class BackupService {
-  /// Obtiene el directorio de Descargas adecuado según el sistema operativo
-  static Directory _getDownloadsDirectory() {
-    if (Platform.isWindows) {
-      final userProfile = Platform.environment['USERPROFILE'] ?? '';
-      final dir = Directory('$userProfile\\Downloads');
-      if (dir.existsSync()) return dir;
-    } else if (Platform.isAndroid) {
-      final primaryDownload = Directory('/storage/emulated/0/Download');
-      if (primaryDownload.existsSync()) return primaryDownload;
-      final altDownload = Directory('/sdcard/Download');
-      if (altDownload.existsSync()) return altDownload;
+  /// Resuelve dinámicamente el directorio seguro más adecuado para guardar respaldos
+  static Future<Directory> _resolveBackupDirectory() async {
+    try {
+      final downloads = await getDownloadsDirectory();
+      if (downloads != null && await downloads.exists()) {
+        return downloads;
+      }
+    } catch (_) {}
+
+    try {
+      if (Platform.isAndroid) {
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null && await extDir.exists()) {
+          return extDir;
+        }
+      }
+    } catch (_) {}
+
+    final docs = await getApplicationDocumentsDirectory();
+    if (!await docs.exists()) {
+      await docs.create(recursive: true);
     }
-    return Directory.current;
+    return docs;
   }
 
-  /// Exporta la biblioteca completa de SQLite a un archivo JSON en Descargas
-  static Future<String> exportBackup() async {
+  /// Exporta la biblioteca completa de SQLite a un archivo JSON seguro
+  static Future<String> exportBackup({String? customPath, String? customDirectoryPath}) async {
     final db = DatabaseService.instance;
     final games = await db.getAllGames();
 
@@ -34,28 +49,40 @@ class BackupService {
     final dateStr = DateFormat('yyyyMMdd_HHmmss').format(now);
     final fileName = 'tracker_backup_$dateStr.json';
 
-    final downloadsDir = _getDownloadsDirectory();
-    final filePath = '${downloadsDir.path}${Platform.pathSeparator}$fileName';
+    String targetFilePath;
+    if (customPath != null && customPath.trim().isNotEmpty) {
+      targetFilePath = customPath.trim();
+    } else if (customDirectoryPath != null && customDirectoryPath.trim().isNotEmpty) {
+      targetFilePath = p.join(customDirectoryPath.trim(), fileName);
+    } else {
+      final dir = await _resolveBackupDirectory();
+      targetFilePath = p.join(dir.path, fileName);
+    }
+
+    final targetFile = File(targetFilePath);
+    final parentDir = targetFile.parent;
+    if (!await parentDir.exists()) {
+      await parentDir.create(recursive: true);
+    }
 
     final payload = {
       'app': 'Victor Engineer - Game Tracker',
-      'version': '3.0.0',
+      'version': '3.1.0',
       'exported_at': now.toIso8601String(),
       'total_records': games.length,
       'games': games.map((g) => g.toJson()).toList(),
     };
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(payload);
-    final file = File(filePath);
-    await file.writeAsString(jsonString, encoding: utf8);
+    await targetFile.writeAsString(jsonString, encoding: utf8);
 
-    return file.path;
+    return targetFile.path;
   }
 
   /// Importa y restaura una biblioteca desde un archivo JSON
   static Future<int> importBackupFromFile(File file) async {
     if (!await file.exists()) {
-      throw Exception('El archivo seleccionado no existe.');
+      throw Exception('El archivo seleccionado no existe: ${file.path}');
     }
 
     final content = await file.readAsString(encoding: utf8);
@@ -103,32 +130,73 @@ class BackupService {
       throw Exception('El archivo no contiene registros de videojuegos válidos.');
     }
 
-    // Persistir todos los juegos en SQLite en una sola transacción ultrarrápida
+    // Persistir todos los juegos en SQLite en una sola transacción atómica ultrarrápida
     await DatabaseService.instance.batchUpsertGames(gamesToRestore);
 
     return gamesToRestore.length;
   }
 
-  /// Lista los respaldos existentes disponibles en el directorio de Descargas
+  /// Lista los respaldos existentes disponibles buscando dinámicamente en directorios del sistema
   static Future<List<File>> getAvailableBackups() async {
+    final List<File> result = [];
+    final Set<String> seenPaths = {};
+
+    final candidateDirs = <Directory>[];
+
     try {
-      final downloadsDir = _getDownloadsDirectory();
-      if (!downloadsDir.existsSync()) return [];
+      final downloads = await getDownloadsDirectory();
+      if (downloads != null && await downloads.exists()) {
+        candidateDirs.add(downloads);
+      }
+    } catch (_) {}
 
-      final files = downloadsDir
-          .listSync()
-          .whereType<File>()
-          .where((f) {
-            final name = f.path.split(Platform.pathSeparator).last.toLowerCase();
-            return (name.startsWith('tracker_backup_') || name.startsWith('sample_games_')) &&
-                name.endsWith('.json');
-          })
-          .toList();
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      if (await docs.exists()) {
+        candidateDirs.add(docs);
+      }
+    } catch (_) {}
 
-      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-      return files;
-    } catch (_) {
-      return [];
+    try {
+      if (Platform.isAndroid) {
+        final extDir = await getExternalStorageDirectory();
+        if (extDir != null && await extDir.exists()) {
+          candidateDirs.add(extDir);
+        }
+      }
+    } catch (_) {}
+
+    // Directorio actual de la app (para sample_games_library.json)
+    try {
+      candidateDirs.add(Directory.current);
+    } catch (_) {}
+
+    for (final dir in candidateDirs) {
+      try {
+        if (!dir.existsSync()) continue;
+        final list = dir.listSync();
+        for (final entity in list) {
+          if (entity is File) {
+            final fileName = p.basename(entity.path).toLowerCase();
+            if ((fileName.startsWith('tracker_backup_') || fileName.startsWith('sample_games_')) &&
+                fileName.endsWith('.json')) {
+              if (seenPaths.add(entity.path)) {
+                result.add(entity);
+              }
+            }
+          }
+        }
+      } catch (_) {}
     }
+
+    result.sort((a, b) {
+      try {
+        return b.lastModifiedSync().compareTo(a.lastModifiedSync());
+      } catch (_) {
+        return 0;
+      }
+    });
+
+    return result;
   }
 }

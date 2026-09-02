@@ -2,8 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-/// Widget unificado para renderizar carátulas de videojuegos,
-/// soportando URLs de internet (CachedNetworkImage) y archivos locales de la galería (Image.file).
+/// Widget unificado y de alto rendimiento para renderizar carátulas de videojuegos,
+/// soportando URLs remotas (CachedNetworkImage con límites de textura) y archivos locales
+/// (Image.file con límites de decodificación y sin I/O bloqueante síncrono en build).
 class AppCoverImage extends StatelessWidget {
   final String? coverUrl;
   final double? width;
@@ -12,6 +13,9 @@ class AppCoverImage extends StatelessWidget {
   final BorderRadius? borderRadius;
   final Widget? placeholder;
   final Widget? errorWidget;
+  final int memCacheWidth;
+  final int memCacheHeight;
+  final int cacheWidth;
 
   const AppCoverImage({
     super.key,
@@ -22,6 +26,9 @@ class AppCoverImage extends StatelessWidget {
     this.borderRadius,
     this.placeholder,
     this.errorWidget,
+    this.memCacheWidth = 400,
+    this.memCacheHeight = 600,
+    this.cacheWidth = 400,
   });
 
   @override
@@ -37,22 +44,29 @@ class AppCoverImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        memCacheWidth: memCacheWidth,
+        memCacheHeight: memCacheHeight,
         placeholder: (ctx, _) => placeholder ?? _buildDefaultPlaceholder(ctx),
-        errorWidget: (ctx, _, __) => errorWidget ?? _buildDefaultPlaceholder(ctx),
+        errorWidget: (ctx, _, __) =>
+            errorWidget ?? _buildDefaultPlaceholder(ctx),
       );
     } else {
-      final file = File(url);
-      if (file.existsSync()) {
-        content = Image.file(
-          file,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (ctx, _, __) => errorWidget ?? _buildDefaultPlaceholder(ctx),
-        );
-      } else {
-        content = _buildDefaultPlaceholder(context);
-      }
+      // Carga asíncrona no bloqueante de archivo local
+      content = Image.file(
+        File(url),
+        width: width,
+        height: height,
+        fit: fit,
+        cacheWidth: cacheWidth,
+        errorBuilder: (ctx, _, __) =>
+            errorWidget ?? _buildDefaultPlaceholder(ctx),
+        frameBuilder: (ctx, child, frame, wasSynchronouslyLoaded) {
+          if (wasSynchronouslyLoaded || frame != null) {
+            return child;
+          }
+          return placeholder ?? _buildDefaultPlaceholder(ctx);
+        },
+      );
     }
 
     if (borderRadius != null) {

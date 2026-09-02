@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../models/game.dart';
 import '../services/database_service.dart';
+import '../services/secure_storage_service.dart';
 import '../services/theme_manager.dart';
 import '../services/metadata_service.dart';
 import '../services/hltb_service.dart';
@@ -107,8 +108,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadRawgKey() async {
-    final prefs = await SharedPreferences.getInstance();
-    _rawgKey = prefs.getString('rawg_key') ?? '';
+    _rawgKey = await SecureStorageService.instance.getRawgKey() ?? '';
   }
 
   Future<void> _searchGames(String query) async {
@@ -150,682 +150,24 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _promptGameDetails(Map<String, dynamic> rawgGame) async {
-    String selectedStatus = 'Por jugar';
-    DateTime? selectedStartDate;
-    final hoursController = TextEditingController(text: '0');
-    bool isGenreAccordionExpanded = false;
-    bool showAllPlatforms = false;
-
-    // Extraer plataformas reales donde el juego existe según RAWG
-    final List<String> detectedPlatforms = [];
-    if (rawgGame['platforms'] != null && rawgGame['platforms'] is List) {
-      for (var item in rawgGame['platforms']) {
-        final pName = item['platform']?['name']?.toString()?.trim();
-        if (pName != null && pName.isNotEmpty) {
-          final canonical = _canonicalPlatform(pName);
-          if (!detectedPlatforms.contains(canonical)) {
-            detectedPlatforms.add(canonical);
-          }
-        }
-      }
-    }
-
-    String selectedPlatform = detectedPlatforms.contains('PC')
-        ? 'PC'
-        : (detectedPlatforms.isNotEmpty ? detectedPlatforms.first : 'PC');
-
-    // Extract genres from RAWG - ¡Sin restricciones, capturando TODOS los géneros devueltos!
-    final List<String> selectedGenres = [];
-    if (rawgGame['genres'] != null && rawgGame['genres'] is List) {
-      for (var g in rawgGame['genres']) {
-        final name = g['name']?.toString()?.trim();
-        if (name != null && name.isNotEmpty) {
-          if (!selectedGenres.contains(name)) {
-            selectedGenres.add(name);
-          }
-          if (!_allAvailableGenres.contains(name)) {
-            _allAvailableGenres.add(name);
-          }
-        }
-      }
-    }
-
-    final bool? shouldSave = await showDialog<bool>(
+    final result = await showDialog<_GameDetailsResult>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              backgroundColor: AppColors.surface(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: AppColors.border(context)),
-              ),
-              child: Container(
-                constraints:
-                    const BoxConstraints(maxWidth: 560, maxHeight: 720),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with Game Title and Cover
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: rawgGame['background_image'] != null
-                              ? CachedNetworkImage(
-                                  imageUrl: rawgGame['background_image'],
-                                  width: 60,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(
-                                    width: 60,
-                                    height: 80,
-                                    color: AppColors.surfaceSubtle(context),
-                                  ),
-                                  errorWidget: (_, __, ___) => Container(
-                                    width: 60,
-                                    height: 80,
-                                    color: AppColors.surfaceSubtle(context),
-                                    child: Icon(Icons.gamepad_rounded,
-                                        size: 24,
-                                        color:
-                                            AppColors.textSecondary(context)),
-                                  ),
-                                )
-                              : Container(
-                                  width: 60,
-                                  height: 80,
-                                  color: AppColors.surfaceSubtle(context),
-                                  child: Icon(Icons.gamepad_rounded,
-                                      size: 24,
-                                      color:
-                                          AppColors.textSecondary(context)),
-                                ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                rawgGame['name'] ?? 'Juego',
-                                style: GoogleFonts.outfit(
-                                  color: AppColors.textPrimary(context),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                rawgGame['released'] != null
-                                    ? 'Lanzamiento: ${rawgGame['released']}'
-                                    : 'Sin fecha de lanzamiento',
-                                style: GoogleFonts.inter(
-                                  color: AppColors.textSecondary(context),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              if (rawgGame['playtime'] != null &&
-                                  rawgGame['playtime'] > 0) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  'HLTB estimado: ${rawgGame['playtime']}h',
-                                  style: GoogleFonts.outfit(
-                                    color: const Color(0xFFDC2626),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Divider(color: AppColors.border(context)),
-                    const SizedBox(height: 8),
-
-                    // Scrollable form fields
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Estado & Horas Jugadas
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Estado',
-                                        style: GoogleFonts.inter(
-                                          color:
-                                              AppColors.textSecondary(context),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      DropdownButtonFormField<String>(
-                                        value: selectedStatus,
-                                        dropdownColor:
-                                            AppColors.surface(context),
-                                        menuMaxHeight: 220,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color:
-                                              AppColors.textPrimary(context),
-                                        ),
-                                        items: _availableStatuses
-                                            .map((s) => DropdownMenuItem(
-                                                value: s,
-                                                child: Text(s,
-                                                    style: GoogleFonts.inter(
-                                                        fontSize: 13))))
-                                            .toList(),
-                                        onChanged: (val) {
-                                          if (val != null) {
-                                            setDialogState(
-                                                () => selectedStatus = val);
-                                          }
-                                        },
-                                        decoration: InputDecoration(
-                                          filled: true,
-                                          fillColor: AppColors.surfaceSubtle(
-                                              context),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 12, vertical: 8),
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            borderSide: BorderSide(
-                                                color: AppColors.border(
-                                                    context)),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Horas Jugadas',
-                                        style: GoogleFonts.inter(
-                                          color:
-                                              AppColors.textSecondary(context),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      TextField(
-                                        controller: hoursController,
-                                        keyboardType: TextInputType.number,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 13,
-                                          color:
-                                              AppColors.textPrimary(context),
-                                        ),
-                                        decoration: InputDecoration(
-                                          prefixIcon: Icon(
-                                            Icons.timer_outlined,
-                                            size: 16,
-                                            color: AppColors.textSecondary(
-                                                context),
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal: 12, vertical: 10),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Fecha de Inicio
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Fecha de Inicio',
-                                  style: GoogleFonts.inter(
-                                    color: AppColors.textSecondary(context),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                InkWell(
-                                  onTap: () async {
-                                    final picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime.now(),
-                                      firstDate: DateTime(2000),
-                                      lastDate: DateTime(2100),
-                                    );
-                                    if (picked != null) {
-                                      setDialogState(() =>
-                                          selectedStartDate = picked);
-                                    }
-                                  },
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surfaceSubtle(context),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                          color: AppColors.border(context)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                            Icons.calendar_today_rounded,
-                                            size: 14,
-                                            color: Color(0xFFDC2626)),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          selectedStartDate == null
-                                              ? 'Sin fecha de inicio'
-                                              : DateFormat('dd/MM/yyyy')
-                                                  .format(selectedStartDate!),
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: selectedStartDate == null
-                                                ? AppColors.textSecondary(
-                                                    context)
-                                                : AppColors.textPrimary(
-                                                    context),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-
-                            // Plataforma (Selector Visual en Cuadrícula / Chips con Iconos Oficiales)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.sports_esports_rounded,
-                                            size: 16,
-                                            color: Color(0xFFDC2626)),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Plataforma',
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color:
-                                                AppColors.textPrimary(context),
-                                          ),
-                                        ),
-                                        if (detectedPlatforms.isNotEmpty) ...[
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF10B981)
-                                                  .withOpacity(0.15),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              border: Border.all(
-                                                  color:
-                                                      const Color(0xFF10B981)
-                                                          .withOpacity(0.3),
-                                                  width: 0.5),
-                                            ),
-                                            child: Text(
-                                              '${detectedPlatforms.length} disponibles',
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color:
-                                                    const Color(0xFF10B981),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    if (detectedPlatforms.isNotEmpty)
-                                      TextButton(
-                                        onPressed: () {
-                                          setDialogState(() {
-                                            showAllPlatforms =
-                                                !showAllPlatforms;
-                                          });
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                        child: Text(
-                                          showAllPlatforms
-                                              ? 'Solo recomendadas'
-                                              : '+ Otras plataformas',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFFDC2626),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Builder(builder: (context) {
-                                  final availableList = showAllPlatforms ||
-                                          detectedPlatforms.isEmpty
-                                      ? _availablePlatforms
-                                      : detectedPlatforms;
-
-                                  final listToRender =
-                                      List<String>.from(availableList);
-                                  if (!listToRender
-                                      .contains(selectedPlatform)) {
-                                    listToRender.insert(0, selectedPlatform);
-                                  }
-
-                                  return Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: listToRender.map((p) {
-                                      final isSelected =
-                                          selectedPlatform == p;
-                                      final isDark =
-                                          Theme.of(context).brightness ==
-                                              Brightness.dark;
-                                      return InkWell(
-                                        onTap: () {
-                                          setDialogState(() =>
-                                              selectedPlatform = p);
-                                        },
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                        child: AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 180),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? const Color(0xFFDC2626)
-                                                    .withOpacity(0.15)
-                                                : (isDark
-                                                    ? const Color(0xFF18181B)
-                                                    : const Color(0xFFF4F4F5)),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? const Color(0xFFDC2626)
-                                                  : (isDark
-                                                      ? const Color(0xFF27272A)
-                                                      : const Color(0xFFE4E4E7)),
-                                              width: isSelected ? 1.5 : 1.0,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              PlatformHelper.getIcon(p,
-                                                  size: 15,
-                                                  isColor: isSelected),
-                                              const SizedBox(width: 7),
-                                              Text(
-                                                p,
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 12,
-                                                  fontWeight: isSelected
-                                                      ? FontWeight.bold
-                                                      : FontWeight.w500,
-                                                  color: isSelected
-                                                      ? const Color(0xFFDC2626)
-                                                      : AppColors.textPrimary(
-                                                          context),
-                                                ),
-                                              ),
-                                              if (isSelected) ...[
-                                                const SizedBox(width: 6),
-                                                const Icon(
-                                                    Icons.check_circle_rounded,
-                                                    size: 13,
-                                                    color: Color(0xFFDC2626)),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  );
-                                }),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Desplegable / Acordeón de Géneros
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceSubtle(context),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isGenreAccordionExpanded
-                                      ? const Color(0xFFDC2626).withOpacity(0.4)
-                                      : AppColors.border(context),
-                                ),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                children: [
-                                  InkWell(
-                                    onTap: () {
-                                      setDialogState(() {
-                                        isGenreAccordionExpanded =
-                                            !isGenreAccordionExpanded;
-                                      });
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 12),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              const Icon(
-                                                  Icons.category_rounded,
-                                                  size: 16,
-                                                  color: Color(0xFFDC2626)),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'Géneros',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                  color:
-                                                      AppColors.textPrimary(
-                                                          context),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 1),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFFDC2626)
-                                                          .withOpacity(0.15),
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  '${selectedGenres.length}',
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                    color:
-                                                        const Color(0xFFDC2626),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Icon(
-                                            isGenreAccordionExpanded
-                                                ? Icons.keyboard_arrow_up
-                                                : Icons.keyboard_arrow_down,
-                                            size: 20,
-                                            color: AppColors.textSecondary(
-                                                context),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  if (isGenreAccordionExpanded) ...[
-                                    Divider(
-                                        height: 1,
-                                        color: AppColors.border(context)),
-                                    Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children:
-                                            _allAvailableGenres.map((g) {
-                                          final isSelected =
-                                              selectedGenres.contains(g);
-                                          return FilterChip(
-                                            label: Text(
-                                              g,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 11,
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : AppColors
-                                                        .textSecondary(
-                                                            context),
-                                              ),
-                                            ),
-                                            selected: isSelected,
-                                            selectedColor:
-                                                const Color(0xFFDC2626),
-                                            backgroundColor:
-                                                AppColors.surface(context),
-                                            side: BorderSide(
-                                              color: isSelected
-                                                  ? Colors.transparent
-                                                  : AppColors.border(context),
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(6)),
-                                            showCheckmark: false,
-                                            onSelected: (selected) {
-                                              setDialogState(() {
-                                                if (selected) {
-                                                  selectedGenres.add(g);
-                                                } else {
-                                                  selectedGenres.remove(g);
-                                                }
-                                              });
-                                            },
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(
-                            'Cancelar',
-                            style: GoogleFonts.inter(
-                              color: AppColors.textSecondary(context),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDC2626),
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          label: Text(
-                            'Añadir a mi Biblioteca',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => _GameDetailsPromptDialog(
+        rawgGame: rawgGame,
+        availablePlatforms: _availablePlatforms,
+        allAvailableGenres: _allAvailableGenres,
+        canonicalPlatform: _canonicalPlatform,
+      ),
     );
 
-    if (shouldSave == true) {
+    if (result != null) {
       await _addGameToLibrary(
         rawgGame: rawgGame,
-        status: selectedStatus,
-        platform: selectedPlatform,
-        startDate: selectedStartDate,
-        hoursPlayed: double.tryParse(hoursController.text) ?? 0,
-        genres: selectedGenres,
+        status: result.status,
+        platform: result.platform,
+        startDate: result.startDate,
+        hoursPlayed: result.hoursPlayed,
+        genres: result.genres,
       );
     }
   }
@@ -1140,3 +482,684 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
+
+class _GameDetailsResult {
+  final String status;
+  final String platform;
+  final DateTime? startDate;
+  final num hoursPlayed;
+  final List<String> genres;
+
+  _GameDetailsResult({
+    required this.status,
+    required this.platform,
+    required this.startDate,
+    required this.hoursPlayed,
+    required this.genres,
+  });
+}
+
+class _GameDetailsPromptDialog extends StatefulWidget {
+  final Map<String, dynamic> rawgGame;
+  final List<String> availablePlatforms;
+  final List<String> allAvailableGenres;
+  final String Function(String) canonicalPlatform;
+
+  const _GameDetailsPromptDialog({
+    required this.rawgGame,
+    required this.availablePlatforms,
+    required this.allAvailableGenres,
+    required this.canonicalPlatform,
+  });
+
+  @override
+  State<_GameDetailsPromptDialog> createState() =>
+      _GameDetailsPromptDialogState();
+}
+
+class _GameDetailsPromptDialogState extends State<_GameDetailsPromptDialog> {
+  late final TextEditingController _hoursController;
+  String _selectedStatus = 'Por jugar';
+  DateTime? _selectedStartDate;
+  late String _selectedPlatform;
+  final List<String> _detectedPlatforms = [];
+  final List<String> _selectedGenres = [];
+  bool _isGenreAccordionExpanded = false;
+  bool _showAllPlatforms = false;
+
+  final List<String> _availableStatuses = [
+    'Por jugar',
+    'Jugando',
+    'Jugado',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _hoursController = TextEditingController(text: '0');
+
+    // Extraer plataformas detectadas
+    if (widget.rawgGame['platforms'] != null &&
+        widget.rawgGame['platforms'] is List) {
+      for (final item in widget.rawgGame['platforms']) {
+        final pName = item['platform']?['name']?.toString()?.trim();
+        if (pName != null && pName.isNotEmpty) {
+          final canonical = widget.canonicalPlatform(pName);
+          if (!_detectedPlatforms.contains(canonical)) {
+            _detectedPlatforms.add(canonical);
+          }
+        }
+      }
+    }
+
+    _selectedPlatform = _detectedPlatforms.contains('PC')
+        ? 'PC'
+        : (_detectedPlatforms.isNotEmpty ? _detectedPlatforms.first : 'PC');
+
+    // Extraer géneros devueltos por RAWG
+    if (widget.rawgGame['genres'] != null &&
+        widget.rawgGame['genres'] is List) {
+      for (final g in widget.rawgGame['genres']) {
+        final name = g['name']?.toString()?.trim();
+        if (name != null && name.isNotEmpty) {
+          if (!_selectedGenres.contains(name)) {
+            _selectedGenres.add(name);
+          }
+          if (!widget.allAvailableGenres.contains(name)) {
+            widget.allAvailableGenres.add(name);
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _hoursController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rawgGame = widget.rawgGame;
+
+    return Dialog(
+      backgroundColor: AppColors.surface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.border(context)),
+      ),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with Game Title and Cover
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: rawgGame['background_image'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: rawgGame['background_image'],
+                          width: 60,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          memCacheWidth: 200,
+                          memCacheHeight: 300,
+                          placeholder: (_, __) => Container(
+                            width: 60,
+                            height: 80,
+                            color: AppColors.surfaceSubtle(context),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
+                            width: 60,
+                            height: 80,
+                            color: AppColors.surfaceSubtle(context),
+                            child: Icon(Icons.gamepad_rounded,
+                                size: 24,
+                                color: AppColors.textSecondary(context)),
+                          ),
+                        )
+                      : Container(
+                          width: 60,
+                          height: 80,
+                          color: AppColors.surfaceSubtle(context),
+                          child: Icon(Icons.gamepad_rounded,
+                              size: 24,
+                              color: AppColors.textSecondary(context)),
+                        ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        rawgGame['name'] ?? 'Juego',
+                        style: GoogleFonts.outfit(
+                          color: AppColors.textPrimary(context),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        rawgGame['released'] != null
+                            ? 'Lanzamiento: ${rawgGame['released']}'
+                            : 'Sin fecha de lanzamiento',
+                        style: GoogleFonts.inter(
+                          color: AppColors.textSecondary(context),
+                          fontSize: 12,
+                        ),
+                      ),
+                      if (rawgGame['playtime'] != null &&
+                          rawgGame['playtime'] > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'HLTB estimado: ${rawgGame['playtime']}h',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFFDC2626),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: AppColors.border(context)),
+            const SizedBox(height: 8),
+
+            // Scrollable form fields
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Estado & Horas Jugadas
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Estado',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textSecondary(context),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              DropdownButtonFormField<String>(
+                                value: _selectedStatus,
+                                dropdownColor: AppColors.surface(context),
+                                menuMaxHeight: 220,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary(context),
+                                ),
+                                items: _availableStatuses
+                                    .map((s) => DropdownMenuItem(
+                                        value: s,
+                                        child: Text(s,
+                                            style: GoogleFonts.inter(
+                                                fontSize: 13))))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedStatus = val);
+                                  }
+                                },
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: AppColors.surfaceSubtle(context),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide(
+                                        color: AppColors.border(context)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Horas Jugadas',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.textSecondary(context),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: _hoursController,
+                                keyboardType: TextInputType.number,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary(context),
+                                ),
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.timer_outlined,
+                                    size: 16,
+                                    color: AppColors.textSecondary(context),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Fecha de Inicio
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Fecha de Inicio',
+                          style: GoogleFonts.inter(
+                            color: AppColors.textSecondary(context),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              setState(() => _selectedStartDate = picked);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceSubtle(context),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: AppColors.border(context)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today_rounded,
+                                    size: 14, color: Color(0xFFDC2626)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _selectedStartDate == null
+                                      ? 'Sin fecha de inicio'
+                                      : DateFormat('dd/MM/yyyy')
+                                          .format(_selectedStartDate!),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: _selectedStartDate == null
+                                        ? AppColors.textSecondary(context)
+                                        : AppColors.textPrimary(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Plataforma
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.sports_esports_rounded,
+                                    size: 16, color: Color(0xFFDC2626)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Plataforma',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary(context),
+                                  ),
+                                ),
+                                if (_detectedPlatforms.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981)
+                                          .withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                          color: const Color(0xFF10B981)
+                                              .withOpacity(0.3),
+                                          width: 0.5),
+                                    ),
+                                    child: Text(
+                                      '${_detectedPlatforms.length} disponibles',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (_detectedPlatforms.isNotEmpty)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _showAllPlatforms = !_showAllPlatforms;
+                                  });
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                child: Text(
+                                  _showAllPlatforms
+                                      ? 'Solo recomendadas'
+                                      : '+ Otras plataformas',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Builder(builder: (context) {
+                          final availableList = _showAllPlatforms ||
+                                  _detectedPlatforms.isEmpty
+                              ? widget.availablePlatforms
+                              : _detectedPlatforms;
+
+                          final listToRender =
+                              List<String>.from(availableList);
+                          if (!listToRender.contains(_selectedPlatform)) {
+                            listToRender.insert(0, _selectedPlatform);
+                          }
+
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: listToRender.map((p) {
+                              final isSelected = _selectedPlatform == p;
+                              final isDark = Theme.of(context).brightness ==
+                                  Brightness.dark;
+                              return InkWell(
+                                onTap: () {
+                                  setState(() => _selectedPlatform = p);
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFFDC2626)
+                                            .withOpacity(0.15)
+                                        : (isDark
+                                            ? const Color(0xFF18181B)
+                                            : const Color(0xFFF4F4F5)),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFDC2626)
+                                          : (isDark
+                                              ? const Color(0xFF27272A)
+                                              : const Color(0xFFE4E4E7)),
+                                      width: isSelected ? 1.5 : 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      PlatformHelper.getIcon(p,
+                                          size: 15, isColor: isSelected),
+                                      const SizedBox(width: 7),
+                                      Text(
+                                        p,
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          color: isSelected
+                                              ? const Color(0xFFDC2626)
+                                              : AppColors.textPrimary(context),
+                                        ),
+                                      ),
+                                      if (isSelected) ...[
+                                        const SizedBox(width: 6),
+                                        const Icon(Icons.check_circle_rounded,
+                                            size: 13,
+                                            color: Color(0xFFDC2626)),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        }),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Acordeón de Géneros
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceSubtle(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _isGenreAccordionExpanded
+                              ? const Color(0xFFDC2626).withOpacity(0.4)
+                              : AppColors.border(context),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isGenreAccordionExpanded =
+                                    !_isGenreAccordionExpanded;
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.category_rounded,
+                                          size: 16, color: Color(0xFFDC2626)),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Géneros',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color:
+                                              AppColors.textPrimary(context),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFDC2626)
+                                              .withOpacity(0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '${_selectedGenres.length}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFFDC2626),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Icon(
+                                    _isGenreAccordionExpanded
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
+                                    size: 20,
+                                    color: AppColors.textSecondary(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_isGenreAccordionExpanded) ...[
+                            Divider(
+                                height: 1, color: AppColors.border(context)),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: widget.allAvailableGenres.map((g) {
+                                  final isSelected =
+                                      _selectedGenres.contains(g);
+                                  return FilterChip(
+                                    label: Text(
+                                      g,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : AppColors.textSecondary(context),
+                                      ),
+                                    ),
+                                    selected: isSelected,
+                                    selectedColor: const Color(0xFFDC2626),
+                                    backgroundColor: AppColors.surface(context),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? Colors.transparent
+                                          : AppColors.border(context),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(6)),
+                                    showCheckmark: false,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          _selectedGenres.add(g);
+                                        } else {
+                                          _selectedGenres.remove(g);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+
+            // Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text(
+                    'Cancelar',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final result = _GameDetailsResult(
+                      status: _selectedStatus,
+                      platform: _selectedPlatform,
+                      startDate: _selectedStartDate,
+                      hoursPlayed:
+                          double.tryParse(_hoursController.text.trim()) ?? 0,
+                      genres: _selectedGenres,
+                    );
+                    Navigator.pop(context, result);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: Text(
+                    'Añadir a mi Biblioteca',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

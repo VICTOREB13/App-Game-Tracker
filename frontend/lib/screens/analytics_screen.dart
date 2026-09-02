@@ -113,93 +113,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return rated.take(5).toList();
   }
 
-  void _showEditGoalDialog() {
-    final controller = TextEditingController(text: _annualGoal.toString());
-    showDialog(
+  Future<void> _showEditGoalDialog() async {
+    final newGoal = await showDialog<int>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: AppColors.border(context)),
-        ),
-        title: Text(
-          'Meta Anual $_selectedYear',
-          style: GoogleFonts.outfit(
-            color: AppColors.textPrimary(context),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '¿Cuántos juegos te propones completar durante el año $_selectedYear?',
-              style: GoogleFonts.inter(
-                color: AppColors.textSecondary(context),
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary(context),
-              ),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: AppColors.surfaceSubtle(context),
-                suffixText: 'juegos',
-                suffixStyle:
-                    GoogleFonts.inter(color: AppColors.textSecondary(context)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: AppColors.border(context)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFDC2626)),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.inter(color: AppColors.textSecondary(context)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final val = int.tryParse(controller.text.trim());
-              if (val != null && val > 0) {
-                _setYearGoal(val);
-              }
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Guardar',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
+      builder: (ctx) => _EditGoalDialog(
+        year: _selectedYear,
+        initialGoal: _annualGoal,
       ),
     );
+
+    if (newGoal != null && newGoal > 0) {
+      _setYearGoal(newGoal);
+    }
   }
 
   @override
@@ -1244,3 +1169,116 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 }
+
+class _EditGoalDialog extends StatefulWidget {
+  final int year;
+  final int initialGoal;
+
+  const _EditGoalDialog({
+    required this.year,
+    required this.initialGoal,
+  });
+
+  @override
+  State<_EditGoalDialog> createState() => _EditGoalDialogState();
+}
+
+class _EditGoalDialogState extends State<_EditGoalDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialGoal.toString());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.surface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.border(context)),
+      ),
+      title: Text(
+        'Meta Anual ${widget.year}',
+        style: GoogleFonts.outfit(
+          color: AppColors.textPrimary(context),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '¿Cuántos juegos te propones completar durante el año ${widget.year}?',
+            style: GoogleFonts.inter(
+              color: AppColors.textSecondary(context),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary(context),
+            ),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: AppColors.surfaceSubtle(context),
+              suffixText: 'juegos',
+              suffixStyle:
+                  GoogleFonts.inter(color: AppColors.textSecondary(context)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.border(context)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFDC2626)),
+              ),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: Text(
+            'Cancelar',
+            style: GoogleFonts.inter(color: AppColors.textSecondary(context)),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final val = int.tryParse(_controller.text.trim());
+            Navigator.pop(context, val);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFDC2626),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Guardar',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+}
+

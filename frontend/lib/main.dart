@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'services/database_service.dart';
+import 'services/secure_storage_service.dart';
 import 'services/theme_manager.dart';
 import 'screens/dashboard.dart';
 
@@ -9,6 +10,9 @@ void main() async {
 
   // Inicializar base de datos local SQLite (0 ms cold start)
   await DatabaseService.instance.init();
+
+  // Migración transparente de claves sensibles a almacenamiento cifrado
+  await SecureStorageService.instance.migrateFromSharedPreferences();
 
   // Cargar preferencia de tema (Oscuro / Claro / Sistema)
   await ThemeManager.instance.loadTheme();

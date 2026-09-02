@@ -4,6 +4,8 @@ import 'package:tracker_app/models/game.dart';
 void main() {
   group('Game Model SQLite & JSON Tests', () {
     test('toSqliteMap y fromSqliteMap preservan todos los campos fielmente', () {
+      final initialDate = DateTime(2023, 11, 1);
+      final updateDate = DateTime(2023, 12, 1);
       final game = Game(
         id: 'test-uuid-1234',
         title: 'Hades',
@@ -17,9 +19,11 @@ void main() {
         hltbCompletionist: 97.0,
         summary: 'Juego sobresaliente de Supergiant Games',
         link: 'https://es.wikipedia.org/wiki/Hades',
-        startDate: DateTime(2023, 11, 1),
+        startDate: initialDate,
         completedDate: DateTime(2023, 12, 10),
         steamId: 1145360,
+        createdAt: initialDate,
+        updatedAt: updateDate,
       );
 
       final map = game.toSqliteMap();
@@ -27,6 +31,8 @@ void main() {
       expect(map['title'], equals('Hades'));
       expect(map['hours_played'], equals(65.5));
       expect(map['steam_id'], equals(1145360));
+      expect(map['created_at'], equals(initialDate.toIso8601String()));
+      expect(map['updated_at'], equals(updateDate.toIso8601String()));
 
       final restored = Game.fromSqliteMap(map);
       expect(restored.id, equals(game.id));
@@ -35,6 +41,8 @@ void main() {
       expect(restored.genres, equals(game.genres));
       expect(restored.steamId, equals(game.steamId));
       expect(restored.status, equals('Jugado'));
+      expect(restored.createdAt, equals(initialDate));
+      expect(restored.updatedAt, equals(updateDate));
     });
 
     test('toJson y fromJson serializan y deserializan correctamente para respaldos', () {
@@ -82,29 +90,54 @@ void main() {
     });
 
     test('copyWith permite borrar campos asignando null explícito (patrón Sentinel)', () {
+      final initialDate = DateTime(2023, 1, 1);
       final initialGame = Game(
         id: 'uuid-test',
         title: 'Hollow Knight',
         coverUrl: 'https://ejemplo.com/hollow.jpg',
         link: 'https://es.wikipedia.org/wiki/Hollow_Knight',
         rating: '★★★★★',
+        hoursPlayed: 45.0,
+        genres: ['Metroidvania', 'Indie'],
+        hltbMain: 27.0,
+        hltbCompletionist: 65.0,
+        startDate: initialDate,
+        completedDate: initialDate,
+        steamId: 367520,
       );
 
-      // Borrar enlace y portada explícitamente pasando null
+      // Borrar enlace, portada, horas y géneros explícitamente pasando null
       final updated = initialGame.copyWith(
         link: null,
         coverUrl: null,
+        hoursPlayed: null,
+        genres: null,
+        rating: null,
+        hltbMain: null,
+        hltbCompletionist: null,
+        startDate: null,
+        completedDate: null,
+        steamId: null,
       );
 
       expect(updated.link, isNull);
       expect(updated.coverUrl, isNull);
+      expect(updated.hoursPlayed, isNull);
+      expect(updated.genres, isEmpty);
+      expect(updated.rating, isNull);
+      expect(updated.hltbMain, isNull);
+      expect(updated.hltbCompletionist, isNull);
+      expect(updated.startDate, isNull);
+      expect(updated.completedDate, isNull);
+      expect(updated.steamId, isNull);
       expect(updated.title, equals('Hollow Knight'));
-      expect(updated.rating, equals('★★★★★')); // Se preserva
 
       // Modificar título sin tocar link
       final updatedTitle = initialGame.copyWith(title: 'Silksong');
       expect(updatedTitle.title, equals('Silksong'));
       expect(updatedTitle.link, equals('https://es.wikipedia.org/wiki/Hollow_Knight'));
+      expect(updatedTitle.hoursPlayed, equals(45.0));
+      expect(updatedTitle.genres, equals(['Metroidvania', 'Indie']));
     });
   });
 }

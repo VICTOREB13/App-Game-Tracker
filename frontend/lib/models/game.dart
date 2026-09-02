@@ -168,7 +168,7 @@ class Game {
           : null,
       'steam_id': steamId != null ? steamId!.toInt() : null,
       'created_at': createdAt?.toIso8601String() ?? now,
-      'updated_at': now,
+      'updated_at': updatedAt?.toIso8601String() ?? now,
     };
   }
 
@@ -343,8 +343,8 @@ class Game {
     Object? coverUrl = _sentinel,
     String? status,
     Object? platform = _sentinel,
-    num? hoursPlayed,
-    List<String>? genres,
+    Object? hoursPlayed = _sentinel,
+    Object? genres = _sentinel,
     Object? rating = _sentinel,
     Object? hltbMain = _sentinel,
     Object? hltbCompletionist = _sentinel,
@@ -353,9 +353,20 @@ class Game {
     Object? startDate = _sentinel,
     Object? completedDate = _sentinel,
     Object? steamId = _sentinel,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    Object? createdAt = _sentinel,
+    Object? updatedAt = _sentinel,
   }) {
+    List<String> resolvedGenres;
+    if (identical(genres, _sentinel)) {
+      resolvedGenres = this.genres;
+    } else if (genres is List<String>) {
+      resolvedGenres = genres;
+    } else if (genres is List) {
+      resolvedGenres = genres.map((e) => e.toString()).toList();
+    } else {
+      resolvedGenres = const [];
+    }
+
     return Game(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -366,8 +377,10 @@ class Game {
       platform: identical(platform, _sentinel)
           ? this.platform
           : (platform as String?),
-      hoursPlayed: hoursPlayed ?? this.hoursPlayed,
-      genres: genres ?? this.genres,
+      hoursPlayed: identical(hoursPlayed, _sentinel)
+          ? this.hoursPlayed
+          : (hoursPlayed as num?),
+      genres: resolvedGenres,
       rating: identical(rating, _sentinel)
           ? this.rating
           : (rating as String?),
@@ -392,8 +405,12 @@ class Game {
       steamId: identical(steamId, _sentinel)
           ? this.steamId
           : (steamId as num?),
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      createdAt: identical(createdAt, _sentinel)
+          ? this.createdAt
+          : (createdAt as DateTime?),
+      updatedAt: identical(updatedAt, _sentinel)
+          ? this.updatedAt
+          : (updatedAt as DateTime?),
     );
   }
 }
