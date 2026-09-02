@@ -348,6 +348,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       return;
     }
 
+    if (!mounted) return;
     final result = await SteamSyncDialog.show(
       context: context,
       apiKey: apiKey,
@@ -775,7 +776,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 onSelected: (val) async {
                   if (val == 'theme') {
-                    ThemeManager.instance.toggleTheme();
+                    await ThemeManager.instance.toggleTheme();
                   } else if (val == 'steam_sync') {
                     await _syncWithSteam();
                   } else if (val == 'refresh') {

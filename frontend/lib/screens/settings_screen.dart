@@ -187,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _loadSettings();
 
       if (!mounted) return;
-      showDialog<void>(
+      await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: AppColors.surface(context),
@@ -321,7 +321,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
     setState(() => _isSyncingHltb = false);
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface(context),
@@ -449,7 +449,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
     setState(() => _isSyncingMetadata = false);
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface(context),
@@ -1144,7 +1144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => _ImportBackupDialog(
         availableBackups: availableBackups,

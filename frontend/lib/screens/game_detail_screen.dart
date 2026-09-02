@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -1380,9 +1381,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final isCurrentDark = Theme.of(context).brightness == Brightness.dark;
     bool cardIsDark = isCurrentDark;
 
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return Dialog(
             backgroundColor: AppColors.surface(context),
@@ -1565,7 +1567,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                             : () async {
                                 setDialogState(() => _isExporting = true);
                                 await _exportSocialCard(isDark: cardIsDark);
-                                if (mounted) {
+                                if (ctx.mounted) {
                                   setDialogState(() => _isExporting = false);
                                   Navigator.pop(ctx);
                                 }
