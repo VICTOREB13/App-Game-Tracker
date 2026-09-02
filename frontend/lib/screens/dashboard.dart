@@ -1391,11 +1391,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                     crossAxisSpacing: 14,
                                     mainAxisSpacing: 14,
                                   ),
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 14,
-                                ),
-                                itemCount: _paginatedGames.length,
-                                itemBuilder: (context, index) {
+                                  itemCount: _paginatedGames.length,
+                                  itemBuilder: (context, index) {
                                   final game = _paginatedGames[index];
                                   return TweenAnimationBuilder<double>(
                                     key: ValueKey('grid_${game.id}_$index'),
