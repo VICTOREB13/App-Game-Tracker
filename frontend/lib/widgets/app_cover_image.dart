@@ -39,7 +39,7 @@ class AppCoverImage extends StatelessWidget {
     final url = coverUrl?.trim();
 
     if (url == null || url.isEmpty) {
-      content = _buildDefaultPlaceholder(context);
+      content = placeholder ?? _buildDefaultPlaceholder(context);
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
       content = CachedNetworkImage(
         imageUrl: url,

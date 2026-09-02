@@ -38,7 +38,8 @@ void main() {
 
         if (request.url.path.contains('/api/search/site')) {
           expect(request.headers['x-auth-token'], equals('auth_token_123'));
-          expect(request.headers['x-hp-key-custom'], equals('custom-val-data'));
+          expect(request.headers['x-hp-key'], equals('x-hp-key-custom'));
+          expect(request.headers['x-hp-val'], equals('custom-val-data'));
 
           return http.Response(
             json.encode({
