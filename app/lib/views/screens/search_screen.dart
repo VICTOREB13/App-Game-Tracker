@@ -167,16 +167,17 @@ class _SearchScreenState extends State<SearchScreen> {
                       )
                     : _controller.results.isEmpty
                         ? SearchEmptyState(
-                            query: _searchController.text,
-                            hasSearched: _searchController.text.trim().isNotEmpty,
+                            message: _searchController.text.trim().isEmpty
+                                ? 'Escribe el nombre de un juego para buscar'
+                                : 'No se encontraron juegos para "${_searchController.text}"',
                           )
                         : ListView.builder(
                             itemCount: _controller.results.length,
                             itemBuilder: (context, index) {
                               final game = _controller.results[index];
                               return SearchResultCard(
-                                game: game,
-                                onAdd: () => _promptGameDetails(game),
+                                rawgGame: game,
+                                onTap: () => _promptGameDetails(game),
                               );
                             },
                           ),

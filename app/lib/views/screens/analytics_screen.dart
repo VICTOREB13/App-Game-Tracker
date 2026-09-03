@@ -371,8 +371,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   icon: const Icon(Icons.chevron_left_rounded, size: 22),
                                   color: AppColors.textSecondary(context),
                                   onPressed: () {
-                                    setState(() => _selectedYear--);
-                                    unawaited(_loadYearGoal());
+                                    unawaited(_controller.setSelectedYear(_selectedYear - 1));
                                   },
                                   tooltip: 'Año anterior',
                                   constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
@@ -398,8 +397,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                   icon: const Icon(Icons.chevron_right_rounded, size: 22),
                                   color: AppColors.textSecondary(context),
                                   onPressed: () {
-                                    setState(() => _selectedYear++);
-                                    unawaited(_loadYearGoal());
+                                    unawaited(_controller.setSelectedYear(_selectedYear + 1));
                                   },
                                   tooltip: 'Año siguiente',
                                   constraints: const BoxConstraints(minWidth: 36, minHeight: 32),
@@ -447,8 +445,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     size: 20),
                                 color: AppColors.textSecondary(context),
                                 onPressed: () {
-                                  setState(() => _selectedYear--);
-                                  unawaited(_loadYearGoal());
+                                  unawaited(_controller.setSelectedYear(_selectedYear - 1));
                                 },
                                 tooltip: 'Año anterior',
                                 constraints: const BoxConstraints(
@@ -478,8 +475,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                     size: 20),
                                 color: AppColors.textSecondary(context),
                                 onPressed: () {
-                                  setState(() => _selectedYear++);
-                                  unawaited(_loadYearGoal());
+                                  unawaited(_controller.setSelectedYear(_selectedYear + 1));
                                 },
                                 tooltip: 'Año siguiente',
                                 constraints: const BoxConstraints(
@@ -1160,7 +1156,6 @@ class _EditGoalDialog extends StatefulWidget {
   final int initialGoal;
 
   const _EditGoalDialog({
-    super.key,
     required this.year,
     required this.initialGoal,
   });

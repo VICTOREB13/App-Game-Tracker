@@ -185,12 +185,12 @@ class GameDetailController extends ChangeNotifier {
   }
 
   void setHltbMain(num? val) {
-    _hltbMain = val != null ? val.clamp(0.0, Game.maxPlaytimeHours) : null;
+    _hltbMain = val?.clamp(0.0, Game.maxPlaytimeHours);
     notifyListeners();
   }
 
   void setHltbCompletionist(num? val) {
-    _hltbCompletionist = val != null ? val.clamp(0.0, Game.maxPlaytimeHours) : null;
+    _hltbCompletionist = val?.clamp(0.0, Game.maxPlaytimeHours);
     notifyListeners();
   }
 

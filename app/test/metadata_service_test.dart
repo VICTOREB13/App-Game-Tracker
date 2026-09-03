@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:tracker_app/models/game.dart';
+import 'package:tracker_app/services/hltb_service.dart';
 import 'package:tracker_app/services/metadata_service.dart';
 import 'package:tracker_app/services/resilient_http_client.dart';
 

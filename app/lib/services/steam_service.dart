@@ -284,9 +284,6 @@ class SteamService {
     int processedCount = 0;
     final List<String> details = [];
 
-    // Constante de estados finales que no se auto-degradan
-    const estadosFinales = ['Jugado'];
-
     final rawgKey = await SecureStorageService.instance.getRawgKey() ?? '';
 
     // Lista de juegos a persistir en lote en Fase 1

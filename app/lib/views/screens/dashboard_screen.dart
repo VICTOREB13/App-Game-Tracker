@@ -90,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
       return;
     }
+    if (!mounted) return;
     final result = await SteamSyncDialog.show(
       context: context,
       apiKey: apiKey,
