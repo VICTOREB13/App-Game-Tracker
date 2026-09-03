@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/theme_manager.dart';
@@ -100,10 +100,10 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'AGT',
+                      'VE',
                       style: GoogleFonts.outfit(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
                       ),

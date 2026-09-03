@@ -75,12 +75,12 @@ class SocialCardPreview extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'AGT',
+                        'VE',
                         style: GoogleFonts.outfit(
                           color: Colors.white,
                           fontWeight: FontWeight.w900,
                           fontSize: 10,
-                          letterSpacing: 0.5,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
