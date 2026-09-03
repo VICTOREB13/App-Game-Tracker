@@ -1,10 +1,10 @@
-# 🎮 App Game Tracker (v3.2.0)
+# 🎮 App Game Tracker (v3.3.0)
 
 > **Rastreador de Videojuegos y Entretenimiento Personal Local-First para Windows y Android.**  
 > Desarrollado con ❤️ por **[Victor Engineer](https://victorengineer.fyi)**.
 
 [![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-red.svg)](LICENSE)
-[![Flutter](https://img.shields.io/badge/Flutter-3.22+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.47+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Motor](https://img.shields.io/badge/Almacenamiento-SQLite%20FFI-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
 [![Steam](https://img.shields.io/badge/Steam%20Web-API%20Sync-171a21?logo=steam&logoColor=white)](https://steamcommunity.com/dev)
 [![Sitio Oficial](https://img.shields.io/badge/Autor-victorengineer.fyi-DC2626)](https://victorengineer.fyi)
@@ -15,7 +15,7 @@
 
 **App Game Tracker** es una aplicación multiplataforma moderna, elegante y de latencia cero diseñada para llevar el registro definitivo de tu biblioteca de videojuegos. 
 
-A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.2.0** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, servicio nativo de HowLongToBeat, selector visual de plataformas, CRUD integral con borrado de campos opcionales, privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
+A diferencia de soluciones dependientes de la nube lenta o bases de datos de terceros, la versión **v3.3.0** adopta una arquitectura **100% Local-First** impulsada por **SQLite** con límites defensivos de optimización de memoria, servicio nativo de HowLongToBeat, selector visual de plataformas, CRUD integral con borrado de campos opcionales, privacidad total y funcionamiento offline continuo en **Windows (PC)** y **Android**.
 
 ---
 

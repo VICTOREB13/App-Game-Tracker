@@ -1,7 +1,7 @@
-# Project: App Game Tracker (v3.2.0)
+# Project: App Game Tracker (v3.3.0)
 
 ## Architecture
-- **Framework & Platform:** Flutter 3.22+ (Windows Desktop x64, Android).
+- **Framework & Platform:** Flutter 3.47+ (Windows Desktop x64, Android).
 - **Architecture Pattern:** Local-First Reactive Architecture with SQLite Engine (`sqflite` / `sqflite_common_ffi`), Service Layer for external API integrations (Steam, HLTB, RAWG, Wikipedia), and State Management via `StatefulWidget` / `ChangeNotifier` / Services.
 - **Visual Identity:** Victor Engineer (Obsidian Zinc Dark Mode `#09090B`, Crisp Zinc Light Mode `#FAFAFA`, Crimson Accent `#DC2626`, Google Fonts `Outfit` + `Inter`).
 - **Data Persistence:** SQLite database (`app_game_tracker.db` / `tracker.db`) with B-Tree indexes, JSON backup/export, local cover art cache (`app_documents/covers/`).

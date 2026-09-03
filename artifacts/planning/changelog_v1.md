@@ -11,6 +11,15 @@ tags: [proyecto, changelog, versiones, v3.2.0, modularization, monolith-decompos
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
 
+## [3.3.0] - 2026-09-03 (Flutter 3.47 Modernization & Strict Quality Compliance)
+
+### Modernized & Upgraded
+- **Migración a Estándares de Flutter 3.47+:**
+  - Modernización completa de los 85 llamados a `.withOpacity()` por la nueva API de alta fidelidad cromática `.withValues(alpha: ...)`.
+  - Migración de `value:` deprecado a `initialValue:` en todos los componentes `DropdownButtonFormField`.
+  - Limpieza de `analysis_options.yaml` (remoción de `deprecated_member_use: ignore`) garantizando cumplimiento 100% estricto de análisis estático.
+  - Actualización de flujos de CI/CD para compilación nativa en canales estables modernos con soporte de Android SDK 36.
+
 ## [3.2.0] - 2026-09-02 (Modular Architecture, Monolith Decomposition & Quality Gate)
 
 ### Added & Modularized
