@@ -113,8 +113,15 @@ class DatabaseService {
 
   /// Obtiene la ruta física del archivo SQLite en disco
   Future<String> getDatabasePath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return p.join(directory.path, 'app_game_tracker.db');
+    if (_database != null && _database!.path.isNotEmpty) {
+      return _database!.path;
+    }
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      return p.join(directory.path, 'app_game_tracker.db');
+    } catch (_) {
+      return 'app_game_tracker.db';
+    }
   }
 
   /// Recupera todos los juegos con soporte para filtros, ordenamientos y paginación SQL

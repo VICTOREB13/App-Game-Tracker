@@ -105,7 +105,12 @@ class SettingsController extends ChangeNotifier {
       final prefs = await _getPrefs();
       final count = await _dbService.getGameCount();
       final hours = await _dbService.getTotalHours();
-      final path = await _dbService.getDatabasePath();
+      String path = '';
+      try {
+        path = await _dbService.getDatabasePath();
+      } catch (_) {
+        path = 'app_game_tracker.db';
+      }
 
       final rawg = await _secureStorage.getRawgKey();
       final steam = await _secureStorage.getSteamApiKey();

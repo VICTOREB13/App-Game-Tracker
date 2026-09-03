@@ -166,7 +166,7 @@ void main() {
         'PromptPlatformSelector conmuta plataformas y responde a seleccion',
         (WidgetTester tester) async {
       String selected = 'PC';
-      final detected = ['PC', 'PlayStation 5'];
+      final detected = ['PC', 'Playstation 5'];
 
       await tester.pumpWidget(
         StatefulBuilder(

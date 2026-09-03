@@ -28,17 +28,23 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasRecommended = widget.detectedPlatforms.isNotEmpty;
+    final normalizedDetected = widget.detectedPlatforms
+        .map(PlatformHelper.canonicalize)
+        .toSet()
+        .toList();
+    final normalizedSelected =
+        PlatformHelper.canonicalize(widget.selectedPlatform);
+    final hasRecommended = normalizedDetected.isNotEmpty;
 
     final listToRender = _showAllPlatforms || !hasRecommended
         ? PlatformHelper.getOrderedPlatforms(
-            recommended: widget.detectedPlatforms,
-            currentPlatform: widget.selectedPlatform,
+            recommended: normalizedDetected,
+            currentPlatform: normalizedSelected,
           )
         : [
-            if (!widget.detectedPlatforms.contains(widget.selectedPlatform))
-              widget.selectedPlatform,
-            ...widget.detectedPlatforms,
+            if (!normalizedDetected.contains(normalizedSelected))
+              normalizedSelected,
+            ...normalizedDetected,
           ];
 
     return Column(
@@ -78,7 +84,7 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
                       ),
                     ),
                     child: Text(
-                      '${widget.detectedPlatforms.length} recomendadas',
+                      '${normalizedDetected.length} recomendadas',
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
@@ -116,7 +122,7 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
           spacing: 8,
           runSpacing: 8,
           children: listToRender.map((p) {
-            final isSelected = widget.selectedPlatform == p;
+            final isSelected = normalizedSelected == p;
             return InkWell(
               onTap: () => widget.onPlatformChanged(p),
               borderRadius: BorderRadius.circular(8),
