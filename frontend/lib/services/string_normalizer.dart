@@ -3,6 +3,25 @@ import 'dart:math';
 /// Utilidades de normalización y comparación difusa de títulos de videojuegos
 /// Port directo de la lógica implementada originalmente en `games.py`.
 class StringNormalizer {
+  /// Sanitiza una cadena para generar un nombre de archivo seguro y válido en el sistema de archivos
+  static String sanitizeFilename(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'archivo';
+    return trimmed
+        .replaceAll(RegExp(r'[™®©]'), '')
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+  }
+
+  /// Limpia símbolos de marca registrada (™®©) y espacios redundantes preservando mayúsculas
+  static String cleanSpecialCharacters(String name) {
+    return name
+        .replaceAll(RegExp(r'[™®©]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   /// Borra símbolos de marca y puntuación para una comparación justa.
   /// Reemplaza ['™', '®', '©', ':', '.', ',', '!', '?', '-', '_', '(', ')'] por espacios.
   static String cleanTitle(String? name) {

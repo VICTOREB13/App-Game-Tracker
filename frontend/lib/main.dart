@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'services/database_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/theme_manager.dart';
-import 'screens/dashboard.dart';
+import 'views/screens/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

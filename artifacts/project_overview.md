@@ -82,9 +82,9 @@ Aplicación multiplataforma de grado profesional (Windows Desktop x64 y Android)
 
 ## 🗺️ Índice de Artefactos del Proyecto
 
-- **Arquitectura del Sistema:** [[PRJ_App_Game_Tracker_architecture|Arquitectura del Sistema v3.0.5]]
+- **Arquitectura del Sistema:** [[PRJ_App_Game_Tracker_architecture|Arquitectura del Sistema]]
 - **Contrato de Datos y API:** [[PRJ_App_Game_Tracker_api_spec|Especificación de API y Contratos SQLite]]
-- **Plan de Implementación:** [[PRJ_App_Game_Tracker_implementation_plan|Plan de Implementación v3.0.5]]
-- **Lista de Tareas:** [[PRJ_App_Game_Tracker_task|Checklist de Tareas]]
+- **Plan de Implementación:** [[PRJ_App_Game_Tracker_implementation_plan|Plan de Implementación v3.2.0 (Modularización y Poda de Slop)]]
+- **Lista de Tareas:** [[PRJ_App_Game_Tracker_task|Checklist de Tareas Atómicas v3.2.0]]
 - **Historial de Versiones:** [[PRJ_App_Game_Tracker_changelog_v1|Changelog v1]]
-- **Reporte de Auditoría y Quality Gate:** [[PRJ_App_Game_Tracker_audit_report|Reporte de Auditoría]]
+- **Reporte de Auditoría y Diagnóstico:** [[PRJ_App_Game_Tracker_audit_report_refactor|Informe de Auditoría de Refactorización]]

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tracker_app/models/game.dart';
-import 'package:tracker_app/widgets/dashboard/game_card_grid.dart';
-import 'package:tracker_app/widgets/dashboard/game_card_list.dart';
-import 'package:tracker_app/widgets/dashboard/hero_spotlight_card.dart';
-import 'package:tracker_app/widgets/dashboard/pagination_control_bar.dart';
+import 'package:tracker_app/views/widgets/dashboard/dashboard_fab.dart';
+import 'package:tracker_app/views/widgets/dashboard/dashboard_filter_bar.dart';
+import 'package:tracker_app/views/widgets/dashboard/dashboard_skeleton_grid.dart';
+import 'package:tracker_app/views/widgets/dashboard/dashboard_view_header.dart';
+import 'package:tracker_app/views/widgets/dashboard/game_card_grid.dart';
+import 'package:tracker_app/views/widgets/dashboard/game_card_list.dart';
+import 'package:tracker_app/views/widgets/dashboard/hero_spotlight_card.dart';
+import 'package:tracker_app/views/widgets/dashboard/pagination_control_bar.dart';
+import 'package:tracker_app/views/widgets/filter_modal_sheet.dart';
 
 void main() {
   final testGame = Game(
@@ -127,6 +132,146 @@ void main() {
 
       await tester.tap(find.byTooltip('Página siguiente'));
       expect(changedPage, equals(2));
+    });
+
+    testWidgets('DashboardSkeletonGrid renderiza la cantidad solicitada de placeholders',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DashboardSkeletonGrid(cardExtent: 200, itemCount: 6),
+          ),
+        ),
+      );
+
+      expect(find.byType(GridView), findsOneWidget);
+      expect(find.byType(DecoratedBox), findsWidgets);
+    });
+
+    testWidgets('DashboardViewHeader renderiza contadores y responde a toggle de vista',
+        (WidgetTester tester) async {
+      bool toggleCalled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardViewHeader(
+              filteredGamesCount: 15,
+              totalGamesCount: 40,
+              searchQuery: 'Zelda',
+              isGridView: true,
+              gridCardExtent: 220,
+              onToggleViewMode: () => toggleCalled = true,
+              onGridCardExtentChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('15 de 40 juegos'), findsOneWidget);
+      expect(find.text('Filtro: "Zelda"'), findsOneWidget);
+      expect(find.text('Grid'), findsOneWidget);
+      expect(find.text('Lista'), findsOneWidget);
+
+      await tester.tap(find.text('Lista'));
+      expect(toggleCalled, isTrue);
+    });
+
+    testWidgets('DashboardFilterBar renderiza chips de estado y botón de limpiar',
+        (WidgetTester tester) async {
+      String? selectedStatus;
+      bool cleared = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardFilterBar(
+              selectedStatus: 'Jugando',
+              selectedPlatform: 'Todas',
+              selectedGenre: 'Todos',
+              selectedSort: 'Recientes',
+              platformOptions: const [
+                FilterOption(label: 'PC', count: 10),
+              ],
+              genreOptions: const [
+                FilterOption(label: 'RPG', count: 5),
+              ],
+              activeFiltersCount: 1,
+              onStatusSelected: (s) => selectedStatus = s,
+              onPlatformSelected: (_) {},
+              onGenreSelected: (_) {},
+              onSortSelected: (_) {},
+              onClearFilters: () => cleared = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Jugando'), findsWidgets);
+      expect(find.text('Limpiar'), findsOneWidget);
+
+      await tester.tap(find.text('Limpiar'));
+      expect(cleared, isTrue);
+
+      await tester.tap(find.text('Por jugar'));
+      expect(selectedStatus, equals('Por jugar'));
+    });
+
+    testWidgets('DashboardFab renderiza versión extendida en desktop y simple en móvil',
+        (WidgetTester tester) async {
+      bool pressed = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardFab(
+              isMobile: false,
+              onPressed: () => pressed = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Añadir'), findsOneWidget);
+      await tester.tap(find.text('Añadir'));
+      expect(pressed, isTrue);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DashboardFab(
+              isMobile: true,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    });
+
+    testWidgets('PaginationControlBar renderiza botón integrado onAddGame',
+        (WidgetTester tester) async {
+      bool addCalled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PaginationControlBar(
+              totalItems: 10,
+              currentPage: 1,
+              pageSize: 25,
+              totalPages: 1,
+              onPageChanged: (_) {},
+              onPageSizeChanged: (_) {},
+              onAddGame: () => addCalled = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Añadir juego'), findsOneWidget);
+      await tester.tap(find.text('Añadir juego'));
+      expect(addCalled, isTrue);
     });
   });
 }

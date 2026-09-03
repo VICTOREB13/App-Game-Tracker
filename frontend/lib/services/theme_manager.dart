@@ -29,7 +29,7 @@ class ThemeManager extends ChangeNotifier {
           break;
       }
       notifyListeners();
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -41,7 +41,7 @@ class ThemeManager extends ChangeNotifier {
       if (mode == ThemeMode.light) val = 'light';
       if (mode == ThemeMode.system) val = 'system';
       await prefs.setString(_prefKey, val);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   }
 
   Future<void> toggleTheme() async {

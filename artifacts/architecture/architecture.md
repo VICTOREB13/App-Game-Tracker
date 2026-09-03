@@ -66,7 +66,9 @@ graph TD
     end
 
     subgraph Domain["Lógica de Dominio y Modelos"]
-        GameModel["Modelo Game (Patrón Sentinel copyWith, Límites Defensivos, toSqliteMap)"]
+        GameModel["Modelo Game (Entidad Inmutable < 200 LoC, Patrón Sentinel copyWith, toSqliteMap)"]
+        GameSanitizer["GameSanitizer (Límites Defensivos, Sanitización de Cadenas & Clamp Numérico)"]
+        NotionParser["NotionParser (Parser Desacoplado de Registros Heredados de Notion v2.x)"]
         PlatformHlp["PlatformHelper (Logos Vectoriales Oficiales & Paletas de Fabricante)"]
         StringNorm["StringNormalizer (Fuzzy Similarity > 0.90 & Clean Title)"]
         BackupSvc["BackupService (Scoped Storage, JSON Export / Import)"]
@@ -192,3 +194,12 @@ Para soportar lecturas y escrituras simultáneas de alto rendimiento sin bloqueo
 ### 4. Sincronización en Dos Fases con Worker Pool
 - **Fase 1 (Core Inmediate):** Importación rápida (< 1s) e inserción en lote de datos directos de Steam.
 - **Fase 2 (Enriquecimiento en Segundo Plano):** Worker pool con 2 workers en paralelo y retardo de 300 ms entre llamadas para evitar bloqueos por límite de tasa (rate limiting).
+
+### 5. Capa de Controladores (Patrón Arquitectónico MVC)
+Para desacoplar completamente la lógica de negocio y las consultas directas a servicios (`DatabaseService`, `SecureStorageService`, `BackupService`, `SharedPreferences`) de los widgets de presentación (Views), la arquitectura implementa la capa de Controladores en `frontend/lib/controllers/` extendiendo `ChangeNotifier`:
+- **`DashboardController`:** Centraliza el estado de la biblioteca, paginación reactiva, filtros dinámicos (estado, plataforma, género, búsqueda, ordenamiento), zoom/modos de visualización y acciones rápidas (`quickAddHours`, `updateGameStatus`).
+- **`GameDetailController`:** Gestiona el ciclo de vida del juego seleccionado, edición de campos, transiciones automáticas de estado (`applyPlaytimeProgress`), enriquecimiento bajo demanda (HLTB y Wikipedia), guardado en SQLite y datos para ficha social.
+- **`GameSearchController`:** Orquesta la búsqueda externa en RAWG API, gestión de credenciales y la ingesta atómica de nuevos títulos enriquecidos en SQLite.
+- **`SettingsController`:** Administra el almacenamiento seguro de credenciales con `SecureStorageService`, sincronizaciones masivas (Steam, HLTB, Metadatos), operaciones de respaldo/restauración JSON y mantenimiento de la base de datos (VACUUM / reseteo).
+- **`AnalyticsController`:** Realiza el cálculo de métricas reactivas (distribución por estado, plataforma y género, horas totales, porcentaje de completado, calculadora de backlog, metas anuales multi-año y récords del Salón de la Fama).
+

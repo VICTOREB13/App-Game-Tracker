@@ -206,6 +206,30 @@ Estructura canónica generada y consumida por `BackupService` con soporte de Sco
 
 | Clave Canónica | Tipo de Dato | Propósito | Servicio Consumidor |
 | :--- | :--- | :--- | :--- |
-| `steam_api_key` | `String` | Llave oficial de Steam Web API | `SteamService`, `DashboardScreen`, `SettingsScreen` |
-| `rawg_key` | `String` | Llave de RAWG Video Games API | `MetadataService`, `SteamService`, `SearchScreen`, `SettingsScreen` |
-| `notion_token` | `String` | Token de Integración Interna Notion | `NotionService`, `SetupScreen` |
+| `steam_api_key` | `String` | Llave oficial de Steam Web API | `SteamService`, `SettingsController`, `DashboardController` |
+| `rawg_key` | `String` | Llave de RAWG Video Games API | `MetadataService`, `SteamService`, `GameSearchController`, `SettingsController` |
+| `notion_token` | `String` | Token de Integración Interna Notion | `NotionService`, `SettingsController` |
+
+---
+
+## 🎮 Contratos de Controladores MVC (`frontend/lib/controllers/`)
+
+| Controlador | Clase Base | Métodos Clave | Servicios Inyectados |
+| :--- | :--- | :--- | :--- |
+| `DashboardController` | `ChangeNotifier` | `loadGames`, `refresh`, `setPage`, `setPageSize`, `setSearchQuery`, `setStatusFilter`, `setPlatformFilter`, `setGenreFilter`, `setSortOption`, `clearFilters`, `toggleViewMode`, `setGridCardExtent`, `quickAddHours`, `updateGameStatus` | `DatabaseService`, `SharedPreferences` |
+| `GameDetailController` | `ChangeNotifier` | `setTitle`, `setStatus`, `setPlatform`, `setRating`, `setHours`, `addHours`, `setSummary`, `setCoverUrl`, `setLink`, `setHltbMain`, `setHltbCompletionist`, `setStartDate`, `setCompletedDate`, `toggleGenre`, `setGenres`, `fetchHltbData`, `fetchWikipediaLink`, `saveGame`, `deleteGame`, `exportSocialCardData` | `DatabaseService`, `HltbService`, `MetadataService` |
+| `GameSearchController` | `ChangeNotifier` | `loadRawgKey`, `searchGames`, `clearSearch`, `addGameToLibrary` | `MetadataService`, `DatabaseService`, `SecureStorageService`, `HltbService` |
+| `SettingsController` | `ChangeNotifier` | `loadSettings`, `saveRawgKey`, `saveSteamSettings`, `saveNotionToken`, `testSteamConnection`, `resolveSteamVanity`, `syncSteam`, `syncAllHltb`, `syncAllMetadata`, `exportBackup`, `importBackupFromFile`, `importBackupFromJsonString`, `getAvailableBackups`, `optimizeDatabase`, `clearAllGames` | `SecureStorageService`, `DatabaseService`, `SteamService`, `MetadataService`, `SharedPreferences` |
+| `AnalyticsController` | `ChangeNotifier` | `loadAnalytics`, `setSelectedYear`, `setAnnualGoal`, `previousYear`, `nextYear` | `DatabaseService`, `SharedPreferences` |
+
+---
+
+## 🧩 Entidades y Helpers de Dominio (`frontend/lib/models/` y `services/`)
+
+| Componente | Archivo | Responsabilidad | LoC |
+| :--- | :--- | :--- | :--- |
+| `Game` | `frontend/lib/models/game.dart` | Entidad de dominio pura, inmutable y testeable. Serialización SQLite/JSON, copyWith, applyPlaytimeProgress. | 187 |
+| `GameSanitizer` | `frontend/lib/models/game_sanitizer.dart` | Límites defensivos, truncado de caracteres, clamp numérico y normalización de fechas/géneros. | 87 |
+| `NotionParser` | `frontend/lib/services/notion_parser.dart` | Extracción y deserialización desacoplada de registros de Notion v2.x para respaldos legados. | 134 |
+
+

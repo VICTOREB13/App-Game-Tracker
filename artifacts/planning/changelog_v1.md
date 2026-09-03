@@ -1,15 +1,109 @@
 ---
 tipo: changelog
 proyecto: App_Game_Tracker
-version: v3.0.6
+version: v3.2.0
 estado: activo
-fecha: 2026-08-27
-tags: [proyecto, changelog, versiones, v3.0.6, ui-polish, settings-screen, hltb-sync-button, victor-engineer]
+fecha: 2026-09-02
+tags: [proyecto, changelog, versiones, v3.2.0, modularization, monolith-decomposition, clean-code, anti-slop, quality-gate, victor-engineer]
 ---
 
 # Registro de Cambios (Changelog) - Rastreador de Entretenimiento Personal
 
 Todos los cambios notables de este proyecto se documentarán en este archivo.
+
+## [3.2.0] - 2026-09-02 (Modular Architecture, Monolith Decomposition & Quality Gate)
+
+### Added & Modularized
+- **Descomposición Total de los 4 Monolitos Principales (< 300 LoC por Pantalla):**
+  - Reducción drástica del tamaño y complejidad de las capas de pantalla monolíticas, pasando de **6,455 LoC** a **969 LoC** netas (**-85.0% global, -86.2% de reducción balanceada en pantallas**):
+    - `dashboard.dart`: reducido de **1,876 LoC** a **274 LoC** (**-85.4%**).
+    - `game_detail_screen.dart`: reducido de **1,962 LoC** a **296 LoC** (**-84.9%**).
+    - `settings_screen.dart`: reducido de **1,455 LoC** a **227 LoC** (**-84.4%**).
+    - `search_screen.dart`: reducido de **1,162 LoC** a **172 LoC** (**-85.2%**).
+  - Las pantallas ahora operan como controladores puros y orquestadores limpios de ciclo de vida, persistencia SQLite y enrutamiento declarativo.
+- **Creación y Catálogo de 27 Nuevos Widgets Modulares y Helpers Desacoplados:**
+  - **Dashboard (`lib/widgets/dashboard/`):**
+    - `DashboardAppBar`: Barra superior reactiva con monograma AGT, toggle de temas, búsqueda animada y spinner de sincronización de Steam.
+    - `DashboardFilterBar`: Barra de filtros adaptativa (chips de estado, dropdowns de plataforma y género, selector de orden y botón de limpieza).
+    - `DashboardViewHeader`: Subheader con contador de biblioteca (`_filteredGames.length / _totalGamesCount`), chip de búsqueda activa, conmutador Grid/Lista y controles de zoom estilo explorador de Windows.
+    - `DashboardGameView`: Orquestador de presentación dinámico entre cuadrícula responsiva (`GameCardGrid`) y lista tabular compacta (`GameCardList`).
+    - `DashboardSkeletonGrid`: Placeholder de carga shimmer responsivo para transiciones asíncronas.
+    - `DashboardFab`: Botón flotante estilizado para acceso rápido a la búsqueda y adición de títulos.
+    - `FilterMetadataHelper`: Cálculo desacoplado de frecuencias, opciones y conteo de filtros sin reconsultar SQLite.
+    - `QuickActionBottomSheet`: Modal bottom sheet para modificación táctil de estado y adición incremental de horas (`+1h`).
+    - `HeroSpotlightCard`: Tarjeta cinematográfica "Jugando Ahora" con glow dinámico, barra de progreso y botón rápido.
+    - `PaginationControlBar`: Controles de paginación desacoplados con selector de tamaño de página.
+  - **Detalle de Juego (`lib/widgets/game_detail/`):**
+    - `GameDetailHeader`: Cabecera visual con backdrop blur de portada, tarjeta Hero centralizada y badges de plataforma/estado.
+    - `GameCoverPickerCard`: Selector unificado de portadas con selector de archivos local (`FilePicker`), copiado seguro y campo de URL web consolidado (eliminando el campo duplicado de URL).
+    - `GameHltbProgressCard`: Tarjeta de progreso contra HowLongToBeat con barra animada (Campaña vs. 100%) y horas restantes.
+    - `GameGenreSelector`: Acordeón interactivo con contador de géneros seleccionados y selector múltiple de los 30 géneros estándar provistos por `GenreHelper`.
+    - `GameDetailFormFields`: Campos de formulario desacoplados (`GameSectionHeader`, `QuickHourButton`, `GameDropdownField`, `GameDatePickerField`).
+    - `SocialCardDialog`: Modal de personalización y previsualización de tarjeta social con alternancia de temas Claro/Oscuro.
+    - `SocialCardPreview`: Renderizador envuelto en `RepaintBoundary` para exportación en alta definición (PNG 2.5x) directo a Descargas.
+  - **Configuración (`lib/widgets/settings/`):**
+    - `SettingsSectionHeader`: Cabeceras estilizadas para delimitación de secciones.
+    - `ThemeSettingsCard`: Selector visual de temas (Oscuro, Claro, Sistema).
+    - `DatabaseSettingsCard`: Estadísticas en tiempo real de SQLite y botón de optimización (`VACUUM`).
+    - `SteamSettingsCard`: Gestión segura de API Key, resolución de Vanity URL y sincronización de biblioteca Steam.
+    - `RawgSettingsCard`: Gestión de API Key y enriquecimiento por lotes de portadas, sinopsis y géneros.
+    - `HltbSettingsCard`: Sincronización masiva de duraciones HowLongToBeat y auto-culminación por tiempo de juego.
+    - `BackupSettingsCard`: Respaldo y restauración portable en formato JSON.
+    - `BrandingFooter`: Créditos de autoría Victor Engineer, enlace a repositorio y versión oficial.
+    - `SyncSummaryDialog`: Diálogo modal genérico para desgloses estadísticos de sincronización externa (Steam, HLTB, RAWG).
+    - `ImportBackupDialog`: Diálogo modal desacoplado para selección y restauración de copias de seguridad.
+  - **Búsqueda y Exploración (`lib/widgets/search/`):**
+    - `SearchBarInput`: Campo de texto con icono de lupa, botón de borrado rápido y spinner de carga reactivo.
+    - `SearchEmptyState`: Estado vacío centrado con icono gamer y guía de búsqueda.
+    - `SearchResultCard`: Tarjeta de resultado con portada, badges de género/año y botón rápido de adición.
+    - `GameDetailsPromptDialog`: Diálogo modal desacoplado de adición manual con validación y normalización.
+    - `GameDetailsResult`: Modelo de datos inmutable tipado para transferencias de búsqueda.
+- **Dock Inferior Unificado en el Dashboard:**
+  - Consolidación del layout de navegación inferior fusionando los controles de paginación (`PaginationControlBar`) y el botón flotante "Añadir juego" (`DashboardFab`) en una estructura balanceada y ergonómica.
+  - Eliminación de solapamientos visuales y colisiones entre botones flotantes y flechas de paginación en pantallas móviles y de escritorio.
+
+### Refactored & Enhanced
+- **Centralización de `StatusHelper` y Gestión Inteligente de Plataformas (`PlatformHelper`):**
+  - Creación de `frontend/lib/widgets/status_helper.dart` como única fuente de verdad para estados de juego (`Jugando`, `Por jugar`, `Jugado`), colores semánticos (`0xFFDC2626`, `0xFFF59E0B`, `0xFF10B981`), iconos temáticos, pills y badges. Erradicadas las 7 implementaciones duplicadas a lo largo de pantallas y widgets.
+  - Ampliación de `PlatformHelper.getOrderedPlatforms(List<String> rawgPlatforms)` para priorizar inteligentemente las plataformas oficiales retornadas por RAWG al añadir juegos, manteniendo un orden ergonómico y canónico.
+- **Enrutamiento RAWG en `MetadataService` con `ResilientHttpClient` y Métodos Masivos:**
+  - Implementación de `MetadataService.searchRawgGames(query, rawgKey, {pageSize})` utilizando el cliente resiliente `ResilientHttpClient` con políticas de timeout y reintentos transparentes.
+  - Eliminación de todas las llamadas HTTP directas (`http.get`) y la dependencia `import 'package:http/http.dart'` en las pantallas de la interfaz (`search_screen.dart`).
+  - Traslado de los bucles iterativos de red desde `settings_screen.dart` hacia `MetadataService.syncAllHltbGames()` y `MetadataService.syncAllGamesMetadata()`, desacoplando completamente la lógica masiva de enriquecimiento de la capa visual.
+- **Encapsulación de Regla de Auto-Culminación (`Game.applyPlaytimeProgress`):**
+  - Centralización de la regla de auto-culminación en el modelo de dominio `Game` como método inmutable, gestionando transiciones automáticas a 'Jugado' al superar `hltbMain` y a 'Jugando' si parte de 'Por jugar' y acumula horas.
+
+### Removed & Optimized (Anti-Slop)
+- **Poda Global de AI Slop y Comentarios Didácticos Redundantes:**
+  - Eliminación exhaustiva de más de **250 líneas** de comentarios triviales, obvios y redundantes de IA a lo largo de todo el codebase (`frontend/lib/`).
+  - Eliminación de anotaciones elementales como `// Title`, `// Rating`, `// Save button`, `// Actions`, `// RepaintBoundary Card`, nombres de colores comentados en `GenreHelper`, etc., elevando el estándar hacia código limpio, idiomático y profesional en Dart.
+
+### Quality Gate & DevOps
+- **Ampliación a 17 Suites de Pruebas Deterministas Offline (99 Tests):**
+  - Incorporación y homologación de suites completas de pruebas unitarias y de widgets en `frontend/test/`:
+    - `status_helper_test.dart` (6 tests)
+    - `game_progress_test.dart` (6 tests)
+    - `platform_helper_test.dart` (9 tests)
+    - `string_normalizer_test.dart` (5 tests)
+    - `metadata_service_test.dart` (7 tests)
+    - `resilient_http_client_test.dart` (4 tests)
+    - `secure_storage_service_test.dart` (7 tests)
+    - `database_service_test.dart` (5 tests)
+    - `backup_service_test.dart` (3 tests)
+    - `steam_service_test.dart` (3 tests)
+    - `hltb_service_test.dart` (2 tests)
+    - `game_model_test.dart` (4 tests)
+    - `widgets/app_cover_image_test.dart` (6 tests)
+    - `widgets/dashboard_widgets_test.dart` (9 tests)
+    - `widgets/game_detail_widgets_test.dart` (9 tests)
+    - `widgets/settings_widgets_test.dart` (9 tests)
+    - `widgets/search_widgets_test.dart` (5 tests)
+  - 100% de tasa de aprobación (99/99 tests exitosos) sin dependencias de red en vivo, empleando `MockClient` y SQLite FFI in-memory.
+- **Pipeline CI/CD Robusto & Quality Gate Integrado:**
+  - Actualización de `.github/workflows/release.yml` integrando el job mandatario `quality_gate` (`flutter analyze` y `flutter test`) antes de autorizar las compilaciones de Windows x64 y Android APK.
+  - Sincronización estricta de versión de Flutter SDK (`3.22.0`) y extracción automática de versión desde `pubspec.yaml` para el etiquetado del binario APK.
+  - Soporte de triggers ante tags `v*` en `.github/workflows/ci.yml`.
+  - Certificación oficial documentada en `artifacts/audit_reports/audit_report_refactor_v3.2.0.md` con veredicto **`PASS (QUALITY GATE CERTIFIED)`**.
 
 ## [3.0.6] - 2026-08-27 (Settings UI Refinements & Compact Actions)
 

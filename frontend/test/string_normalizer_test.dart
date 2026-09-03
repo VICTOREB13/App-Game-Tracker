@@ -44,5 +44,24 @@ void main() {
       expect(StringNormalizer.similarity(null, null), equals(1.0));
       expect(StringNormalizer.similarity('', 'Game'), equals(0.0));
     });
+
+    test('sanitizeFilename genera nombres seguros para sistemas de archivos', () {
+      expect(
+        StringNormalizer.sanitizeFilename('The Witcher 3: Wild Hunt™'),
+        equals('The_Witcher_3_Wild_Hunt'),
+      );
+      expect(
+        StringNormalizer.sanitizeFilename('  ¿Juego / Test: Vol. 1?  '),
+        equals('Juego__Test_Vol_1'),
+      );
+      expect(StringNormalizer.sanitizeFilename(''), equals('archivo'));
+    });
+
+    test('cleanSpecialCharacters remueve marcas registradas preservando casing', () {
+      expect(
+        StringNormalizer.cleanSpecialCharacters('Pokémon™ Scarlet® & Violet©'),
+        equals('Pokémon Scarlet & Violet'),
+      );
+    });
   });
 }

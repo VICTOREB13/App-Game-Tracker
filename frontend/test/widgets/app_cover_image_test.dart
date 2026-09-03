@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:tracker_app/widgets/app_cover_image.dart';
+import 'package:tracker_app/views/widgets/app_cover_image.dart';
 
 void main() {
   test('AppCoverImage tiene valores por defecto apropiados para preservación de aspect ratio', () {

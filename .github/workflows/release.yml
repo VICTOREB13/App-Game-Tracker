@@ -10,8 +10,42 @@ permissions:
   contents: write
 
 jobs:
+  quality_gate:
+    name: Quality Gate (Analyze & Test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Restaurar Dependencias
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Linter y Análisis Estático (Quality Gate)
+        working-directory: ./frontend
+        run: flutter analyze
+
+      - name: Ejecutar Pruebas Automatizadas (17 Suites)
+        working-directory: ./frontend
+        run: flutter test
+
   build_windows:
     name: Compilar Ejecutable Windows x64
+    needs: [quality_gate]
     runs-on: windows-latest
 
     steps:
@@ -24,6 +58,7 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
@@ -73,6 +108,7 @@ jobs:
 
   build_android:
     name: Compilar APK Android
+    needs: [quality_gate]
     runs-on: ubuntu-latest
 
     steps:
@@ -129,9 +165,17 @@ jobs:
         working-directory: ./frontend
         run: flutter pub get
 
+      - name: Extraer Versión de pubspec.yaml
+        id: app_version
+        working-directory: ./frontend
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1 | tr -d ' ')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Versión detectada para APK: $VERSION"
+
       - name: Compilar APK (Fat APK)
         working-directory: ./frontend
-        run: flutter build apk --release
+        run: flutter build apk --release --build-name=${{ steps.app_version.outputs.VERSION }} --build-number=${{ github.run_number }}
 
       - name: Renombrar APK para Release
         run: |

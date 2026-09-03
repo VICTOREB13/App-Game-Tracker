@@ -350,7 +350,6 @@ class SteamService {
         num finalHours = matchedGame.hoursPlayed ?? 0;
         DateTime? finalStartDate = matchedGame.startDate;
         DateTime? finalCompletedDate = matchedGame.completedDate;
-        String finalStatus = matchedGame.status;
         num? finalSteamId = matchedGame.steamId ?? appid;
 
         // 1. Horas jugadas
@@ -371,31 +370,26 @@ class SteamService {
           needsUpdate = true;
         }
 
-        // 4. Auto-Culminación inmediata si ya tenía HLTB cargado
-        final hltbMain = matchedGame.hltbMain?.toDouble();
-        if (hltbMain != null &&
-            hltbMain > 0 &&
-            roundedNewHours >= hltbMain &&
-            !estadosFinales.contains(matchedGame.status)) {
-          finalStatus = 'Jugado';
-          finalCompletedDate ??= DateTime.now();
-          autoCulminatedCount++;
-          needsUpdate = true;
-          details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= $hltbMain h)');
-        } else if (matchedGame.status == 'Por jugar' && roundedNewHours >= 1.0) {
-          finalStatus = 'Jugando';
-          finalStartDate ??= DateTime.now();
-          needsUpdate = true;
-        }
-
-        final updatedGame = matchedGame.copyWith(
-          hoursPlayed: finalHours,
+        final progressed = matchedGame.copyWith(
           steamId: finalSteamId,
           startDate: finalStartDate,
           completedDate: finalCompletedDate,
-          status: finalStatus,
-          updatedAt: DateTime.now(),
-        );
+        ).applyPlaytimeProgress(totalHours: finalHours);
+
+        if (progressed.status != matchedGame.status && progressed.status == 'Jugado') {
+          autoCulminatedCount++;
+          details.add('🏆 Auto-culminado por HLTB: $name ($roundedNewHours h >= ${matchedGame.hltbMain} h)');
+        }
+
+        if (progressed.status != matchedGame.status ||
+            progressed.hoursPlayed != matchedGame.hoursPlayed ||
+            progressed.startDate != matchedGame.startDate ||
+            progressed.completedDate != matchedGame.completedDate ||
+            progressed.steamId != matchedGame.steamId) {
+          needsUpdate = true;
+        }
+
+        final updatedGame = progressed;
 
         if (needsUpdate) {
           coreGamesToUpsert.add(updatedGame);
@@ -413,24 +407,20 @@ class SteamService {
           gamesToEnrich.add(updatedGame);
         }
       } else {
-        // --- JUEGO NUEVO: CREAR CON METADATOS BÁSICOS ---
         final steamCoverUrl =
             'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/$appid/header.jpg';
 
-        final status = roundedNewHours >= 1.0 ? 'Jugando' : 'Por jugar';
-        final startDate = roundedNewHours >= 1.0 ? DateTime.now() : null;
-
-        final newGame = Game(
+        final baseGame = Game(
           title: name,
           coverUrl: steamCoverUrl,
-          status: status,
+          status: 'Por jugar',
           platform: 'PC',
           hoursPlayed: roundedNewHours,
           steamId: appid,
-          startDate: startDate,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
+        final newGame = baseGame.applyPlaytimeProgress(totalHours: roundedNewHours);
 
         coreGamesToUpsert.add(newGame);
         createdCount++;

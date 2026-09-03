@@ -5,6 +5,7 @@ import '../models/game.dart';
 import 'database_service.dart';
 import 'hltb_service.dart';
 import 'resilient_http_client.dart';
+import 'string_normalizer.dart';
 
 /// Servicio de enriquecimiento automático de metadatos (RAWG, Wikipedia y HLTB)
 /// Replicación de `rellenar_metadata()` de `games.py`.
@@ -27,11 +28,7 @@ class MetadataService {
 
   /// Busca el enlace enciclopédico oficial en Wikipedia (probando español e inglés)
   Future<String?> searchWikipedia(String gameTitle) async {
-    final cleanTitle = gameTitle
-        .replaceAll(RegExp(r'[™®©]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
+    final cleanTitle = StringNormalizer.cleanSpecialCharacters(gameTitle);
     if (cleanTitle.isEmpty) return null;
 
     final searches = [
@@ -91,11 +88,7 @@ class MetadataService {
       String gameTitle, String rawgKey) async {
     if (rawgKey.trim().isEmpty) return null;
 
-    final cleanTitle = gameTitle
-        .replaceAll(RegExp(r'[™®©]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
+    final cleanTitle = StringNormalizer.cleanSpecialCharacters(gameTitle);
     if (cleanTitle.isEmpty) return null;
 
     try {
@@ -133,6 +126,38 @@ class MetadataService {
     return null;
   }
 
+  /// Busca juegos en RAWG API para autocompletado y catálogo paginado
+  Future<List<Map<String, dynamic>>> searchRawgGames(
+    String query,
+    String rawgKey, {
+    int pageSize = 15,
+  }) async {
+    final cleanQuery = StringNormalizer.cleanSpecialCharacters(query);
+    if (cleanQuery.isEmpty || rawgKey.trim().isEmpty) return [];
+
+    try {
+      final url = Uri.https(
+        'api.rawg.io',
+        '/api/games',
+        {
+          'key': rawgKey.trim(),
+          'search': cleanQuery,
+          'page_size': pageSize.toString(),
+        },
+      );
+
+      final res = await _httpClient.get(url, timeout: const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final rawResults = (data['results'] as List<dynamic>?) ?? [];
+        return rawResults.whereType<Map<String, dynamic>>().toList();
+      }
+    } catch (e) {
+      debugPrint('Error en searchRawgGames RAWG ($query): $e');
+    }
+    return [];
+  }
+
   /// Enriquece un juego con metadatos faltantes y lo persiste en SQLite
   Future<Game> enrichGame(Game game, {String? rawgKey}) async {
     bool modified = false;
@@ -162,14 +187,14 @@ class MetadataService {
             modified = true;
           }
 
-          // Auto-culminación inmediata si las horas acumuladas superan HLTB
-          final hours = game.hoursPlayed ?? 0;
-          if (newHltbMain != null &&
-              newHltbMain > 0 &&
-              hours >= newHltbMain &&
-              game.status != 'Jugado') {
-            newStatus = 'Jugado';
-            newCompletedDate ??= DateTime.now();
+          final progressed = game.copyWith(
+            hltbMain: newHltbMain,
+            status: newStatus,
+            completedDate: newCompletedDate,
+          ).applyPlaytimeProgress(totalHours: game.hoursPlayed ?? 0);
+          if (progressed.status != newStatus) {
+            newStatus = progressed.status;
+            newCompletedDate = progressed.completedDate;
             modified = true;
           }
         }
@@ -178,7 +203,6 @@ class MetadataService {
       }
     }
 
-    // 2. RAWG: si falta portada o géneros
     if (rawgKey != null && rawgKey.trim().isNotEmpty) {
       final needsRawg =
           (newCover == null || newCover.isEmpty) || newGenres.isEmpty;
@@ -201,7 +225,6 @@ class MetadataService {
       }
     }
 
-    // 3. Wikipedia: si falta el enlace de referencia
     if (newLink == null || newLink.trim().isEmpty) {
       final wikiUrl = await searchWikipedia(game.title);
       if (wikiUrl != null && wikiUrl.isNotEmpty) {
@@ -226,5 +249,156 @@ class MetadataService {
     }
 
     return game;
+  }
+
+  /// Sincroniza masivamente la duración de campaña y completista desde HowLongToBeat.
+  /// Itera sobre los juegos dados (filtrando los pendientes por defecto si [onlyPending] es true),
+  /// consultando [HltbService.searchHltb], aplicando [Game.applyPlaytimeProgress] y actualizando en SQLite.
+  /// Retorna un mapa con contadores: `{ 'total': ..., 'updated': ..., 'failed': ..., 'auto_culminated': ... }`.
+  Future<Map<String, int>> syncAllHltbGames({
+    required List<Game> games,
+    bool onlyPending = true,
+    void Function(int current, int total, String title)? onProgress,
+  }) async {
+    final targets = onlyPending
+        ? games
+            .where((g) =>
+                (g.hltbMain == null || g.hltbMain == 0) ||
+                (g.hltbCompletionist == null || g.hltbCompletionist == 0))
+            .toList()
+        : games;
+
+    if (targets.isEmpty) {
+      return {
+        'total': 0,
+        'updated': 0,
+        'failed': 0,
+        'auto_culminated': 0,
+      };
+    }
+
+    int updated = 0;
+    int failed = 0;
+    int autoCulminated = 0;
+
+    for (int i = 0; i < targets.length; i++) {
+      final game = targets[i];
+      onProgress?.call(i + 1, targets.length, game.title);
+
+      try {
+        final result = await HltbService.instance.searchHltb(game.title);
+        if (result != null &&
+            (result.mainStory != null || result.completionist != null)) {
+          final newMain = result.mainStory ?? game.hltbMain;
+          final newComp = result.completionist ?? game.hltbCompletionist;
+
+          final progressed = game.copyWith(
+            hltbMain: newMain,
+            hltbCompletionist: newComp,
+            updatedAt: DateTime.now(),
+          ).applyPlaytimeProgress(totalHours: game.hoursPlayed ?? 0);
+
+          if (progressed.status != game.status &&
+              progressed.status == 'Jugado') {
+            autoCulminated++;
+          }
+
+          await DatabaseService.instance.updateGame(progressed);
+          updated++;
+        }
+      } catch (e) {
+        failed++;
+        debugPrint('Error enriqueciendo HLTB (${game.title}): $e');
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+
+    return {
+      'total': targets.length,
+      'updated': updated,
+      'failed': failed,
+      'auto_culminated': autoCulminated,
+    };
+  }
+
+  /// Sincroniza masivamente metadatos (RAWG y Wikipedia) para los juegos indicados.
+  /// Itera sobre los juegos enriqueciendo con RAWG y Wikipedia mediante [enrichGame]
+  /// y persiste en la base de datos SQLite.
+  /// Retorna un mapa con contadores: `{ 'total': ..., 'updated': ..., 'failed': ..., 'genres_updated': ..., 'wiki_updated': ..., 'covers_updated': ... }`.
+  Future<Map<String, int>> syncAllGamesMetadata({
+    required List<Game> games,
+    required String rawgKey,
+    bool onlyPending = true,
+    void Function(int current, int total, String title)? onProgress,
+  }) async {
+    final targets = onlyPending
+        ? games
+            .where((g) =>
+                g.genres.isEmpty ||
+                (g.link == null || g.link!.trim().isEmpty) ||
+                (g.coverUrl == null || g.coverUrl!.trim().isEmpty))
+            .toList()
+        : games;
+
+    if (targets.isEmpty) {
+      return {
+        'total': 0,
+        'updated': 0,
+        'failed': 0,
+        'genres_updated': 0,
+        'wiki_updated': 0,
+        'covers_updated': 0,
+      };
+    }
+
+    int updated = 0;
+    int failed = 0;
+    int genresUpdated = 0;
+    int wikiUpdated = 0;
+    int coversUpdated = 0;
+
+    for (int i = 0; i < targets.length; i++) {
+      final game = targets[i];
+      onProgress?.call(i + 1, targets.length, game.title);
+
+      final hadGenres = game.genres.isNotEmpty;
+      final hadCover =
+          game.coverUrl != null && game.coverUrl!.trim().isNotEmpty;
+      final hadLink = game.link != null && game.link!.trim().isNotEmpty;
+
+      try {
+        final enriched = await enrichGame(game, rawgKey: rawgKey);
+        if (!identical(enriched, game)) {
+          updated++;
+          if (!hadGenres && enriched.genres.isNotEmpty) {
+            genresUpdated++;
+          }
+          if (!hadCover &&
+              (enriched.coverUrl != null &&
+                  enriched.coverUrl!.trim().isNotEmpty)) {
+            coversUpdated++;
+          }
+          if (!hadLink &&
+              (enriched.link != null && enriched.link!.trim().isNotEmpty)) {
+            wikiUpdated++;
+          }
+        }
+      } catch (e) {
+        failed++;
+        debugPrint('Error enriqueciendo metadatos (${game.title}): $e');
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+
+    return {
+      'total': targets.length,
+      'updated': updated,
+      'failed': failed,
+      'genres_updated': genresUpdated,
+      'wiki_updated': wikiUpdated,
+      'covers_updated': coversUpdated,
+    };
   }
 }

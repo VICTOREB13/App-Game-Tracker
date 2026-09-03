@@ -18,7 +18,7 @@ class BackupService {
       if (downloads != null && await downloads.exists()) {
         return downloads;
       }
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     try {
       if (Platform.isAndroid) {
@@ -27,7 +27,7 @@ class BackupService {
           return extDir;
         }
       }
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     final docs = await getApplicationDocumentsDirectory();
     if (!await docs.exists()) {
@@ -162,14 +162,14 @@ class BackupService {
       if (downloads != null && await downloads.exists()) {
         candidateDirs.add(downloads);
       }
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     try {
       final docs = await getApplicationDocumentsDirectory();
       if (await docs.exists()) {
         candidateDirs.add(docs);
       }
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     try {
       if (Platform.isAndroid) {
@@ -178,12 +178,12 @@ class BackupService {
           candidateDirs.add(extDir);
         }
       }
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     // Directorio actual de la app (para sample_games_library.json)
     try {
       candidateDirs.add(Directory.current);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
 
     for (final dir in candidateDirs) {
       try {
@@ -200,7 +200,7 @@ class BackupService {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { /* ignore */ }
     }
 
     result.sort((a, b) {

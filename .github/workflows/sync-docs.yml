@@ -53,6 +53,8 @@ jobs:
             sed -i "s/\[\[task\]\]/\[\[${PREFIJO}task|task\]\]/g" "$archivo_destino"
             sed -i "s/\[\[changelog_v1\]\]/\[\[${PREFIJO}changelog_v1|changelog_v1\]\]/g" "$archivo_destino"
             sed -i "s/\[\[audit_report\]\]/\[\[${PREFIJO}audit_report|audit_report\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[audit_report_refactor\]\]/\[\[${PREFIJO}audit_report_refactor|audit_report_refactor\]\]/g" "$archivo_destino"
+            sed -i "s/\[\[audit_report_refactor_v3.2.0\]\]/\[\[${PREFIJO}audit_report_refactor_v3.2.0|audit_report_refactor_v3.2.0\]\]/g" "$archivo_destino"
           done
           
       - name: 🚀 Empujar a Obsidian Vault
