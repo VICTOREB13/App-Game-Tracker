@@ -24,21 +24,48 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0' # Versión estable más reciente
           channel: 'stable'
+          cache: true
 
       - name: Generar Archivos de Plataforma
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter create --platforms android .
 
+      - name: Configurar Compatibilidad de Android SDK (compileSdk 36)
+        working-directory: ./app
+        run: |
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 36/' android/app/build.gradle
+          fi
+          if [ -f "android/app/build.gradle.kts" ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
+          fi
+          if [ -f "android/build.gradle" ]; then
+            cat << 'EOF' >> android/build.gradle
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (compileSdkVersion < 36) {
+                    compileSdkVersion 36
+                }
+            }
+        }
+    }
+}
+EOF
+          fi
+
       - name: Cambiar el nombre nativo y añadir Permisos
-        working-directory: ./frontend
+        working-directory: ./app
         run: |
           sed -i 's/android:label=".*"/android:label="Rastreador de Juegos"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
 
       - name: Configurar Iconos Oficiales Victor Engineer (Android)
-        working-directory: ./frontend
+        working-directory: ./app
         run: |
           if [ -d "assets/launcher_icons/android" ]; then
             cp -r assets/launcher_icons/android/* android/app/src/main/res/
@@ -50,36 +77,36 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           mkdir -p ~/.android
-          mkdir -p frontend/assets/keystore
+          mkdir -p app/assets/keystore
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > frontend/assets/keystore/release.keystore
-            cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/assets/keystore/release.keystore
+            cp app/assets/keystore/release.keystore ~/.android/debug.keystore
             echo "✅ Keystore restaurado desde GitHub Secrets (ANDROID_KEYSTORE_BASE64)"
-          elif [ -f "frontend/assets/keystore/release.keystore" ]; then
-            cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+          elif [ -f "app/assets/keystore/release.keystore" ]; then
+            cp app/assets/keystore/release.keystore ~/.android/debug.keystore
             echo "✅ Keystore de firma permanente configurado en ~/.android/debug.keystore"
           else
             echo "⚠️ No se detectó ANDROID_KEYSTORE_BASE64 ni release.keystore; se usará keystore por defecto"
           fi
 
       - name: Restaurar dependencias
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter pub get
 
       - name: Extraer Versión de pubspec.yaml
         id: app_version
-        working-directory: ./frontend
+        working-directory: ./app
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1 | tr -d ' ')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Versión detectada para APK: $VERSION"
 
       - name: Compilar APK (Fat APK)
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter build apk --release --build-name=${{ steps.app_version.outputs.VERSION }} --build-number=${{ github.run_number }}
 
       - name: Subir APK al Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TrackerApp_Android_APK
-          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
