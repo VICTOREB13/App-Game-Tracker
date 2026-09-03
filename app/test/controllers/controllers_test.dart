@@ -7,6 +7,7 @@ import 'package:tracker_app/services/database_service.dart';
 
 void main() {
   setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   });

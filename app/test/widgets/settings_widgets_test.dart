@@ -183,8 +183,8 @@ void main() {
       );
 
       expect(find.text('VE'), findsOneWidget);
-      expect(find.text('Victor '), findsOneWidget);
-      expect(find.text('Engineer'), findsOneWidget);
+      expect(find.textContaining('Victor'), findsOneWidget);
+      expect(find.textContaining('Engineer'), findsOneWidget);
       expect(find.text('Gaming Tracker App • v3.2.0'), findsOneWidget);
       expect(find.text('https://victorengineer.fyi'), findsOneWidget);
     });

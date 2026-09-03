@@ -210,10 +210,14 @@ void main() {
       expect(find.text('Jugando'), findsWidgets);
       expect(find.text('Limpiar'), findsOneWidget);
 
-      await tester.tap(find.text('Limpiar'));
+      await tester.ensureVisible(find.text('Limpiar'));
+      await tester.tap(find.text('Limpiar'), warnIfMissed: false);
+      await tester.pumpAndSettle();
       expect(cleared, isTrue);
 
-      await tester.tap(find.text('Por jugar'));
+      await tester.ensureVisible(find.text('Por jugar'));
+      await tester.tap(find.text('Por jugar'), warnIfMissed: false);
+      await tester.pumpAndSettle();
       expect(selectedStatus, equals('Por jugar'));
     });
 

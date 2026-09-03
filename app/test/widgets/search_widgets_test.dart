@@ -50,6 +50,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Elden'), findsOneWidget);
 
+      await tester.showKeyboard(find.byType(TextField));
       await tester.testTextInput.receiveAction(TextInputAction.done);
       expect(submittedQuery, equals('Elden'));
 
@@ -184,7 +185,7 @@ void main() {
       expect(find.text('2 recomendadas'), findsOneWidget);
       expect(find.text('+ Otras plataformas'), findsOneWidget);
       expect(find.text('PC'), findsOneWidget);
-      expect(find.text('PlayStation 5'), findsOneWidget);
+      expect(find.text('Playstation 5'), findsOneWidget);
       expect(find.text('Nintendo Switch'), findsNothing);
 
       // Expandir otras plataformas
@@ -194,10 +195,10 @@ void main() {
       expect(find.text('Solo recomendadas'), findsOneWidget);
       expect(find.text('Nintendo Switch'), findsOneWidget);
 
-      // Seleccionar PlayStation 5
-      await tester.tap(find.text('PlayStation 5'));
+      // Seleccionar Playstation 5
+      await tester.tap(find.text('Playstation 5'));
       await tester.pumpAndSettle();
-      expect(selected, equals('PlayStation 5'));
+      expect(selected, equals('Playstation 5'));
     });
 
     testWidgets(

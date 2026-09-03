@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/theme_manager.dart';
@@ -72,10 +72,15 @@ class DashboardViewHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -327,6 +332,9 @@ class DashboardViewHeader extends StatelessWidget {
           ),
         ],
       ),
+    ),
+  ),
+),
     );
   }
 }

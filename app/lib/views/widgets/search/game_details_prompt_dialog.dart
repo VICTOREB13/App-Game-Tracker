@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -164,9 +164,8 @@ class _GameDetailsPromptDialogState extends State<GameDetailsPromptDialog> {
         ),
       ]);
 
-  Widget _buildActions() => Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+  Widget _buildActions() => Wrap(alignment: WrapAlignment.end, spacing: 8, runSpacing: 4, children: [
         TextButton(onPressed: () => Navigator.pop(context, null), child: Text('Cancelar', style: GoogleFonts.inter(color: AppColors.textSecondary(context)))),
-        const SizedBox(width: 8),
         ElevatedButton.icon(
           onPressed: _submit,
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), foregroundColor: Colors.white),

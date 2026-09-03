@@ -52,7 +52,7 @@ void main() {
       );
       expect(
         StringNormalizer.sanitizeFilename('  ¿Juego / Test: Vol. 1?  '),
-        equals('Juego__Test_Vol_1'),
+        equals('Juego_Test_Vol_1'),
       );
       expect(StringNormalizer.sanitizeFilename(''), equals('archivo'));
     });

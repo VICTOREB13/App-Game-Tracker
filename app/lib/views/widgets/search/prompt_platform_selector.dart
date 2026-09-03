@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../services/theme_manager.dart';
@@ -44,10 +44,14 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.sports_esports_rounded,
                     size: 16, color: Color(0xFFDC2626)),
