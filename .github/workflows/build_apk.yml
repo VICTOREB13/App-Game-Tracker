@@ -82,9 +82,22 @@ jobs:
         working-directory: ./app
         run: flutter pub get
 
-      - name: Alinear compileSdk 36 en plugin file_picker
+      - name: Alinear compileSdk 36 en dependencias de Gradle
         run: |
-          find "$HOME/.pub-cache" -path "*/file_picker*/android/build.gradle" -exec sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 36/g' {} + 2>/dev/null || true
+          for cp in "$HOME/.pub-cache" "${PUB_CACHE:-$HOME/.pub-cache}"; do
+            if [ -d "$cp" ]; then
+              find "$cp" -name "build.gradle" -exec sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 36/g' {} + 2>/dev/null || true
+              find "$cp" -name "build.gradle" -exec sed -i -E 's/compileSdk [0-9]+/compileSdk 36/g' {} + 2>/dev/null || true
+              find "$cp" -name "build.gradle.kts" -exec sed -i -E 's/compileSdk = [0-9]+/compileSdk = 36/g' {} + 2>/dev/null || true
+            fi
+          done
+
+          if [ -f "app/android/build.gradle" ]; then
+            printf '\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty("android")) {\n            project.android {\n                compileSdkVersion 36\n            }\n        }\n    }\n}\n' >> app/android/build.gradle
+          fi
+          if [ -f "app/android/build.gradle.kts" ]; then
+            printf '\nsubprojects {\n    afterEvaluate {\n        val android = extensions.findByName("android")\n        if (android != null) {\n            try {\n                val m = android.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)\n                m.invoke(android, 36)\n            } catch (e: Exception) {}\n        }\n    }\n}\n' >> app/android/build.gradle.kts
+          fi
 
       - name: Extraer Versión de pubspec.yaml
         id: app_version
