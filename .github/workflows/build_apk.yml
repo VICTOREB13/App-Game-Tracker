@@ -42,20 +42,7 @@ jobs:
             sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
           fi
           if [ -f "android/build.gradle" ]; then
-            cat << 'EOF' >> android/build.gradle
-
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                if (compileSdkVersion < 36) {
-                    compileSdkVersion 36
-                }
-            }
-        }
-    }
-}
-EOF
+            printf "\nsubprojects {\n    afterEvaluate { project ->\n        if (project.hasProperty('android')) {\n            project.android {\n                if (compileSdkVersion < 36) {\n                    compileSdkVersion 36\n                }\n            }\n        }\n    }\n}\n" >> android/build.gradle
           fi
 
       - name: Cambiar el nombre nativo y añadir Permisos
