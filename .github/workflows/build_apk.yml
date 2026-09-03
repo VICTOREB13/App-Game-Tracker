@@ -31,7 +31,7 @@ jobs:
         working-directory: ./app
         run: flutter create --platforms android .
 
-      - name: Configurar Compatibilidad de Android SDK (compileSdk 36 y AAR)
+      - name: Configurar Compatibilidad de Android SDK (compileSdk 36)
         working-directory: ./app
         run: |
           echo "compileSdkVersion=36" >> android/gradle.properties
@@ -45,13 +45,6 @@ jobs:
           if [ -f "android/app/build.gradle.kts" ]; then
             sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
             sed -i 's/compileSdk = [0-9]*/compileSdk = 36/' android/app/build.gradle.kts
-          fi
-
-          if [ -f "android/build.gradle" ]; then
-            printf '\nsubprojects {\n    tasks.matching { it.name.contains("AarMetadata") }.configureEach {\n        enabled = false\n    }\n}\n' >> android/build.gradle
-          fi
-          if [ -f "android/build.gradle.kts" ]; then
-            printf '\nsubprojects {\n    tasks.matching { it.name.contains("AarMetadata") }.configureEach {\n        enabled = false\n    }\n}\n' >> android/build.gradle.kts
           fi
 
       - name: Cambiar el nombre nativo y añadir Permisos
@@ -88,6 +81,12 @@ jobs:
       - name: Restaurar dependencias
         working-directory: ./app
         run: flutter pub get
+
+      - name: Alinear compileSdk 36 en dependencias de pub-cache
+        run: |
+          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
+          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' {} + 2>/dev/null || true
+          find "$HOME/.pub-cache" -name "build.gradle.kts" -exec sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' {} + 2>/dev/null || true
 
       - name: Extraer Versión de pubspec.yaml
         id: app_version
