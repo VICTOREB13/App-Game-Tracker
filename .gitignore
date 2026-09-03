@@ -4,7 +4,7 @@
 .flutter-plugins-dependencies
 .packages
 build/
-frontend/build/
+app/build/
 
 # OS & IDE
 .DS_Store

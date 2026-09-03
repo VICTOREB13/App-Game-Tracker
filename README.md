@@ -108,28 +108,32 @@ flutter build apk --release
 
 ---
 
-## 🏗️ Arquitectura de Software
+## 🏗️ Arquitectura de Software (Patrón MVC)
 
 ```
-frontend/lib/
-├── models/
-│   └── game.dart               # Modelo canónico de Videojuego (SQLite & JSON)
-├── services/
-│   ├── database_service.dart   # Persistencia SQLite FFI / Android
-│   ├── steam_service.dart      # Sincronización Steam, Family Sharing y HLTB
-│   ├── metadata_service.dart   # Enriquecimiento con RAWG y Wikipedia
-│   ├── string_normalizer.dart  # Limpieza de títulos y similitud difusa (> 0.90)
-│   ├── backup_service.dart     # Motor de exportación/importación JSON
-│   └── theme_manager.dart      # Gestor reactivo de temas (Oscuro/Claro/Sistema)
-├── screens/
-│   ├── dashboard.dart          # Panel principal, Spotlight y catálogo interactivo
-│   ├── game_detail_screen.dart # Ficha del juego, contador de horas y selector de carátula
-│   ├── search_screen.dart      # Explorador de títulos y adición manual
-│   ├── analytics_screen.dart   # Estadísticas, gráficos y metas anuales
-│   └── settings_screen.dart    # Configuración de SQLite, Steam, RAWG y respaldos
-└── widgets/
-    ├── app_cover_image.dart    # Renderizado híbrido unificado (Web / Galería Local)
-    └── platform_helper.dart    # Normalización de badges de plataformas
+app/lib/
+├── models/                     # [M] MODELO: Entidades de Dominio e Inmutabilidad
+│   ├── game.dart               # Modelo canónico de Videojuego (SQLite & JSON)
+│   ├── game_sanitizer.dart     # Sanitización y límites defensivos
+│   └── game_details_result.dart # Contrato de datos de ingesta
+├── controllers/                # [C] CONTROLADOR: Lógica de Negocio y Estado (ChangeNotifier)
+│   ├── dashboard_controller.dart
+│   ├── game_detail_controller.dart
+│   ├── game_search_controller.dart
+│   ├── settings_controller.dart
+│   └── analytics_controller.dart
+├── views/                      # [V] VISTA: Interfaz Gráfica Desacoplada
+│   ├── screens/                # Pantallas orquestadoras (Dashboard, Detail, Search, Settings, Analytics)
+│   └── widgets/                # 27 Subwidgets modulares y reutilizables
+└── services/                   # SERVICIOS: Persistencia SQLite local, Red y APIs
+    ├── database_service.dart   # Persistencia SQLite FFI / Android
+    ├── steam_service.dart      # Sincronización Steam Web API
+    ├── hltb_service.dart       # Scraping de HowLongToBeat
+    ├── metadata_service.dart   # Enriquecimiento con RAWG y Wikipedia
+    ├── backup_service.dart     # Motor de exportación/importación JSON Scoped Storage
+    ├── secure_storage_service.dart # Almacenamiento seguro cifrado
+    ├── string_normalizer.dart  # Limpieza de títulos y sanitización
+    └── theme_manager.dart      # Gestor reactivo de temas
 ```
 
 ---

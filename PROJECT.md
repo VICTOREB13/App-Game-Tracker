@@ -24,11 +24,12 @@
 | 3 | M3: Planning & Roadmap | Comprehensive implementation plan & atomic tasks in artifacts/planning/ | M2 | DONE |
 | 4 | M4: Final Review & Quality Gate | Final verification, zero lib changes check, handoff to Sentinel | M3 | DONE |
 
-## Code Layout
-- `frontend/lib/main.dart`: App entry point, theme initialization, window configuration.
-- `frontend/lib/models/`: Data models (`game.dart`).
-- `frontend/lib/services/`: Services (`database_service.dart`, `steam_service.dart`, `hltb_service.dart`, `metadata_service.dart`, `backup_service.dart`, `notion_service.dart`, `notion_parser.dart`, `string_normalizer.dart`, `theme_manager.dart`).
-- `frontend/lib/screens/`: UI Screens (`dashboard.dart`, `game_detail_screen.dart`, `search_screen.dart`, `analytics_screen.dart`, `settings_screen.dart`, `setup_screen.dart`).
-- `frontend/lib/widgets/`: Reusable UI components (`app_cover_image.dart`, `filter_modal_sheet.dart`, `genre_helper.dart`, `platform_helper.dart`).
-- `frontend/test/`: Automated test suite.
+## Code Layout (MVC Pattern)
+- `app/lib/main.dart`: App entry point, theme initialization, window configuration.
+- `app/lib/models/`: Data models (`game.dart`, `game_sanitizer.dart`, `game_details_result.dart`).
+- `app/lib/controllers/`: Business logic and state management (`dashboard_controller.dart`, `game_detail_controller.dart`, `game_search_controller.dart`, `settings_controller.dart`, `analytics_controller.dart`).
+- `app/lib/views/screens/`: UI Screens (`dashboard_screen.dart`, `game_detail_screen.dart`, `search_screen.dart`, `settings_screen.dart`, `analytics_screen.dart`, `setup_screen.dart`).
+- `app/lib/views/widgets/`: Modular UI components across dashboard, game_detail, search, and settings.
+- `app/lib/services/`: Services (`database_service.dart`, `steam_service.dart`, `hltb_service.dart`, `metadata_service.dart`, `backup_service.dart`, `secure_storage_service.dart`, `string_normalizer.dart`, `theme_manager.dart`).
+- `app/test/`: Automated test suite (17 deterministic test suites).
 - `artifacts/`: Project artifacts (architecture, planning, audit reports).

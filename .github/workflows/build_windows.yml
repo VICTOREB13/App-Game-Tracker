@@ -29,11 +29,11 @@ jobs:
         run: flutter doctor -v
 
       - name: Generar Archivos de Plataforma Windows
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter create --platforms windows .
 
       - name: Configurar Icono Oficial Victor Engineer (Windows)
-        working-directory: ./frontend
+        working-directory: ./app
         shell: pwsh
         run: |
           if (Test-Path "assets/images/app_icon.ico") {
@@ -44,15 +44,15 @@ jobs:
           }
 
       - name: Restaurar dependencias
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter pub get
 
       - name: Compilar Aplicación para Windows (Release)
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter build windows --release
 
       - name: Empaquetar Release en ZIP
-        working-directory: ./frontend
+        working-directory: ./app
         shell: pwsh
         run: |
           $releasePath = if (Test-Path "build\windows\x64\runner\Release") { 
@@ -69,4 +69,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TrackerApp_Windows_x64
-          path: frontend/build/windows/TrackerApp_Windows_x64.zip
+          path: app/build/windows/TrackerApp_Windows_x64.zip

@@ -196,7 +196,7 @@ Para soportar lecturas y escrituras simultáneas de alto rendimiento sin bloqueo
 - **Fase 2 (Enriquecimiento en Segundo Plano):** Worker pool con 2 workers en paralelo y retardo de 300 ms entre llamadas para evitar bloqueos por límite de tasa (rate limiting).
 
 ### 5. Capa de Controladores (Patrón Arquitectónico MVC)
-Para desacoplar completamente la lógica de negocio y las consultas directas a servicios (`DatabaseService`, `SecureStorageService`, `BackupService`, `SharedPreferences`) de los widgets de presentación (Views), la arquitectura implementa la capa de Controladores en `frontend/lib/controllers/` extendiendo `ChangeNotifier`:
+Para desacoplar completamente la lógica de negocio y las consultas directas a servicios (`DatabaseService`, `SecureStorageService`, `BackupService`, `SharedPreferences`) de los widgets de presentación (Views), la arquitectura implementa la capa de Controladores en `app/lib/controllers/` extendiendo `ChangeNotifier`:
 - **`DashboardController`:** Centraliza el estado de la biblioteca, paginación reactiva, filtros dinámicos (estado, plataforma, género, búsqueda, ordenamiento), zoom/modos de visualización y acciones rápidas (`quickAddHours`, `updateGameStatus`).
 - **`GameDetailController`:** Gestiona el ciclo de vida del juego seleccionado, edición de campos, transiciones automáticas de estado (`applyPlaytimeProgress`), enriquecimiento bajo demanda (HLTB y Wikipedia), guardado en SQLite y datos para ficha social.
 - **`GameSearchController`:** Orquesta la búsqueda externa en RAWG API, gestión de credenciales y la ingesta atómica de nuevos títulos enriquecidos en SQLite.

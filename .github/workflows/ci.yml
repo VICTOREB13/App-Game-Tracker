@@ -44,28 +44,28 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           mkdir -p ~/.android
-          mkdir -p frontend/assets/keystore
+          mkdir -p app/assets/keystore
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > frontend/assets/keystore/release.keystore
-            cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/assets/keystore/release.keystore
+            cp app/assets/keystore/release.keystore ~/.android/debug.keystore
             echo "✅ Keystore restaurado desde GitHub Secrets (ANDROID_KEYSTORE_BASE64)"
-          elif [ -f "frontend/assets/keystore/release.keystore" ]; then
-            cp frontend/assets/keystore/release.keystore ~/.android/debug.keystore
+          elif [ -f "app/assets/keystore/release.keystore" ]; then
+            cp app/assets/keystore/release.keystore ~/.android/debug.keystore
             echo "✅ Keystore local configurado"
           else
             echo "ℹ️ No se detectó ANDROID_KEYSTORE_BASE64 ni release.keystore; omitiendo configuración de firma"
           fi
 
       - name: Restaurar Dependencias
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter pub get
 
       - name: Linter y Análisis Estático (Quality Gate)
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter analyze
 
       - name: Ejecutar Pruebas Unitarias y Cobertura (Coverage)
-        working-directory: ./frontend
+        working-directory: ./app
         run: flutter test --coverage
 
       - name: Subir Reporte de Cobertura (Artifact)
@@ -73,5 +73,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lcov-coverage-report
-          path: frontend/coverage/
+          path: app/coverage/
           if-no-files-found: ignore
