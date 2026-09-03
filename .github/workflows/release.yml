@@ -27,7 +27,6 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
@@ -46,7 +45,7 @@ jobs:
   build_windows:
     name: Compilar Ejecutable Windows x64
     needs: [quality_gate]
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Descargar Código
@@ -54,16 +53,21 @@ jobs:
 
       - name: Configurar Entorno Visual Studio C++ (MSVC)
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          vsversion: '2022'
+          arch: x64
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
       - name: Habilitar Soporte de Windows Desktop
         run: flutter config --enable-windows-desktop
+
+      - name: Diagnóstico de Entorno Flutter y Visual Studio
+        run: flutter doctor -v
 
       - name: Generar Archivos de Plataforma Windows
         working-directory: ./app
@@ -84,6 +88,8 @@ jobs:
 
       - name: Compilar Aplicación para Windows
         working-directory: ./app
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: flutter build windows --release
 
       - name: Empaquetar Binario en Archivo ZIP
@@ -124,8 +130,8 @@ jobs:
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
+          cache: true
 
       - name: Generar Archivos de Plataforma Android
         working-directory: ./app

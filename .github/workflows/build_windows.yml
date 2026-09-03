@@ -6,7 +6,7 @@ on:
 jobs:
   build_windows:
     name: Construir Ejecutable de Windows (PC)
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Descargar Código
@@ -14,11 +14,13 @@ jobs:
 
       - name: Configurar Visual Studio / MSVC C++ Environment
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          vsversion: '2022'
+          arch: x64
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
@@ -49,6 +51,8 @@ jobs:
 
       - name: Compilar Aplicación para Windows (Release)
         working-directory: ./app
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: flutter build windows --release
 
       - name: Empaquetar Release en ZIP
