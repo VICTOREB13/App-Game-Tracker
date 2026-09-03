@@ -182,11 +182,9 @@ jobs:
         working-directory: ./app
         run: flutter pub get
 
-      - name: Alinear compileSdk 36 en dependencias de pub-cache
+      - name: Alinear compileSdk 36 en plugin file_picker
         run: |
-          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 36/g' {} + 2>/dev/null || true
-          find "$HOME/.pub-cache" -name "build.gradle" -exec sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' {} + 2>/dev/null || true
-          find "$HOME/.pub-cache" -name "build.gradle.kts" -exec sed -i 's/compileSdk = [0-9]*/compileSdk = 36/g' {} + 2>/dev/null || true
+          find "$HOME/.pub-cache" -path "*/file_picker*/android/build.gradle" -exec sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 36/g' {} + 2>/dev/null || true
 
       - name: Extraer Versión de pubspec.yaml
         id: app_version

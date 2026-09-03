@@ -103,7 +103,7 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
           border: Border.all(color: borderColor, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
               blurRadius: 30,
               spreadRadius: 4,
               offset: const Offset(0, 4),
@@ -138,7 +138,7 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDC2626).withOpacity(0.12),
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -305,12 +305,12 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withOpacity(isDark ? 0.20 : 0.12)
+              ? activeColor.withValues(alpha: isDark ? 0.20 : 0.12)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? activeColor.withOpacity(0.6)
+                ? activeColor.withValues(alpha: 0.6)
                 : Colors.transparent,
             width: 1.2,
           ),
@@ -323,7 +323,7 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
               height: 32,
               decoration: BoxDecoration(
                 color: isSelected
-                    ? activeColor.withOpacity(0.2)
+                    ? activeColor.withValues(alpha: 0.2)
                     : AppColors.surfaceSubtle(context),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -354,12 +354,12 @@ class _FilterModalSheetState extends State<FilterModalSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? activeColor.withOpacity(0.2)
+                    ? activeColor.withValues(alpha: 0.2)
                     : AppColors.surfaceSubtle(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isSelected
-                      ? activeColor.withOpacity(0.4)
+                      ? activeColor.withValues(alpha: 0.4)
                       : AppColors.border(context),
                 ),
               ),

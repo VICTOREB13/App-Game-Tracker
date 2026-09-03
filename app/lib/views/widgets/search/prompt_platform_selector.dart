@@ -76,10 +76,10 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withOpacity(0.15),
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.3),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.3),
                         width: 0.5,
                       ),
                     ),
@@ -132,7 +132,7 @@ class _PromptPlatformSelectorState extends State<PromptPlatformSelector> {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFFDC2626).withOpacity(0.15)
+                      ? const Color(0xFFDC2626).withValues(alpha: 0.15)
                       : (isDark
                           ? const Color(0xFF18181B)
                           : const Color(0xFFF4F4F5)),

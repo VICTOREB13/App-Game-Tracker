@@ -92,7 +92,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFDC2626).withOpacity(0.35),
+                          color: const Color(0xFFDC2626).withValues(alpha: 0.35),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),

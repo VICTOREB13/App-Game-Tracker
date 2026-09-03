@@ -114,7 +114,7 @@ class QuickActionBottomSheet {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFDC2626).withOpacity(0.12),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -189,7 +189,7 @@ class QuickActionBottomSheet {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isCurrent ? color.withOpacity(0.2) : const Color(0xFF18181B),
+            color: isCurrent ? color.withValues(alpha: 0.2) : const Color(0xFF18181B),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isCurrent ? color : const Color(0xFF27272A),

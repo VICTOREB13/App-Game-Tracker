@@ -144,13 +144,13 @@ class DashboardFilterBar extends StatelessWidget {
         onSelected: (_) => onStatusSelected(label),
         selectedColor: chipColor,
         backgroundColor: isDark
-            ? chipColor.withOpacity(0.12)
+            ? chipColor.withValues(alpha: 0.12)
             : (isSelected ? chipColor : Colors.white),
         side: BorderSide(
           color: isSelected
               ? Colors.transparent
               : (isDark
-                  ? chipColor.withOpacity(0.35)
+                  ? chipColor.withValues(alpha: 0.35)
                   : AppColors.border(context)),
           width: 1,
         ),
@@ -181,7 +181,7 @@ class DashboardFilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: isFiltered
-              ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+              ? const Color(0xFFDC2626).withValues(alpha: isDark ? 0.15 : 0.08)
               : AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -249,7 +249,7 @@ class DashboardFilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: isFiltered
-              ? const Color(0xFFDC2626).withOpacity(isDark ? 0.15 : 0.08)
+              ? const Color(0xFFDC2626).withValues(alpha: isDark ? 0.15 : 0.08)
               : AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -351,10 +351,10 @@ class DashboardFilterBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: const Color(0xFFDC2626).withOpacity(isDark ? 0.12 : 0.08),
+          color: const Color(0xFFDC2626).withValues(alpha: isDark ? 0.12 : 0.08),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFFDC2626).withOpacity(0.4),
+            color: const Color(0xFFDC2626).withValues(alpha: 0.4),
             width: 1,
           ),
         ),

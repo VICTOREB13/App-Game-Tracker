@@ -81,7 +81,7 @@ class DashboardGameView extends StatelessWidget {
                   ? Icons.search_off_rounded
                   : Icons.gamepad_outlined,
               size: 64,
-              color: const Color(0xFF71717A).withOpacity(0.4),
+              color: const Color(0xFF71717A).withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(

@@ -32,7 +32,7 @@ class _PromptGenreSelectorState extends State<PromptGenreSelector> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _isExpanded
-              ? const Color(0xFFDC2626).withOpacity(0.4)
+              ? const Color(0xFFDC2626).withValues(alpha: 0.4)
               : AppColors.border(context),
         ),
       ),
@@ -65,7 +65,7 @@ class _PromptGenreSelectorState extends State<PromptGenreSelector> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDC2626).withOpacity(0.15),
+                          color: const Color(0xFFDC2626).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

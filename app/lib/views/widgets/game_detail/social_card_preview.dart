@@ -47,8 +47,8 @@ class SocialCardPreview extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? const Color(0xFFDC2626).withOpacity(0.12)
-                : Colors.black.withOpacity(0.08),
+                ? const Color(0xFFDC2626).withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.08),
             blurRadius: 24,
             spreadRadius: 1,
             offset: const Offset(0, 6),
@@ -186,10 +186,10 @@ class SocialCardPreview extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.15),
+                            color: statusColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
-                              color: statusColor.withOpacity(0.4),
+                              color: statusColor.withValues(alpha: 0.4),
                               width: 0.5,
                             ),
                           ),

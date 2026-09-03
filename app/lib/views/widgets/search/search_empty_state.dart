@@ -21,7 +21,7 @@ class SearchEmptyState extends StatelessWidget {
           Icon(
             Icons.sports_esports_rounded,
             size: 64,
-            color: AppColors.textSecondary(context).withOpacity(0.3),
+            color: AppColors.textSecondary(context).withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(

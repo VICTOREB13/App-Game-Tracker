@@ -145,10 +145,10 @@ class _SteamSyncDialogState extends State<SteamSyncDialog> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDC2626).withOpacity(0.1),
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: const Color(0xFFDC2626).withOpacity(0.3)),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   _errorMessage!,

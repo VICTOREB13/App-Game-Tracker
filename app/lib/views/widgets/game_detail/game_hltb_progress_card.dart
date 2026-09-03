@@ -30,7 +30,7 @@ class GameHltbProgressCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFDC2626).withOpacity(0.35)),
+        border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

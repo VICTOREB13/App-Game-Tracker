@@ -109,7 +109,7 @@ class _GameDetailsPromptDialogState extends State<GameDetailsPromptDialog> {
             Text('Estado', style: GoogleFonts.inter(color: AppColors.textSecondary(context), fontSize: 12, fontWeight: FontWeight.w500)),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
-              value: _selectedStatus, dropdownColor: AppColors.surface(context), menuMaxHeight: 220,
+              initialValue: _selectedStatus, dropdownColor: AppColors.surface(context), menuMaxHeight: 220,
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary(context)),
               items: StatusHelper.gameStatuses.map((s) => DropdownMenuItem(value: s, child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(StatusHelper.getIcon(s), size: 14, color: StatusHelper.getColor(s)), const SizedBox(width: 8), Text(s, style: GoogleFonts.inter(fontSize: 13))]))).toList(),
               onChanged: (val) {

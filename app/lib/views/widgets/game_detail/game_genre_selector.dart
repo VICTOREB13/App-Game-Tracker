@@ -42,7 +42,7 @@ class _GameGenreSelectorState extends State<GameGenreSelector> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: _isExpanded
-              ? const Color(0xFFDC2626).withOpacity(0.5)
+              ? const Color(0xFFDC2626).withValues(alpha: 0.5)
               : AppColors.border(context),
         ),
       ),
@@ -73,7 +73,7 @@ class _GameGenreSelectorState extends State<GameGenreSelector> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDC2626).withOpacity(0.15),
+                          color: const Color(0xFFDC2626).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(

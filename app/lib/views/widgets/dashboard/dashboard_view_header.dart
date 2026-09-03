@@ -104,10 +104,10 @@ class DashboardViewHeader extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626).withOpacity(0.1),
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: const Color(0xFFDC2626).withOpacity(0.3),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -238,7 +238,7 @@ class DashboardViewHeader extends StatelessWidget {
                         ),
                         color: gridCardExtent > 150
                             ? AppColors.textPrimary(context)
-                            : AppColors.textSecondary(context).withOpacity(0.3),
+                            : AppColors.textSecondary(context).withValues(alpha: 0.3),
                         onPressed: gridCardExtent > 150
                             ? () => onGridCardExtentChanged(gridCardExtent - 35)
                             : null,
@@ -319,7 +319,7 @@ class DashboardViewHeader extends StatelessWidget {
                         ),
                         color: gridCardExtent < 380
                             ? AppColors.textPrimary(context)
-                            : AppColors.textSecondary(context).withOpacity(0.3),
+                            : AppColors.textSecondary(context).withValues(alpha: 0.3),
                         onPressed: gridCardExtent < 380
                             ? () => onGridCardExtentChanged(gridCardExtent + 35)
                             : null,

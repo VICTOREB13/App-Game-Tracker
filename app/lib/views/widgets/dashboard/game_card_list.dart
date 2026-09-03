@@ -57,14 +57,14 @@ class _GameCardListState extends State<GameCardList> {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _isHovered
-                  ? const Color(0xFFDC2626).withOpacity(0.5)
+                  ? const Color(0xFFDC2626).withValues(alpha: 0.5)
                   : AppColors.border(context),
               width: 1,
             ),
             boxShadow: [
               if (_isHovered)
                 BoxShadow(
-                  color: const Color(0xFFDC2626).withOpacity(0.12),
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -186,10 +186,10 @@ class _GameCardListState extends State<GameCardList> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626).withOpacity(0.15),
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: const Color(0xFFDC2626).withOpacity(0.4),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.4),
                       width: 0.5,
                     ),
                   ),

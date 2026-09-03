@@ -54,7 +54,7 @@ class SocialCardDialog {
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFDC2626).withOpacity(0.15),
+                              color: const Color(0xFFDC2626).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(Icons.share_rounded,

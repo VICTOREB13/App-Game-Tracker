@@ -49,7 +49,7 @@ class GameDetailHeader extends StatelessWidget {
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              AppColors.background(context).withOpacity(0.5),
+                              AppColors.background(context).withValues(alpha: 0.5),
                               AppColors.background(context),
                             ],
                           ),
@@ -67,7 +67,7 @@ class GameDetailHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),

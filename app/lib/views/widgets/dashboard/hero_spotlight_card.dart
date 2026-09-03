@@ -39,14 +39,14 @@ class HeroSpotlightCard extends StatelessWidget {
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: playingColor.withOpacity(isDark ? 0.35 : 0.22),
+          color: playingColor.withValues(alpha: isDark ? 0.35 : 0.22),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? playingColor.withOpacity(0.08)
-                : Colors.black.withOpacity(0.04),
+                ? playingColor.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             spreadRadius: 1,
           ),
@@ -99,10 +99,10 @@ class HeroSpotlightCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: playingColor.withOpacity(0.15),
+                                color: playingColor.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                    color: playingColor.withOpacity(0.4),
+                                    color: playingColor.withValues(alpha: 0.4),
                                     width: 0.5),
                               ),
                               child: Row(
@@ -120,8 +120,7 @@ class HeroSpotlightCard extends StatelessWidget {
                                             color: playingColor,
                                             boxShadow: [
                                               BoxShadow(
-                                                color: playingColor.withOpacity(
-                                                    0.3 + 0.6 * pulseAnimation.value),
+                                                color: playingColor.withValues(alpha: 0.3 + 0.6 * pulseAnimation.value),
                                                 blurRadius: 4 +
                                                     6 * pulseAnimation.value,
                                                 spreadRadius: 1 +

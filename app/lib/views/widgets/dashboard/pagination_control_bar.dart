@@ -45,9 +45,7 @@ class PaginationControlBar extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(
-                Theme.of(context).brightness == Brightness.light ? 0.05 : 0.25,
-              ),
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.light ? 0.05 : 0.25,),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -197,7 +195,7 @@ class PaginationControlBar extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFDC2626).withOpacity(0.35),
+                                color: const Color(0xFFDC2626).withValues(alpha: 0.35),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
@@ -217,7 +215,7 @@ class PaginationControlBar extends StatelessWidget {
                         backgroundColor: const Color(0xFFDC2626),
                         foregroundColor: Colors.white,
                         elevation: 2,
-                        shadowColor: const Color(0xFFDC2626).withOpacity(0.4),
+                        shadowColor: const Color(0xFFDC2626).withValues(alpha: 0.4),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 9,

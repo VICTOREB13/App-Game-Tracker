@@ -60,27 +60,27 @@ class _GameCardGridState extends State<GameCardGrid> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: _isHovered
-                    ? const Color(0xFFDC2626).withOpacity(0.7)
+                    ? const Color(0xFFDC2626).withValues(alpha: 0.7)
                     : AppColors.border(context),
                 width: _isHovered ? 1.2 : 1,
               ),
               boxShadow: [
                 if (_isHovered)
                   BoxShadow(
-                    color: const Color(0xFFDC2626).withOpacity(0.22),
+                    color: const Color(0xFFDC2626).withValues(alpha: 0.22),
                     blurRadius: 18,
                     spreadRadius: 1,
                     offset: const Offset(0, 6),
                   )
                 else if (Theme.of(context).brightness == Brightness.dark)
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   )
                 else
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -142,7 +142,7 @@ class _GameCardGridState extends State<GameCardGrid> {
                             color: statusColor,
                             boxShadow: [
                               BoxShadow(
-                                color: statusColor.withOpacity(0.6),
+                                color: statusColor.withValues(alpha: 0.6),
                                 blurRadius: 6,
                                 spreadRadius: 1,
                               ),
@@ -159,11 +159,11 @@ class _GameCardGridState extends State<GameCardGrid> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF09090B).withOpacity(0.85),
+                              color: const Color(0xFF09090B).withValues(alpha: 0.85),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                   color:
-                                      const Color(0xFFF59E0B).withOpacity(0.5),
+                                      const Color(0xFFF59E0B).withValues(alpha: 0.5),
                                   width: 0.5),
                             ),
                             child: Text(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -53,7 +53,7 @@ class QuickHourButton extends StatelessWidget {
         side: BorderSide(
           color: isDark
               ? const Color(0xFFDC2626)
-              : const Color(0xFFDC2626).withOpacity(0.4),
+              : const Color(0xFFDC2626).withValues(alpha: 0.4),
           width: 0.8,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -94,7 +94,7 @@ class GameDropdownField extends StatelessWidget {
         : items;
 
     return DropdownButtonFormField<String>(
-      value: effectiveItems.contains(value) ? value : effectiveItems.first,
+      initialValue: effectiveItems.contains(value) ? value : effectiveItems.first,
       dropdownColor: AppColors.surface(context),
       borderRadius: BorderRadius.circular(12),
       style: GoogleFonts.inter(
@@ -448,7 +448,7 @@ class GameSaveButton extends StatelessWidget {
           backgroundColor: const Color(0xFFDC2626),
           foregroundColor: Colors.white,
           elevation: 4,
-          shadowColor: const Color(0xFFDC2626).withOpacity(0.4),
+          shadowColor: const Color(0xFFDC2626).withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: isSaving
